@@ -37,7 +37,7 @@ class JWT {
         this.payload.iat = issuedAt || unixTime();
     }
     
-    addClaim(claimName: string, value: string | number | boolean) {
+    addClaim(claimName: string, value: any) {
         if(JWT.reservedClaims.includes(claimName)) {
             throw new Error("You cannot redefine the " + claimName + " claim as it is a reserved claim.");
         }
@@ -45,6 +45,7 @@ class JWT {
         return this;
     }
     
+    // Secret must be compact hex string.
     finalize(secret: string) {
         if(!(/^[a-fA-F0-9]+$/.test(secret))) {
             throw new Error("Secret must be a hex string. (No 0x)");
