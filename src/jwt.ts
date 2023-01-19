@@ -1,19 +1,24 @@
 import { createHmac } from "crypto";
 import { unixTime } from "./helper.js";
 
+type Header = {
+    alg: string,
+    typ: string
+};
+
+type Payload = {
+    iss: string,
+    exp: number,
+    iat: number,
+    [key: string]: any
+};
+
 class JWT {
-    header?: {
-        alg: string,
-        typ: string
-    };
+
+    header?: Header;
     encodedHeader: string;
-    payload: {
-        iss: string,
-        exp: number,
-        iat: number,
-        [key: string]: any
-    };
-    
+    payload: Payload;
+
     token: string = "";
     
     static reservedClaims = ["iss", "exp", "iat"];
