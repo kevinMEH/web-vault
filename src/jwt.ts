@@ -74,6 +74,37 @@ class JWT {
         }
         // TODO:
     }
+    
+    static #verify(token: string, secret: string) {
+        const parts: string[] = token.split(".");
+        if(parts.length !== 3) {
+            throw new Error("Invalid JSON Web Token format.");
+        }
+        if(!(/^[a-fA-F0-9]+$/.test(secret))) {
+            throw new Error("Secret must be a hex string. (No 0x)");
+        }
+        const body = parts[0] + "." + parts[1];
+        const hmac = createHmac("sha256", Buffer.from(secret, "hex"));
+        hmac.update(body);
+        const signature = hmac.digest("base64url");
+        return signature === parts[2];
+    }
+    
+    // Token will be verified before unwrapping.
+    // Header and payload structure will not be verified.
+    // Throws error on bad token, secret, or signature.
+    // 
+    // Note on payload structure: Assuming that we issue the token, we should know
+    // and be able to expect the format the token is in. If user tries to pass in
+    // a token with modified header keys and values, the signature will not verify
+    // and an error will be thrown before the bad payload and header is returned.
+    static unwrap(token: string, secret: string): [Header, Payload] {
+        if(!JWT.#verify(token, secret)) {
+            throw new Error("Token signature does not match header and body.");
+        }
+        const parts = token.split(".");
+        return [fromBase64(parts[0]) as Header, fromBase64(parts[1]) as Payload];
+    }
 }
 
 function toBase64(object: Object) {
