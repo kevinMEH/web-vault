@@ -6,6 +6,36 @@ import assert from "assert";
 import path from "path";
 import fs from "fs/promises";
 
+// Expects an error, throwing an error if there is no error.
+// The error message can be a substring of the full error message.
+// Returns a function that can be tested.
+function expectError(testFunction: Function, errorMessage: string) {
+    return () => {
+        try {
+            testFunction()
+        } catch(error) {
+            assert((error as Error).message.includes(errorMessage),
+                "Error message \"" + (error as Error).message
+                + "\" does not include the expected error message \""
+                + errorMessage + "\".");
+            return;
+        }
+        throw new Error("Expected error \"" + errorMessage + "\" but found success instead.");
+    }
+}
+
+
+test("Verifying expectError works when no error (using expectError).", expectError(() => {
+    const errorFunction = expectError(() => {
+        const _ = "Everything is ok.";
+        const _2 = "No errors here.";
+    }, "");
+    errorFunction();
+}, "Expected error \"\" but found success instead."));
+
+test("Verifying expectError works on error.", expectError(() => {
+    throw new Error("This is a random error.");
+}, "random error"))
 
 
 import { log, logFileNameFromDate } from "./logger.js";
