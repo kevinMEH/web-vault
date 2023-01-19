@@ -57,9 +57,13 @@ class JWT {
         return this;
     }
     
-    getToken() {
+    getToken(secret?: string) {
         if(this.token === "") {
-            throw new Error("The JSON Web Token has not been finalized yet.");
+            if(secret === undefined) {
+                throw new Error("The JSON Web Token has not been finalized yet. (Provide a secret to automatically finalize.)");
+            } else {
+                this.finalize(secret);
+            }
         }
         return this.token;
     }
