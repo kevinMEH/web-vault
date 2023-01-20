@@ -3,11 +3,12 @@ import path from "path";
 
 const baseLoggingDirectory = process.env.LOGGING_DIRECTORY || path.join(process.cwd(), "logs");
 
-// Logs a message.
+
+// Logs a message related to a specific vault.
 // Vault log directory should already exist.
 // TODO: Add configuration for logging, ex: date format, log file names
-async function log(vaultName: string, message: string) {
-    const filePath = path.join(baseLoggingDirectory, vaultName, logFileNameFromDate());
+async function vaultLog(vaultName: string, message: string) {
+    const filePath = path.join(baseLoggingDirectory, "vaults", vaultName, logFileNameFromDate());
     // TODO: Switch to file descriptors and have array of file
     // descriptors to read and write to. (Performance reasons)
     message = (new Date()).toUTCString() + "\n" + message + "\n\n";
@@ -20,4 +21,4 @@ function logFileNameFromDate() {
     return date.getUTCFullYear() + "_" + date.getUTCMonth() + "_" + date.getUTCDate() + ".log";
 }
 
-export { log, logFileNameFromDate };
+export { vaultLog, logFileNameFromDate };

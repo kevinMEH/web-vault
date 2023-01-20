@@ -38,16 +38,16 @@ test("Verifying expectError works on error.", expectError(() => {
 }, "random error"))
 
 
-import { log, logFileNameFromDate } from "./logger.js";
+import { vaultLog, logFileNameFromDate } from "./logger.js";
 import JWT from "./jwt.js";
 
 test("Logging to a file", async () => {
     const logFileName = logFileNameFromDate();
     const message = "This is a test message.";
-    await log(".", "This is a test message.");
-    const logFileDirectory = path.join("./logs", logFileName);
-    const contents: string = await fs.readFile(logFileDirectory, { encoding: "utf8" } );
-    fs.rm(logFileDirectory);
+    await vaultLog(".", "This is a test message.");
+    const logFilePath = path.join("./logs/vaults", logFileName);
+    const contents: string = await fs.readFile(logFilePath, { encoding: "utf8" } );
+    fs.rm(logFilePath);
 
     assert(contents.includes(message));
     assert(contents.includes(new Date().toUTCString().substring(0, 16)));
