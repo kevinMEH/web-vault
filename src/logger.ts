@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 
-const baseLoggingDirectory = path.join(process.cwd(), "logs");
+const baseLoggingDirectory = process.env.LOGGING_DIRECTORY || path.join(process.cwd(), "logs");
 
 // Logs a message.
 // Vault log directory should already exist.
