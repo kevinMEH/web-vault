@@ -3,6 +3,11 @@ import path from "path";
 
 const baseLoggingDirectory = process.env.LOGGING_DIRECTORY || path.join(process.cwd(), "logs");
 
+async function metaLog(name: "database" | "authentication", message: string) {
+    const filePath = path.join(baseLoggingDirectory, name, logFileNameFromDate());
+    message = (new Date()).toUTCString() + "\n" + message + "\n\n";
+    await fs.appendFile(filePath, message, { mode: 0o750, flag: "a+" });
+}
 
 // Logs a message related to a specific vault.
 // Vault log directory should already exist.
@@ -21,4 +26,4 @@ function logFileNameFromDate() {
     return date.getUTCFullYear() + "_" + date.getUTCMonth() + "_" + date.getUTCDate() + ".log";
 }
 
-export { vaultLog, logFileNameFromDate };
+export { metaLog, vaultLog, logFileNameFromDate };
