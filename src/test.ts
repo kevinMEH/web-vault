@@ -21,6 +21,10 @@ async function shutdown() {
 
 process.on("SIGINT", shutdown);
 
+// ------------------
+// ------------------
+// ------------------
+
 // Expects an error, throwing an error if there is no error.
 // The error message can be a substring of the full error message.
 // Returns a function that can be tested.
@@ -39,7 +43,6 @@ function expectError(testFunction: Function, errorMessage: string) {
     }
 }
 
-
 test("Verifying expectError works when no error (using expectError).", expectError(() => {
     const errorFunction = expectError(() => {
         const _ = "Everything is ok.";
@@ -52,9 +55,11 @@ test("Verifying expectError works on error.", expectError(() => {
     throw new Error("This is a random error.");
 }, "random error"))
 
+// ------------------
+// ------------------
+// ------------------
 
 import { vaultLog, logFileNameFromDate } from "./logger.js";
-import JWT from "./jwt.js";
 
 test("Logging to a file", async () => {
     const logFileName = logFileNameFromDate();
@@ -63,10 +68,16 @@ test("Logging to a file", async () => {
     const logFilePath = path.join("./logs/vaults", logFileName);
     const contents: string = await fs.readFile(logFilePath, { encoding: "utf8" } );
     fs.rm(logFilePath);
-
+    
     assert(contents.includes(message));
     assert(contents.includes(new Date().toUTCString().substring(0, 16)));
 });
+
+// ------------------
+// ------------------
+// ------------------
+
+import JWT from "./jwt.js";
 
 describe("JSON Web Token tests", () => {
     it("Generates a JWT", () => {
@@ -107,7 +118,12 @@ describe("JSON Web Token tests", () => {
     it("Detects bad token formatting", expectError(() => {
         JWT.unwrap("bad.token", "4B6576696E20697320636F6F6C");
     }, "Invalid JSON Web Token format."));
-})
+});
+
+// ------------------
+// ------------------
+// ------------------
+
 import { isOutdatedToken, addOutdatedToken, close } from "./redis.js";
 
 describe("Redis database tests", () => {
@@ -120,7 +136,7 @@ describe("Redis database tests", () => {
     it("Verifies that Redis correctly deletes expiring tokens", async () => {
         addOutdatedToken("temp.token.expiring", unixTime() - 10);
         assert(await isOutdatedToken("temp.token.expiring") === false);
-        // We the expired token is not considered "outdated" anymore but
+        // The expired token is not considered "outdated" anymore but
         // this is fine as we will always verify if it is expired before
         // checking if it is outdated.
     });
