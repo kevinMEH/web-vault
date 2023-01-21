@@ -146,6 +146,56 @@ describe("Redis database tests", () => {
     });
 });
 
+import { localAddOutdatedToken, localIsOutdated, purgeAllOutdated, _list, NodeType as Node } from "./database.js";
+
+describe("In-memory database tests", () => {
+    it("Stores and identifies an outdated token", async () => {
+        await localAddOutdatedToken("test.token.outdated", unixTime() + 300);
+        assert(localIsOutdated("test.token.outdated"));
+        assert(!localIsOutdated("test.token.valid"));
+    });
+    
+    it("Verifies that local database correctly purges expired tokens", async () => {
+        await localAddOutdatedToken("test.token.nonexpired", unixTime() + 300);
+        await localAddOutdatedToken("test.token.expired", unixTime() - 60);
+        await localAddOutdatedToken("test.token.expired2", unixTime() - 30);
+        await localAddOutdatedToken("test.token.nonexpired2", unixTime() + 300);
+        await localAddOutdatedToken("test.token.expired3", unixTime() - 90);
+
+        // Check for existance
+        assert(localIsOutdated("test.token.nonexpired"));
+        assert(localIsOutdated("test.token.expired"));
+        assert(localIsOutdated("test.token.expired2"));
+        assert(localIsOutdated("test.token.nonexpired2"));
+        assert(localIsOutdated("test.token.expired3"));
+
+        await purgeAllOutdated();
+        
+        // Check for nonexistance after purge for expired tokens
+        assert(localIsOutdated("test.token.nonexpired"));
+        assert(!localIsOutdated("test.token.expired"));
+        assert(!localIsOutdated("test.token.expired2"));
+        assert(localIsOutdated("test.token.nonexpired2"));
+        assert(!localIsOutdated("test.token.expired3"));
+        // The expired tokens are not considered "outdated" anymore but
+        // this is fine as we will always verify if they are expired before
+        // checking if they are outdated.
+        
+        let nonexpiredExists = false;
+        let nonexpired2Exists = false;
+        // Check that purge correctly modified the linked list too
+        let current: Node | null = _list.head;
+        while(current) {
+            assert(current.getExp() >= unixTime() - 10);
+            if(current.value.token === "test.token.nonexpired") nonexpiredExists = true;
+            if(current.value.token === "test.token.nonexpired2") nonexpired2Exists = true;
+            current = current.next;
+        }
+        // Check that purge did not purge nonexpired tokens
+        assert(nonexpiredExists && nonexpired2Exists);
+    })
+})
+
 while(status !== 1) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 }
