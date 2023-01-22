@@ -7,6 +7,7 @@ import { metaLog } from "./logger.js";
 
 const purgeInterval = parseInt(process.env.PURGE_INTERVAL as string) || 60 * 60 * 24; // Default is every day
 
+const databaseSaveInterval = parseInt(process.env.DATABASE_SAVE_INTERVAL as string) || 60 * 60; // Default is once per hour
 
 type TokenPair = {
     token: string,
@@ -83,6 +84,23 @@ const list = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
 const outdatedTokensDatabaseFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
 
 if(process.env.PRODUCTION) {
+    try {
+        await fs.access(outdatedTokensDatabaseFile);
+        await loadOutdatedTokensFromFile();
+    } catch(error) {
+        if((error as Error).message.includes("no such file")) {
+            metaLog("database", "WARNING", "No outdated tokens database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
+        } else {
+            metaLog("database", "ERROR",
+            `Encountered unrecognized error "${(error as Error).message}" while checking if outdated tokens database file exists.`);
+        }
+    }
+    
+    // Interval for saving database to file. Default is once per hour.
+    setInterval(() => {
+        saveOutdatedTokensToFile();
+    }, databaseSaveInterval);
+
     // Interval for purging. Default is once per day.
     // If an offset is specified, the initial interval function will be delayed
     // by the amount of offset.
@@ -248,4 +266,4 @@ async function purgeAllOutdated() {
 }
 
 export type NodeType = InstanceType<typeof Node>;
-export { localAddOutdatedToken, localIsOutdated, purgeAllOutdated, list as _list };
+export { loadOutdatedTokensFromFile, saveOutdatedTokensToFile, localAddOutdatedToken, localIsOutdated, purgeAllOutdated, list as _list, set as _set };
