@@ -146,7 +146,7 @@ describe("Redis database tests", () => {
     });
 });
 
-import { localAddOutdatedToken, localIsOutdated, purgeAllOutdated, _list, NodeType as Node } from "./database.js";
+import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdated, purgeAllOutdated, _list, _set, NodeType as Node } from "./database.js";
 
 describe("In-memory database tests", () => {
     it("Stores and identifies an outdated token", async () => {
@@ -193,10 +193,34 @@ describe("In-memory database tests", () => {
         }
         // Check that purge did not purge nonexpired tokens
         assert(nonexpiredExists && nonexpired2Exists);
+    });
+    
+    it("Saves the in memory database to a file and loads from the file", async () => {
+        await localAddOutdatedToken("save.me.tofile", unixTime() + 100);
+        await localAddOutdatedToken("save.me.too", unixTime() + 100);
+        assert(localIsOutdated("save.me.tofile"));
+        assert(localIsOutdated("save.me.too"));
+
+        await saveOutdatedTokensToFile();
+        
+        _list.head.next = null;
+        _list.tail = _list.head;
+        _set.clear();
+        assert(!localIsOutdated("save.me.tofile"));
+        assert(!localIsOutdated("save.me.too"));
+        
+        await loadOutdatedTokensFromFile();
+
+        assert(localIsOutdated("save.me.tofile"));
+        assert(localIsOutdated("save.me.too"));
+    });
+    
+    after(() => {
+        status++;
     })
 })
 
-while(status !== 1) {
+while(status !== 2) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 }
 shutdown();
