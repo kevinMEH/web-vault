@@ -83,7 +83,7 @@ const list = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
 
 const outdatedTokensDatabaseFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
 
-if(process.env.PRODUCTION) {
+if(process.env.PRODUCTION && process.env.REDIS == undefined) {
     try {
         await fs.access(outdatedTokensDatabaseFile);
         await loadOutdatedTokensFromFile();
