@@ -50,7 +50,7 @@ class JWT {
         if(!(/^[a-fA-F0-9]+$/.test(secret))) {
             throw new Error("Secret must be a hex string. (No 0x)");
         }
-        const body = this.encodedHeader + "." + toBase64(this.payload);
+        const body = this.encodedHeader + "." + objectToBase64(this.payload);
         const hmac = createHmac("sha256", Buffer.from(secret, "hex"));
         hmac.update(body);
         const signature = hmac.digest("base64url");
@@ -76,6 +76,7 @@ class JWT {
         // TODO:
     }
     
+
     static #verify(token: string, secret: string) {
         const parts: string[] = token.split(".");
         if(parts.length !== 3) {
@@ -93,6 +94,7 @@ class JWT {
     
     // Token will be verified before unwrapping.
     // Header and payload structure will not be verified.
+    // Expiration will not be checked.
     // Throws error on bad token, secret, or signature.
     // 
     // Note on payload structure: Assuming that we issue the token, we should know
@@ -104,15 +106,21 @@ class JWT {
             throw new Error("Token signature does not match header and body.");
         }
         const parts = token.split(".");
-        return [fromBase64(parts[0]) as Header, fromBase64(parts[1]) as Payload];
+        return [objectFromBase64(parts[0]) as Header, objectFromBase64(parts[1]) as Payload];
     }
+function toBase64(string: string) {
+    return Buffer.from(string).toString("base64url");
 }
 
-function toBase64(object: Object) {
+function fromBase64(string: string) {
+    return Buffer.from(string, "base64url").toString();
+}
+
+function objectToBase64(object: Object) {
     return Buffer.from(JSON.stringify(object)).toString("base64url");
 }
 
-function fromBase64(string: string): object {
+function objectFromBase64(string: string): object {
     return JSON.parse(Buffer.from(string, "base64url").toString());
 }
 
