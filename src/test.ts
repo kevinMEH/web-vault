@@ -138,18 +138,18 @@ describe("JSON Web Token tests", () => {
 // ------------------
 // ------------------
 
-import { isOutdatedToken, addOutdatedToken, close } from "./redis.js";
+import { redisIsOutdatedToken, redisAddOutdatedToken, close } from "./redis.js";
 
 describe("Redis database tests", () => {
     it("Stores and identifies an outdated token", async () => {
-        addOutdatedToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
+        redisAddOutdatedToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
         unixTime() + 60);
-        assert(await isOutdatedToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ"));
+        assert(await redisIsOutdatedToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ"));
     });
     
     it("Verifies that Redis correctly deletes expiring tokens", async () => {
-        addOutdatedToken("temp.token.expiring", unixTime() - 10);
-        assert(await isOutdatedToken("temp.token.expiring") === false);
+        redisAddOutdatedToken("temp.token.expiring", unixTime() - 10);
+        assert(await redisIsOutdatedToken("temp.token.expiring") === false);
         // The expired token is not considered "outdated" anymore but
         // this is fine as we will always verify if it is expired before
         // checking if it is outdated.
@@ -160,13 +160,13 @@ describe("Redis database tests", () => {
     });
 });
 
-import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdated, purgeAllOutdated, _list, _set, NodeType as Node } from "./database.js";
+import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, _list, _set, NodeType as Node } from "./database.js";
 
 describe("In-memory database tests", () => {
     it("Stores and identifies an outdated token", async () => {
         await localAddOutdatedToken("test.token.outdated", unixTime() + 300);
-        assert(localIsOutdated("test.token.outdated"));
-        assert(!localIsOutdated("test.token.valid"));
+        assert(localIsOutdatedToken("test.token.outdated"));
+        assert(!localIsOutdatedToken("test.token.valid"));
     });
     
     it("Verifies that local database correctly purges expired tokens", async () => {
@@ -177,20 +177,20 @@ describe("In-memory database tests", () => {
         await localAddOutdatedToken("test.token.expired3", unixTime() - 90);
 
         // Check for existance
-        assert(localIsOutdated("test.token.nonexpired"));
-        assert(localIsOutdated("test.token.expired"));
-        assert(localIsOutdated("test.token.expired2"));
-        assert(localIsOutdated("test.token.nonexpired2"));
-        assert(localIsOutdated("test.token.expired3"));
+        assert(localIsOutdatedToken("test.token.nonexpired"));
+        assert(localIsOutdatedToken("test.token.expired"));
+        assert(localIsOutdatedToken("test.token.expired2"));
+        assert(localIsOutdatedToken("test.token.nonexpired2"));
+        assert(localIsOutdatedToken("test.token.expired3"));
 
         await purgeAllOutdated();
         
         // Check for nonexistance after purge for expired tokens
-        assert(localIsOutdated("test.token.nonexpired"));
-        assert(!localIsOutdated("test.token.expired"));
-        assert(!localIsOutdated("test.token.expired2"));
-        assert(localIsOutdated("test.token.nonexpired2"));
-        assert(!localIsOutdated("test.token.expired3"));
+        assert(localIsOutdatedToken("test.token.nonexpired"));
+        assert(!localIsOutdatedToken("test.token.expired"));
+        assert(!localIsOutdatedToken("test.token.expired2"));
+        assert(localIsOutdatedToken("test.token.nonexpired2"));
+        assert(!localIsOutdatedToken("test.token.expired3"));
         // The expired tokens are not considered "outdated" anymore but
         // this is fine as we will always verify if they are expired before
         // checking if they are outdated.
@@ -212,21 +212,21 @@ describe("In-memory database tests", () => {
     it("Saves the in memory database to a file and loads from the file", async () => {
         await localAddOutdatedToken("save.me.tofile", unixTime() + 100);
         await localAddOutdatedToken("save.me.too", unixTime() + 100);
-        assert(localIsOutdated("save.me.tofile"));
-        assert(localIsOutdated("save.me.too"));
+        assert(localIsOutdatedToken("save.me.tofile"));
+        assert(localIsOutdatedToken("save.me.too"));
 
         await saveOutdatedTokensToFile();
         
         _list.head.next = null;
         _list.tail = _list.head;
         _set.clear();
-        assert(!localIsOutdated("save.me.tofile"));
-        assert(!localIsOutdated("save.me.too"));
+        assert(!localIsOutdatedToken("save.me.tofile"));
+        assert(!localIsOutdatedToken("save.me.too"));
         
         await loadOutdatedTokensFromFile();
 
-        assert(localIsOutdated("save.me.tofile"));
-        assert(localIsOutdated("save.me.too"));
+        assert(localIsOutdatedToken("save.me.tofile"));
+        assert(localIsOutdatedToken("save.me.too"));
     });
     
     after(() => {

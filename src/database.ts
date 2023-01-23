@@ -238,7 +238,7 @@ async function localAddOutdatedToken(token: string, expireAt: number) {
     await list.add({ token, expireAt });
 }
 
-function localIsOutdated(token: string) {
+function localIsOutdatedToken(token: string) {
     return set.has(token);
 }
 
@@ -266,4 +266,4 @@ async function purgeAllOutdated() {
 }
 
 export type NodeType = InstanceType<typeof Node>;
-export { loadOutdatedTokensFromFile, saveOutdatedTokensToFile, localAddOutdatedToken, localIsOutdated, purgeAllOutdated, list as _list, set as _set };
+export { loadOutdatedTokensFromFile, saveOutdatedTokensToFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, list as _list, set as _set };
