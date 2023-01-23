@@ -85,7 +85,6 @@ describe("JSON Web Token tests", () => {
             .addClaim("issuerIsCool", true)
             .finalize("4B6576696E20697320636F6F6C")
             .getToken();
-        console.log(token);
         assert(token === "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ");
         // RHS obtained from https://jwt.io/
     });
@@ -118,6 +117,21 @@ describe("JSON Web Token tests", () => {
     it("Detects bad token formatting", expectError(() => {
         JWT.unwrap("bad.token", "4B6576696E20697320636F6F6C");
     }, "Invalid JSON Web Token format."));
+    
+    it("Encrypts and decrypts token using AES 256", () => {
+        const aesKey = "546869732069732061203634206368617261637465722068657820737472696e";
+        const secret = "4B6576696E20697320636F6F6C";
+        const encryptedToken = new JWT("Kevin", 1000000000, 1111111111)
+            .addClaim("issuerIsCool", true)
+            .getEncryptedToken(aesKey, secret);
+        assert(encryptedToken.split(".").length === 2);
+        
+        const [header, payload] = JWT.unwarpEncrypted(encryptedToken, aesKey, secret);
+        assert(header.typ === "JWT");
+        assert(payload.iss === "Kevin");
+        assert(payload.asdf === undefined);
+        assert(payload.issuerIsCool === true);
+    });
 });
 
 // ------------------

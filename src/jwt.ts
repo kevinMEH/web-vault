@@ -1,4 +1,4 @@
-import { createHmac } from "crypto";
+import { createCipheriv, createDecipheriv, createHmac, randomFillSync } from "crypto";
 import { unixTime } from "./helper.js";
 
 type Header = {
@@ -69,11 +69,28 @@ class JWT {
         return this.token;
     }
     
-    getEncryptedToken() {
+    static algorithm = "aes-256-cbc";
+    // Encrypts token using AES.
+    // 1st part of token will be the initialization vector,
+    // 2nd part will be the encrypted token. Separated by a "."
+    // AES key must be compact hex string
+    getEncryptedToken(aesKey: string, secret?: string) {
         if(this.token === "") {
-            throw new Error("The JSON Web Token has not been finalized yet.");
+            if(secret === undefined) {
+                throw new Error("The JSON Web Token has not been finalized yet.");
+            } else {
+                this.finalize(secret);
+            }
         }
-        // TODO:
+        if(!(/^[a-fA-F0-9]+$/.test(aesKey)) || aesKey.length != 64) { // Using AES 256
+            throw new Error("AES key must be a hex string length 64 (256 bits). (No 0x)");
+        }
+        // AES block size 16 bytes
+        const initVector = randomFillSync(new Uint8Array(16));
+        const cipher = createCipheriv(JWT.algorithm, Buffer.from(aesKey, "hex"), initVector);
+        const encodedToken = toBase64(this.token); // We have to encode again because of the "." in the token. (Not valid base64url)
+        
+        return Buffer.from(initVector).toString("base64url") + "." + cipher.update(encodedToken, "base64url", "base64url") + cipher.final("base64url");
     }
     
 
@@ -108,6 +125,33 @@ class JWT {
         const parts = token.split(".");
         return [objectFromBase64(parts[0]) as Header, objectFromBase64(parts[1]) as Payload];
     }
+    
+    // Token will be decrypted, verified, and unwrapped.
+    // Header and payload structure will not be verified.
+    // Expiration will not be checked.
+    // Will throw error on bad token structure, bad initialization vector.
+    static unwarpEncrypted(encryptedToken: string, aesKey: string, secret: string): [Header, Payload] {
+        if(!(/^[a-fA-F0-9]+$/.test(aesKey)) || aesKey.length != 64) { // Using AES 256
+            throw new Error("AES key must be a hex string length 64 (256 bits). (No 0x)");
+        }
+
+        const encryptedParts = encryptedToken.split(".");
+        if(encryptedParts.length !== 2) {
+            throw new Error("Invalid encrypted token format.");
+        }
+
+        const initVector = Uint8Array.from(Buffer.from(encryptedParts[0], "base64url"));
+        if(initVector.length !== 16) {
+            throw new Error("Bad initialization vector length. Expected 16 unsigned 8 bit integers, received " + initVector.length + ".");
+        }
+
+        const decipher = createDecipheriv(JWT.algorithm, Buffer.from(aesKey, "hex"), initVector);
+        const encodedToken = decipher.update(encryptedParts[1], "base64url", "base64url") + decipher.final("base64url");
+        const token = fromBase64(encodedToken);
+        return this.unwrap(token, secret);
+    }
+}
+
 function toBase64(string: string) {
     return Buffer.from(string).toString("base64url");
 }
