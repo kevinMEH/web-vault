@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "NEXT_MANUAL_SIG_HANDLE=true next start",
     "lint": "next lint",
-    "testsrc": "ts-node-esm src/test.ts"
+    "testsrc": "ts-node-esm src/test.ts && echo '\n\n\n\n\n' && ts-node-esm src/auth_test.ts && echo '\n\n\n\n\n' && REDIS=true ts-node-esm src/auth_test.ts"
   },
   "dependencies": {
     "@next/font": "13.1.1",
