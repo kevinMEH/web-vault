@@ -1,6 +1,6 @@
-import JWT from "./jwt.js";
-import { localAddOutdatedToken as __localAddOutdatedToken, localIsOutdatedToken as __localIsOutdatedToken } from "./database.js";
-import { redisAddOutdatedToken as __redisAddOutdatedToken, redisIsOutdatedToken as __redisIsOutdatedToken } from "./redis.js";
+import JWT from "./authentication/jwt.js";
+import { localAddOutdatedToken as __localAddOutdatedToken, localIsOutdatedToken as __localIsOutdatedToken } from "./authentication/database.js";
+import { redisAddOutdatedToken as __redisAddOutdatedToken, redisIsOutdatedToken as __redisIsOutdatedToken } from "./authentication/redis.js";
 import { metaLog } from "./logger.js";
 import { unixTime } from "./helper.js";
 

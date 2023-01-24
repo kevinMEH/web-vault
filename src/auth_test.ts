@@ -1,7 +1,7 @@
 import { after, describe, it } from "node:test";
 import assert from "assert";
 
-import { close } from "./redis.js";
+import { close } from "./authentication/redis.js";
 
 let status = 0;
 
@@ -15,7 +15,7 @@ async function shutdown() {
 
 process.on("SIGINT", shutdown);
 
-import JWT from "./jwt.js";
+import JWT from "./authentication/jwt.js";
 
 process.env.JWT_SECRET = "4B6576696E20697320636F6F6C";
 process.env.DOMAIN = "Kevin";

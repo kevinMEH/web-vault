@@ -77,7 +77,7 @@ test("Logging to a file", async () => {
 // ------------------
 // ------------------
 
-import JWT from "./jwt.js";
+import JWT from "./authentication/jwt.js";
 
 describe("JSON Web Token tests", () => {
     it("Generates a JWT", () => {
@@ -138,7 +138,7 @@ describe("JSON Web Token tests", () => {
 // ------------------
 // ------------------
 
-import { redisIsOutdatedToken, redisAddOutdatedToken, close } from "./redis.js";
+import { redisIsOutdatedToken, redisAddOutdatedToken, close } from "./authentication/redis.js";
 
 describe("Redis database tests", () => {
     it("Stores and identifies an outdated token", async () => {
@@ -160,7 +160,7 @@ describe("Redis database tests", () => {
     });
 });
 
-import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, _list, _set, NodeType as Node } from "./database.js";
+import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, _list, _set, NodeType as Node } from "./authentication/database.js";
 
 describe("In-memory database tests", () => {
     it("Stores and identifies an outdated token", async () => {

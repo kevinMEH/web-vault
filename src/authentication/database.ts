@@ -2,8 +2,8 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import readline from "readline/promises";
 import path from "path";
-import { unixTime } from "./helper.js"
-import { metaLog } from "./logger.js";
+import { unixTime } from "../helper.js"
+import { metaLog } from "../logger.js";
 
 const purgeInterval = parseInt(process.env.PURGE_INTERVAL as string) || 60 * 60 * 24; // Default is every day
 

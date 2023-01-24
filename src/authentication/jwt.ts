@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHmac, randomFillSync } from "crypto";
-import { unixTime } from "./helper.js";
+import { unixTime } from "../helper.js";
 
 type Header = {
     alg: string,
