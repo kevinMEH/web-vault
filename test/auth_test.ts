@@ -50,7 +50,7 @@ describe("Testing authentication module which uses Redis", () => {
     it("Outdates a token", async () => {
         const token = createToken(["log_me_out"]);
         const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string);
-        outdateToken(token, payload.exp);
+        await outdateToken(token, payload.exp);
         assert(!await isValidToken(token));
     });
     

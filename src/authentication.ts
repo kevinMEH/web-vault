@@ -32,8 +32,8 @@ async function isValidToken(token: string) {
     }
 }
 
-function outdateToken(token: string, expireAt: number) {
-    addOutdatedTokenFunction(token, expireAt);
+async function outdateToken(token: string, expireAt: number) {
+    await addOutdatedTokenFunction(token, expireAt);
 }
 
 function createToken(vaults: string[]) {

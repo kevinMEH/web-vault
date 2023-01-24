@@ -22,8 +22,8 @@ async function redisIsOutdatedToken(token: string) {
 
 // Adds an outdated token to the database. The token will be set
 // with a TTL in the form of a unix timestamp.
-function redisAddOutdatedToken(token: string, expireAt: number) {
-    redis.set("webvault:outdated:" + token, "1", "EXAT", expireAt);
+async function redisAddOutdatedToken(token: string, expireAt: number) {
+    await redis.set("webvault:outdated:" + token, "1", "EXAT", expireAt);
 }
 
 async function close() {
