@@ -6,7 +6,7 @@ import assert from "assert";
 import path from "path";
 import fs from "fs/promises";
 
-import { unixTime } from "./helper.js";
+import { unixTime } from "../src/helper.js";
 
 let status = 0;
 
@@ -59,7 +59,7 @@ test("Verifying expectError works on error.", expectError(() => {
 // ------------------
 // ------------------
 
-import { vaultLog, logFileNameFromDate } from "./logger.js";
+import { vaultLog, logFileNameFromDate } from "../src/logger.js";
 
 test("Logging to a file", async () => {
     const logFileName = logFileNameFromDate();
@@ -77,7 +77,7 @@ test("Logging to a file", async () => {
 // ------------------
 // ------------------
 
-import JWT from "./authentication/jwt.js";
+import JWT from "../src/authentication/jwt.js";
 
 describe("JSON Web Token tests", () => {
     it("Generates a JWT", () => {
@@ -138,7 +138,7 @@ describe("JSON Web Token tests", () => {
 // ------------------
 // ------------------
 
-import { redisIsOutdatedToken, redisAddOutdatedToken, close } from "./authentication/redis.js";
+import { redisIsOutdatedToken, redisAddOutdatedToken, close } from "../src/authentication/redis.js";
 
 describe("Redis database tests", () => {
     it("Stores and identifies an outdated token", async () => {
@@ -160,7 +160,7 @@ describe("Redis database tests", () => {
     });
 });
 
-import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, _list, _set, NodeType as Node } from "./authentication/database.js";
+import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, _list, _set, NodeType as Node } from "../src/authentication/database.js";
 
 describe("In-memory database tests", () => {
     it("Stores and identifies an outdated token", async () => {

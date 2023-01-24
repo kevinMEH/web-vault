@@ -1,7 +1,7 @@
 import { after, describe, it } from "node:test";
 import assert from "assert";
 
-import { close } from "./authentication/redis.js";
+import { close } from "../src/authentication/redis.js";
 
 let status = 0;
 
@@ -15,14 +15,14 @@ async function shutdown() {
 
 process.on("SIGINT", shutdown);
 
-import JWT from "./authentication/jwt.js";
+import JWT from "../src/authentication/jwt.js";
 
 process.env.JWT_SECRET = "4B6576696E20697320636F6F6C";
 process.env.DOMAIN = "Kevin";
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
 
-const { isValidToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration } = await import("./authentication.js");
+const { isValidToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration } = await import("../src/authentication.js");
 
 describe("Testing authentication module which uses Redis", () => {
     it("Creates a new token and checks if successful by using the JWT class", () => {
