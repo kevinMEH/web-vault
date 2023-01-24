@@ -23,7 +23,7 @@ class JWT {
     
     static reservedClaims = ["iss", "exp", "iat"];
 
-    constructor(issuer: string, expiration: number, issuedAt: number) {
+    constructor(issuer: string, expiration: number, issuedAt?: number) {
         // this.header = {
         //     alg: "HS256",
         //     typ: "JWT"
