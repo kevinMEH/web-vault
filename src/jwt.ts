@@ -19,7 +19,7 @@ class JWT {
     encodedHeader: string;
     payload: Payload;
 
-    token: string = "";
+    token = "";
     
     static reservedClaims = ["iss", "exp", "iat"];
 
@@ -160,7 +160,7 @@ function fromBase64(string: string) {
     return Buffer.from(string, "base64url").toString();
 }
 
-function objectToBase64(object: Object) {
+function objectToBase64(object: object) {
     return Buffer.from(JSON.stringify(object)).toString("base64url");
 }
 
