@@ -33,6 +33,8 @@ async function isValidToken(token: string) {
 }
 
 async function outdateToken(token: string, expireAt: number) {
+    metaLog("authentication", "INFO",
+    `Outdating token ${token}, expiring at ${expireAt}`);
     await addOutdatedTokenFunction(token, expireAt);
 }
 
@@ -50,6 +52,8 @@ function createToken(vaults: string[]) {
 // Returns a new token (with updated expirations) with the vault added.
 // MUST VERIFY TOKEN IS VALID before calling this function.
 function addNewVaultToToken(token: string, vault: string) {
+    metaLog("authentication", "INFO",
+    `Adding new vault ${vault} to token ${token}`);
     const [_header, payload] = JWT.unwrap(token, secret);
     const currentVaults = payload.vaults;
     if(!currentVaults.includes(vault))
@@ -62,6 +66,8 @@ function addNewVaultToToken(token: string, vault: string) {
 // MUST VERIFY TOKEN IS VALID before calling this function.
 // A token with an empty array as its "vaults" field is safe.
 function removeVaultFromToken(token: string, vault: string) {
+    metaLog("authentication", "INFO",
+    `Removing vault ${vault} from token ${token}`);
     const [_header, payload] = JWT.unwrap(token, secret);
     const currentVaults: string[] = payload.vaults;
     const index = currentVaults.indexOf(vault);
@@ -75,6 +81,8 @@ function removeVaultFromToken(token: string, vault: string) {
 // Useful for short lived expirations for extra security, but refreshes
 // every time the user logs back in / accesses vault.
 function refreshTokenExpiration(token: string) {
+    metaLog("authentication", "INFO",
+    `Refreshing token ${token}`);
     const [_header, payload] = JWT.unwrap(token, secret);
     const vaults = payload.vaults;
     outdateToken(token, payload.exp);
