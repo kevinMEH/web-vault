@@ -24,7 +24,7 @@ else console.log("Using in memory database");
 
 const { isValidToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration } = await import("../src/authentication.js");
 
-describe("Testing authentication module which uses Redis", () => {
+describe("Testing token authentication module", () => {
     it("Creates a new token and checks if successful by using the JWT class", () => {
         const token = createToken(["main_vault"]);
         const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string);
