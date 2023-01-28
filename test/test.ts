@@ -234,6 +234,18 @@ describe("In-memory database tests", () => {
     })
 });
 
+
+import { hashPassword } from "../src/authentication/password.js";
+
+describe("Tests hashing for password", () => {
+    it("Hashes a password and verifies result is correct", () => {
+        const hashed = hashPassword("password", Buffer.from("48656c6c6f20776f726c64", "hex"), 1);
+        assert(hashed === Buffer.from("4vYX8jJxVqwiRBDeCHUEVsevS4qBDKmQYwHlRFGED18=", "base64").toString("hex"));
+        // Password obtained from https://8gwifi.org/pbkdf.jsp
+        // Salt: SGVsbG8gd29ybGQ= / Buffer.from("48656c6c6f20776f726c64", "hex").toString("base64")
+    });
+});
+
 while(status !== 2) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 }
