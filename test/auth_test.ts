@@ -19,10 +19,11 @@ import JWT from "../src/authentication/jwt.js";
 
 process.env.JWT_SECRET = "4B6576696E20697320636F6F6C";
 process.env.DOMAIN = "Kevin";
+process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
 
-const { isValidToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration } = await import("../src/authentication.js");
+const { isValidToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration, setVaultPassword, verifyVaultPassword } = await import("../src/authentication.js");
 
 describe("Testing token authentication module", () => {
     it("Creates a new token and checks if successful by using the JWT class", () => {
@@ -87,7 +88,18 @@ describe("Testing token authentication module", () => {
     after(() => status++);
 });
 
-while(status !== 1) {
+describe("Testing vault authentication module", () => {
+    it("Sets the password for a vault and checks if successful", async () => {
+        await setVaultPassword("testing", "password123");
+        assert(await verifyVaultPassword("testing", "password123"));
+        assert(!await verifyVaultPassword("testing", "Password123"));
+        assert(!await verifyVaultPassword("nonexistant", "password123"));
+    });
+    
+    after(() => status++);
+})
+
+while(status !== 2) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 }
 shutdown();

@@ -1,6 +1,6 @@
 import JWT from "./authentication/jwt.js";
-import { localAddOutdatedToken as __localAddOutdatedToken, localIsOutdatedToken as __localIsOutdatedToken } from "./authentication/database.js";
-import { redisAddOutdatedToken as __redisAddOutdatedToken, redisIsOutdatedToken as __redisIsOutdatedToken } from "./authentication/redis.js";
+import { localAddOutdatedToken as __localAddOutdatedToken, localIsOutdatedToken as __localIsOutdatedToken, localSetVaultPassword, localVerifyVaultPassword } from "./authentication/database.js";
+import { redisAddOutdatedToken as __redisAddOutdatedToken, redisIsOutdatedToken as __redisIsOutdatedToken, redisSetVaultPassword, redisVerifyVaultPassword } from "./authentication/redis.js";
 import { metaLog } from "./logger.js";
 import { unixTime } from "./helper.js";
 
@@ -13,6 +13,8 @@ if(!(/^[a-fA-F0-9]+$/.test(secret))) throw new Error("Secret must be a hex strin
 
 const addOutdatedTokenFunction = process.env.REDIS ? __redisAddOutdatedToken : __localAddOutdatedToken;
 const isOutdatedTokenFunction = process.env.REDIS ? __redisIsOutdatedToken : __localIsOutdatedToken;
+const setVaultPasswordFunction: ((vault: string, password: string) => void | Promise<void>) = process.env.REDIS ? redisSetVaultPassword : localSetVaultPassword;
+const verifyVaultPasswordFunction = process.env.REDIS ? redisVerifyVaultPassword : localVerifyVaultPassword;
 
 async function isValidToken(token: string) {
     if(await isOutdatedTokenFunction(token)) return false;
@@ -89,4 +91,42 @@ function refreshTokenExpiration(token: string) {
     return createToken(vaults);
 }
 
-export { isValidToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken , refreshTokenExpiration };
+
+
+
+
+import { hashPassword } from "./authentication/password.js";
+const passwordSalt = (() => {
+    if(process.env.PASSWORD_SALT === undefined) {
+        throw new Error("The PASSWORD_SALT environment variable must be specified.");
+    }
+    if(!(/^[a-fA-F0-9]+$/.test(process.env.PASSWORD_SALT))) {
+        throw new Error("Password must be a hex string. (No 0x)");
+    }
+    return Buffer.from(process.env.PASSWORD_SALT, "hex");
+})();
+
+const iterationCount = parseInt(process.env.ITERATION_COUNT as string) || 123456;
+
+
+async function setVaultPassword(vault: string, password: string) {
+    const hashedPassword = hashPassword(password, passwordSalt, iterationCount);
+    await setVaultPasswordFunction(vault, hashedPassword);
+}
+
+async function verifyVaultPassword(vault: string, password: string) {
+    const hashedPassword = hashPassword(password, passwordSalt, iterationCount);
+    return await verifyVaultPasswordFunction(vault, hashedPassword);
+}
+
+
+export {
+    isValidToken,
+    createToken,
+    addNewVaultToToken,
+    removeVaultFromToken,
+    outdateToken,
+    refreshTokenExpiration,
+    setVaultPassword,
+    verifyVaultPassword
+};

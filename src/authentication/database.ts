@@ -81,6 +81,8 @@ class Node {
 const tokenSet: Set<string> = new Set();
 const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
 
+const vaultPasswordMap: Map<string, string> = new Map();
+
 const outdatedTokensDatabaseFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
 
 if(process.env.PRODUCTION && process.env.REDIS == undefined) {
@@ -264,7 +266,30 @@ async function purgeAllOutdated() {
     // Release lock
     tokenList.busy = false;
 }
+
+
+
+function saveVaultPasswordsToFile() {
+    // TODO:
+}
+
+function localSetVaultPassword(vault: string, password: string) {
+    vaultPasswordMap.set(vault, password);
+}
+
+function localVerifyVaultPassword(vault: string, password: string) {
+    return password === vaultPasswordMap.get(vault);
 }
 
 export type NodeType = InstanceType<typeof Node>;
-export { loadOutdatedTokensFromFile, saveOutdatedTokensToFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, tokenList as _tokenList, tokenSet as _tokenSet };
+export {
+    loadOutdatedTokensFromFile,
+    saveOutdatedTokensToFile,
+    localAddOutdatedToken,
+    localIsOutdatedToken,
+    purgeAllOutdated,
+    localSetVaultPassword,
+    localVerifyVaultPassword,
+    tokenList as _tokenList,
+    tokenSet as _tokenSet,
+};

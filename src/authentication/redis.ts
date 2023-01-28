@@ -26,8 +26,22 @@ async function redisAddOutdatedToken(token: string, expireAt: number) {
     await redis.set("webvault:outdated:" + token, "1", "EXAT", expireAt);
 }
 
+async function redisSetVaultPassword(vault: string, hashedPassword: string) {
+    await redis.set("webvault:vaultauth:" + vault, hashedPassword);
+}
+
+function redisVerifyVaultPassword(vault: string) {
+    return redis.get("webvault:vaultauth:" + vault);
+}
+
 async function close() {
     await redis.quit();
 }
 
-export { redisIsOutdatedToken, redisAddOutdatedToken, close };
+export {
+    redisIsOutdatedToken,
+    redisAddOutdatedToken,
+    redisSetVaultPassword,
+    redisVerifyVaultPassword,
+    close,
+};
