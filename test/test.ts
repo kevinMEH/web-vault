@@ -160,7 +160,7 @@ describe("Redis database tests", () => {
     });
 });
 
-import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, _list, _set, NodeType as Node } from "../src/authentication/database.js";
+import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, _tokenList, _tokenSet, NodeType as Node } from "../src/authentication/database.js";
 
 describe("In-memory database tests", () => {
     it("Stores and identifies an outdated token", async () => {
@@ -198,7 +198,7 @@ describe("In-memory database tests", () => {
         let nonexpiredExists = false;
         let nonexpired2Exists = false;
         // Check that purge correctly modified the linked list too
-        let current: Node | null = _list.head;
+        let current: Node | null = _tokenList.head;
         while(current) {
             assert(current.getExp() >= unixTime() - 10);
             if(current.value.token === "test.token.nonexpired") nonexpiredExists = true;
@@ -217,9 +217,9 @@ describe("In-memory database tests", () => {
 
         await saveOutdatedTokensToFile();
         
-        _list.head.next = null;
-        _list.tail = _list.head;
-        _set.clear();
+        _tokenList.head.next = null;
+        _tokenList.tail = _tokenList.head;
+        _tokenSet.clear();
         assert(!localIsOutdatedToken("save.me.tofile"));
         assert(!localIsOutdatedToken("save.me.too"));
         
@@ -232,7 +232,7 @@ describe("In-memory database tests", () => {
     after(() => {
         status++;
     })
-})
+});
 
 while(status !== 2) {
     await new Promise(resolve => setTimeout(resolve, 1000));

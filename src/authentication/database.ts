@@ -78,8 +78,8 @@ class Node {
 //      INITIAL SETUP
 // -----------------------
 
-const set: Set<string> = new Set();
-const list = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
+const tokenSet: Set<string> = new Set();
+const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
 
 const outdatedTokensDatabaseFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
 
@@ -184,7 +184,7 @@ async function saveOutdatedTokensToFile() {
     }
     
     // Writing to temp file
-    let current = list.head.next; // Sentinel is automatically added so is not written.
+    let current = tokenList.head.next; // Sentinel is automatically added so is not written.
     while(current) {
         const value = current.value;
         await file.appendFile(`"${value.token}",${value.expireAt}\n`);
@@ -234,36 +234,37 @@ async function saveOutdatedTokensToFile() {
 
 // Add outdated token
 async function localAddOutdatedToken(token: string, expireAt: number) {
-    set.add(token);
-    await list.add({ token, expireAt });
+    tokenSet.add(token);
+    await tokenList.add({ token, expireAt });
 }
 
 function localIsOutdatedToken(token: string) {
-    return set.has(token);
+    return tokenSet.has(token);
 }
 
 async function purgeAllOutdated() {
-    while(!list.setBusy()) { // Try for a lock
+    while(!tokenList.setBusy()) { // Try for a lock
         await new Promise(resolve => setTimeout(resolve, 250)); // Busy, wait 250 ms
     }
 
     const time = unixTime() - 5;
-    let lastValid: Node = list.head;
-    let current: Node | null = list.head;
+    let lastValid: Node = tokenList.head;
+    let current: Node | null = tokenList.head;
     while(current) {
         if(current.getExp() < time) { // Has expired already, remove from list and set
-            set.delete(current.value.token);
+            tokenSet.delete(current.value.token);
             lastValid.next = current.next;
         } else { // Not expired, update lastValid
             lastValid = current;
         }
         current = lastValid.next;
     }
-    list.tail = lastValid;
+    tokenList.tail = lastValid;
     
     // Release lock
-    list.busy = false;
+    tokenList.busy = false;
+}
 }
 
 export type NodeType = InstanceType<typeof Node>;
-export { loadOutdatedTokensFromFile, saveOutdatedTokensToFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, list as _list, set as _set };
+export { loadOutdatedTokensFromFile, saveOutdatedTokensToFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, tokenList as _tokenList, tokenSet as _tokenSet };
