@@ -1,6 +1,16 @@
 import JWT from "./authentication/jwt.js";
-import { localAddOutdatedToken as __localAddOutdatedToken, localIsOutdatedToken as __localIsOutdatedToken, localSetVaultPassword, localVerifyVaultPassword } from "./authentication/database.js";
-import { redisAddOutdatedToken as __redisAddOutdatedToken, redisIsOutdatedToken as __redisIsOutdatedToken, redisSetVaultPassword, redisVerifyVaultPassword } from "./authentication/redis.js";
+import {
+    localAddOutdatedToken,
+    localIsOutdatedToken,
+    localSetVaultPassword,
+    localVerifyVaultPassword,
+} from "./authentication/database.js";
+import {
+    redisAddOutdatedToken,
+    redisIsOutdatedToken,
+    redisSetVaultPassword,
+    redisVerifyVaultPassword,
+} from "./authentication/redis.js";
 import { metaLog } from "./logger.js";
 import { unixTime } from "./helper.js";
 
@@ -11,8 +21,8 @@ const secret = process.env.JWT_SECRET !== undefined ? process.env.JWT_SECRET
     : (() => { throw new Error("The JWT_SECRET environment variable must be specified."); })();
 if(!(/^[a-fA-F0-9]+$/.test(secret))) throw new Error("Secret must be a hex string. (No 0x)");
 
-const addOutdatedTokenFunction = process.env.REDIS ? __redisAddOutdatedToken : __localAddOutdatedToken;
-const isOutdatedTokenFunction = process.env.REDIS ? __redisIsOutdatedToken : __localIsOutdatedToken;
+const addOutdatedTokenFunction = process.env.REDIS ? redisAddOutdatedToken : localAddOutdatedToken;
+const isOutdatedTokenFunction = process.env.REDIS ? redisIsOutdatedToken : localIsOutdatedToken;
 const setVaultPasswordFunction: ((vault: string, password: string) => void | Promise<void>) = process.env.REDIS ? redisSetVaultPassword : localSetVaultPassword;
 const verifyVaultPasswordFunction = process.env.REDIS ? redisVerifyVaultPassword : localVerifyVaultPassword;
 
