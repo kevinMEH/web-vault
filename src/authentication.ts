@@ -1,14 +1,18 @@
 import JWT from "./authentication/jwt.js";
 import {
     localAddOutdatedToken,
+    localDeleteVaultPassword,
     localIsOutdatedToken,
     localSetVaultPassword,
+    localVaultExists,
     localVerifyVaultPassword,
 } from "./authentication/database.js";
 import {
     redisAddOutdatedToken,
+    redisDeleteVaultPassword,
     redisIsOutdatedToken,
     redisSetVaultPassword,
+    redisVaultExists,
     redisVerifyVaultPassword,
 } from "./authentication/redis.js";
 import { metaLog } from "./logger.js";
@@ -25,6 +29,8 @@ const addOutdatedTokenFunction = process.env.REDIS ? redisAddOutdatedToken : loc
 const isOutdatedTokenFunction = process.env.REDIS ? redisIsOutdatedToken : localIsOutdatedToken;
 const setVaultPasswordFunction: ((vault: string, password: string) => void | Promise<void>) = process.env.REDIS ? redisSetVaultPassword : localSetVaultPassword;
 const verifyVaultPasswordFunction = process.env.REDIS ? redisVerifyVaultPassword : localVerifyVaultPassword;
+const vaultExistsFunction = process.env.REDIS ? redisVaultExists : localVaultExists;
+const deleteVaultPasswordFunction: ((vault: string) => void | Promise<void>) = process.env.REDIS ? redisDeleteVaultPassword : localDeleteVaultPassword;
 
 async function isValidToken(token: string) {
     if(await isOutdatedTokenFunction(token)) return false;
@@ -129,6 +135,13 @@ async function verifyVaultPassword(vault: string, password: string) {
     return await verifyVaultPasswordFunction(vault, hashedPassword);
 }
 
+async function vaultExists(vault: string) {
+    return await vaultExistsFunction(vault);
+}
+
+async function deleteVaultPassword(vault: string) {
+    await deleteVaultPasswordFunction(vault);
+}
 
 export {
     isValidToken,
@@ -138,5 +151,7 @@ export {
     outdateToken,
     refreshTokenExpiration,
     setVaultPassword,
-    verifyVaultPassword
+    verifyVaultPassword,
+    vaultExists,
+    deleteVaultPassword
 };

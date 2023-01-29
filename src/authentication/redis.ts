@@ -30,6 +30,13 @@ async function redisSetVaultPassword(vault: string, hashedPassword: string) {
 async function redisVerifyVaultPassword(vault: string, password: string) {
     return await redis.get("webvault:vaultauth:" + vault) === password;
 }
+
+async function redisVaultExists(vault: string) {
+    return await redis.get("webvault:vaultauth:" + vault) !== null;
+}
+
+async function redisDeleteVaultPassword(vault: string) {
+    await redis.del("webvault:vaultauth:" + vault);
 }
 
 async function close() {
@@ -41,5 +48,7 @@ export {
     redisAddOutdatedToken,
     redisSetVaultPassword,
     redisVerifyVaultPassword,
+    redisVaultExists,
+    redisDeleteVaultPassword,
     close,
 };

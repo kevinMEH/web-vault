@@ -23,7 +23,7 @@ process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
 
-const { isValidToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration, setVaultPassword, verifyVaultPassword } = await import("../src/authentication.js");
+const { isValidToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration, setVaultPassword, verifyVaultPassword, vaultExists, deleteVaultPassword } = await import("../src/authentication.js");
 
 describe("Testing token authentication module", () => {
     it("Creates a new token and checks if successful by using the JWT class", () => {
@@ -88,12 +88,22 @@ describe("Testing token authentication module", () => {
     after(() => status++);
 });
 
-describe("Testing vault authentication module", () => {
+describe("Testing vault authentication functions", () => {
     it("Sets the password for a vault and checks if successful", async () => {
         await setVaultPassword("testing", "password123");
         assert(await verifyVaultPassword("testing", "password123"));
         assert(!await verifyVaultPassword("testing", "Password123"));
         assert(!await verifyVaultPassword("nonexistant", "password123"));
+        deleteVaultPassword("testing");
+        assert(!await vaultExists("testing"));
+    });
+    
+    it("Tests the vaultExists function", async () => {
+        await setVaultPassword("existing_peacefully", "password")
+        assert(await vaultExists("existing_peacefully"));
+        assert(!await vaultExists("nonexistant_vault"));
+        deleteVaultPassword("existing_peacefully");
+        assert(!await vaultExists("existing_peacefully"));
     });
     
     after(() => status++);

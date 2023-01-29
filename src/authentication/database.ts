@@ -281,6 +281,14 @@ function localVerifyVaultPassword(vault: string, password: string) {
     return password === vaultPasswordMap.get(vault);
 }
 
+function localVaultExists(vault: string) {
+    return vaultPasswordMap.has(vault);
+}
+
+function localDeleteVaultPassword(vault: string) {
+    vaultPasswordMap.delete(vault);
+}
+
 export type NodeType = InstanceType<typeof Node>;
 export {
     loadOutdatedTokensFromFile,
@@ -290,6 +298,8 @@ export {
     purgeAllOutdated,
     localSetVaultPassword,
     localVerifyVaultPassword,
+    localVaultExists,
+    localDeleteVaultPassword,
     tokenList as _tokenList,
     tokenSet as _tokenSet,
 };
