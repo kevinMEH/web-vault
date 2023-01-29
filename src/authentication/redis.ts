@@ -1,17 +1,14 @@
 import Redis from "ioredis";
 
+const throwRedisError = () => { throw new Error("Attempting to use Redis with the REDIS environment variable turned off."); }
+
 const redis = process.env.REDIS || process.env.PRODUCTION == undefined
     ? new Redis()
     : {
-    get: () => {
-        throw new Error("Attempting to use Redis with the REDIS environment variable turned off.");
-    },
-    set: () => {
-        throw new Error("Attempting to use Redis with the REDIS environment variable turned off.");
-    },
-    quit: () => {
-        throw new Error("Attempting to use Redis with the REDIS environment variable turned off.");
-    }
+    get: throwRedisError,
+    set: throwRedisError,
+    quit: throwRedisError,
+    del: throwRedisError
 };
 
 // Checks if the token is outdated (meaning that the user has requested
@@ -30,8 +27,9 @@ async function redisSetVaultPassword(vault: string, hashedPassword: string) {
     await redis.set("webvault:vaultauth:" + vault, hashedPassword);
 }
 
-function redisVerifyVaultPassword(vault: string) {
-    return redis.get("webvault:vaultauth:" + vault);
+async function redisVerifyVaultPassword(vault: string, password: string) {
+    return await redis.get("webvault:vaultauth:" + vault) === password;
+}
 }
 
 async function close() {
