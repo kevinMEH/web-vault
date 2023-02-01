@@ -78,19 +78,23 @@ class Node {
 //      INITIAL SETUP
 // -----------------------
 
+// First time flags for tokens database and vault passwords database
+let firstTokenSave = true;
+
 const tokenSet: Set<string> = new Set();
 const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
 
 const vaultPasswordMap: Map<string, string> = new Map();
 
-const outdatedTokensDatabaseFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
+const outdatedTokensFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
 
 if(process.env.PRODUCTION && process.env.REDIS == undefined) {
     try {
-        await fs.access(outdatedTokensDatabaseFile);
+        await fs.access(outdatedTokensFile);
         await loadOutdatedTokensFromFile();
     } catch(error) {
-        if((error as Error).message.includes("no such file")) {
+        const message = (error as Error).message;
+        if(message.includes("no such file")) {
             metaLog("database", "WARNING", "No outdated tokens database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
         } else {
             metaLog("database", "ERROR",
@@ -127,9 +131,9 @@ if(process.env.PRODUCTION && process.env.REDIS == undefined) {
 // An uncatchable error will be thrown if the file does not exist. Do not try
 // catching it. TODO: In the future, try and handle this error
 async function loadOutdatedTokensFromFile() {
-    metaLog("database", "INFO", "Loading outdated tokens into memory from file...");
+    metaLog("database", "INFO", `Loading outdated tokens into memory from file... (${outdatedTokensFile})`);
 
-    const stream = createReadStream(outdatedTokensDatabaseFile);
+    const stream = createReadStream(outdatedTokensFile);
     const readlineInterface = readline.createInterface({
         input: stream,
         crlfDelay: Infinity
@@ -146,10 +150,9 @@ async function loadOutdatedTokensFromFile() {
     readlineInterface.close();
     stream.close();
     
-    metaLog("database", "INFO", "Finished loading oudated tokens from file.");
+    metaLog("database", "INFO", "Finished loading outdated tokens from file.");
 }
 
-let firstTime = true;
 async function saveOutdatedTokensToFile() {
     metaLog("database", "INFO", "Saving in-memory outdated tokens database to file...")
     // We will write to a temp file and replace the main file with temp file
@@ -157,33 +160,33 @@ async function saveOutdatedTokensToFile() {
     const tempFilePath = path.join(process.cwd(), "database", "tempOutdatedTokens.csv");
 
     // Attempting temp file creation. Expecting file to be not there.
-    let file: fs.FileHandle;
-    try {
-        file = await fs.open(tempFilePath, "ax");
-    } catch(error) {
-        if((error as Error).message.includes("file already exists")) {
+    const file = await fs.open(tempFilePath, "ax")
+    .catch(async error => {
+        const message = (error as Error).message;
+        if(message.includes("file already exists")) {
             metaLog("database", "ERROR",
             `Trying to save tokens database to file, but temp file already exists. This means that there is currently an ongoing tokens database save operation, or that the last operation has completed unsuccessfully. Waiting 15 seconds and retrying...`);
         } else {
             metaLog("database", "ERROR",
-            `Encountered unrecognized error "${(error as Error).message}" while opening temp file for saving tokens database. Waiting 15 seconds and retrying...`);
+            `Encountered unrecognized error "${message}" while opening temp file for saving tokens database. Waiting 15 seconds and retrying...`);
         }
         await new Promise(resolve => setTimeout(resolve, 15000));
-
-        try {
-            file = await fs.open(tempFilePath, "ax");
-        } catch(error) {
-            if((error as Error).message.includes("file already exists")) {
-                metaLog("database", "ERROR",
-                `Trying to save tokens database to file (2nd try), but temp file still exists. Truncating file and continuing.`);
-                file = await fs.open(tempFilePath, "w");
-            } else {
-                metaLog("database", "ERROR",
-                `Encountered unrecognized error "${(error as Error).message}" while opening temp file for saving tokens database (2nd try). Aborting save operation.`);
-                return;
-            }
+        return await fs.open(tempFilePath, "ax");
+    }).catch(async error => {
+        const message = (error as Error).message;
+        if(message.includes("file already exists")) {
+            metaLog("database", "ERROR",
+            `Trying to save tokens database to file (2nd try), but temp file still exists. Truncating file and continuing.`);
+            return await fs.open(tempFilePath, "w");
+        } else {
+            metaLog("database", "ERROR",
+            `Encountered unrecognized error "${message}" while opening temp file for saving tokens database (2nd try). Aborting save operation.`);
+            return "EXIT";
         }
-    }
+    });
+    
+    if(file === "EXIT") return;
+
     
     // Writing to temp file
     let current = tokenList.head.next; // Sentinel is automatically added so is not written.
@@ -194,44 +197,49 @@ async function saveOutdatedTokensToFile() {
     }
     await file.close();
     
+
     // Replacing main file with temp file
     // Main file -> Old file
     // Temp file -> Main file
     // Unlink Old file
-    const realFilePath = outdatedTokensDatabaseFile;
+    const realFilePath = outdatedTokensFile;
     const oldFilePath = path.join(process.cwd(), "database", "outdatedTokens.csv.old");
-    try {
-        await fs.rename(realFilePath, oldFilePath);
-    } catch(error) {
-        if((error as Error).message.includes("no such file")) {
-            if(!firstTime) {
+
+    await fs.rename(realFilePath, oldFilePath).catch(error => {
+        const message = (error as Error).message;
+        if(message.includes("no such file")) {
+            if(!firstTokenSave) {
                 metaLog("database", "WARNING",
                 `outdatedTokens.csv is somehow nonexistant. Ignoring and continuing.`);
             }
         } else {
             metaLog("database", "ERROR",
-            `Encountered unrecognized error "${(error as Error).message}" while renaming outdatedTokens.csv.`);
+            `Encountered unrecognized error "${message}" while renaming outdatedTokens.csv.`);
         }
-    } finally {
-        await fs.rename(tempFilePath, realFilePath);
-        await fs.unlink(oldFilePath).catch(error => {
-            if((error as Error).message.includes("no such file")) {
-                if(!firstTime) {
-                    metaLog("database", "ERROR",
-                    `There was an error unlinking outdatedTokens.csv.old (old tokens database file.)`);
-                }
-            } else {
+    });
+    await fs.rename(tempFilePath, realFilePath).catch(error => {
+        const message = (error as Error).message;
+        metaLog("database", "ERROR",
+        `There as an error "${message}" renaming tempOutdatedTokens.csv to outdatedTokens.csv.`)
+    });
+    await fs.unlink(oldFilePath).catch(error => {
+        const message = (error as Error).message;
+        if(message.includes("no such file")) {
+            if(!firstTokenSave) {
                 metaLog("database", "ERROR",
-                `Encountered unrecognized error "${(error as Error).message}" while unlinking outdatedTokens.csv.old.`);
+                `There was an error unlinking outdatedTokens.csv.old because it does not exist.`);
             }
-        });
-
-        if(firstTime) {
-            firstTime = false;
+        } else {
+            metaLog("database", "ERROR",
+            `Encountered unrecognized error "${message}" while unlinking outdatedTokens.csv.old.`);
         }
+    });
 
-        metaLog("database", "INFO", `Finished saving in-memory outdated tokens database to file.`);
+    if(firstTokenSave) {
+        firstTokenSave = false;
     }
+
+    metaLog("database", "INFO", `Finished saving in-memory outdated tokens database to file.`);
 }
 
 // Add outdated token
@@ -296,10 +304,12 @@ export {
     localAddOutdatedToken,
     localIsOutdatedToken,
     purgeAllOutdated,
+
     localSetVaultPassword,
     localVerifyVaultPassword,
     localVaultExists,
     localDeleteVaultPassword,
+
     tokenList as _tokenList,
     tokenSet as _tokenSet,
 };
