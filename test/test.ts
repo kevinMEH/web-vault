@@ -160,7 +160,7 @@ describe("Redis database tests", () => {
     });
 });
 
-import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, _tokenList, _tokenSet, NodeType as Node } from "../src/authentication/database.js";
+import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, localSetVaultPassword, saveVaultPasswordsToFile, localVaultExists, loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet, _vaultPasswordMap, NodeType as Node } from "../src/authentication/database.js";
 
 describe("In-memory database tests", () => {
     it("Stores and identifies an outdated token", async () => {
@@ -209,7 +209,7 @@ describe("In-memory database tests", () => {
         assert(nonexpiredExists && nonexpired2Exists);
     });
     
-    it("Saves the in memory database to a file and loads from the file", async () => {
+    it("Saves the in memory tokens database to a file and loads from the file", async () => {
         await localAddOutdatedToken("save.me.tofile", unixTime() + 100);
         await localAddOutdatedToken("save.me.too", unixTime() + 100);
         assert(localIsOutdatedToken("save.me.tofile"));
@@ -227,6 +227,35 @@ describe("In-memory database tests", () => {
 
         assert(localIsOutdatedToken("save.me.tofile"));
         assert(localIsOutdatedToken("save.me.too"));
+    });
+    
+    it("Saves the in memory vault passwords database to a file and loads from the file", async () => {
+        // Setting passwords directly, in reality should be hashed first and local*() should never be called.
+        localSetVaultPassword("test-vault-test", "password112233");
+        localSetVaultPassword("testing2", "Password22");
+        localSetVaultPassword("helloworld", "GoodAndSecure111");
+
+        assert(localVaultExists("test-vault-test"));
+
+        assert(await saveVaultPasswordsToFile() === undefined);
+
+        assert(localVaultExists("helloworld"));
+
+        _vaultPasswordMap.clear();
+
+        assert(!localVaultExists("testing2"));
+        assert(!localVaultExists("helloworld"));
+        
+        await loadVaultPasswordsFromFile();
+        assert(localVaultExists("test-vault-test"));
+        assert(localVaultExists("testing2"));
+        assert(localVaultExists("helloworld"));
+        assert(!localVaultExists("nonexistant-vault"));
+        
+        localDeleteVaultPassword("test-vault-test");
+        localDeleteVaultPassword("testing2");
+        localDeleteVaultPassword("helloworld");
+        assert(await saveVaultPasswordsToFile() === undefined);
     });
     
     after(() => {

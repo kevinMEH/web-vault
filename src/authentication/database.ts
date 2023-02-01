@@ -80,6 +80,7 @@ class Node {
 
 // First time flags for tokens database and vault passwords database
 let firstTokenSave = true;
+let firstVaultSave = true;
 
 const tokenSet: Set<string> = new Set();
 const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
@@ -87,6 +88,7 @@ const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
 const vaultPasswordMap: Map<string, string> = new Map();
 
 const outdatedTokensFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
+const vaultPasswordFile = path.join(process.cwd(), "database", "vaultPasswords.csv");
 
 if(process.env.PRODUCTION && process.env.REDIS == undefined) {
     try {
@@ -98,7 +100,20 @@ if(process.env.PRODUCTION && process.env.REDIS == undefined) {
             metaLog("database", "WARNING", "No outdated tokens database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
         } else {
             metaLog("database", "ERROR",
-            `Encountered unrecognized error "${(error as Error).message}" while checking if outdated tokens database file exists.`);
+            `Encountered unrecognized error "${message}" while checking if outdated tokens database file exists.`);
+        }
+    }
+
+    try {
+        await fs.access(vaultPasswordFile);
+        await loadVaultPasswordsFromFile();
+    } catch(error) {
+        const message = (error as Error).message;
+        if(message.includes("no such file")) {
+            metaLog("database", "WARNING", "No vault passwords database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
+        } else {
+            metaLog("database", "ERROR",
+            `Encountered unrecognized error "${message}" while checking if outdated tokens database file exists.`);
         }
     }
     
@@ -277,8 +292,94 @@ async function purgeAllOutdated() {
 
 
 
-function saveVaultPasswordsToFile() {
-    // TODO:
+// File database/vaultPasswords.csv must exist for this operation to succeed.
+// An uncatchable error will be thrown if the file does not exist. Do not try
+// catching it. TODO: In the future, try and handle this error
+async function loadVaultPasswordsFromFile() {
+    metaLog("database", "INFO", `Loading vault passwords into memory from file... (${vaultPasswordFile})`);
+    
+    const stream = createReadStream(vaultPasswordFile);
+    const readlineInterface = readline.createInterface({
+        input: stream,
+        crlfDelay: Infinity
+    });
+    
+    for await(const line of readlineInterface) {
+        if(line === "") continue;
+        const [vaultName, password] = line.split(",");
+        localSetVaultPassword(vaultName, password);
+    }
+    
+    readlineInterface.close();
+    stream.close();
+    
+    metaLog("database", "INFO", "FInished loading vault passwords from file.");
+}
+
+// Will be called every time vault is created, password is changed, or vault is removed.
+// Should be relatively fast, and each of the operations above will be performed sequentially
+// so there should be no conflicts.
+// Returns an explanation message if unsuccessful, otherwise returns undefined.
+async function saveVaultPasswordsToFile() {
+    metaLog("database", "INFO", "Saving vault passwords to file...");
+    // Write to temp file, replace main with temp
+    const tempFilePath = path.join(process.cwd(), "database", "tempVaultPasswords.csv");
+    
+    let reason = "";
+    const file = await fs.open(tempFilePath, "w")
+    .catch(error => {
+        reason = `Trying to save vault passwords to temp file, but encountered unrecognized error "${(error as Error).message}" while opening temp file. Aborting...`;
+        metaLog("database", "ERROR", reason);
+    }) as fs.FileHandle;
+    if(reason !== ""){
+        return reason;
+    }
+
+
+    // Writing to temp file
+    for(const [vault, password] of vaultPasswordMap) {
+        await file.appendFile(`${vault},${password}\n`);
+    }
+    await file.close();
+    
+
+    const realFilePath = vaultPasswordFile;
+    const oldFilePath = path.join(process.cwd(), "database", "vaultPasswords.csv.old");
+    await fs.rename(realFilePath, oldFilePath).catch(error => {
+        const message = (error as Error).message;
+        if(message.includes("no such file")) {
+            if(!firstVaultSave) {
+                metaLog("database", "WARNING",
+                `vaultPasswords.csv is somehow nonexistant. Ignoring and continuing.`);
+            }
+        } else {
+            metaLog("database", "ERROR",
+            `Encountered unrecognized error "${message}" while renaming vaultPasswords.csv.`)
+        }
+    });
+    await fs.rename(tempFilePath, realFilePath).catch(error => {
+        const message = (error as Error).message;
+        metaLog("database", "ERROR",
+        `There was an error "${message}" renaming tempVaultPasswords.csv to vaultPasswords.csv.`);
+    });
+    await fs.unlink(oldFilePath).catch(error => {
+        const message = (error as Error).message;
+        if(message.includes("no such file")) {
+            if(!firstVaultSave) {
+                metaLog("database", "ERROR",
+                `There was an error unlinking vaultPasswords.csv.old because it does not exist.`);
+            }
+        } else {
+            metaLog("database", "ERROR",
+            `Encountered unrecognized error "${message}" while unlinking vaultPasswords.csv.old.`);
+        }
+    });
+        
+    if(firstVaultSave) {
+        firstVaultSave = false;
+    }
+    
+    metaLog("database", "INFO", "Finished saving vault passwords from in-memory database to file.");
 }
 
 function localSetVaultPassword(vault: string, password: string) {
@@ -305,6 +406,8 @@ export {
     localIsOutdatedToken,
     purgeAllOutdated,
 
+    loadVaultPasswordsFromFile,
+    saveVaultPasswordsToFile,
     localSetVaultPassword,
     localVerifyVaultPassword,
     localVaultExists,
@@ -312,4 +415,5 @@ export {
 
     tokenList as _tokenList,
     tokenSet as _tokenSet,
+    vaultPasswordMap as _vaultPasswordMap
 };
