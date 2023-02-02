@@ -163,18 +163,18 @@ describe("Redis database tests", () => {
 import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, localSetVaultPassword, saveVaultPasswordsToFile, localVaultExists, loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet, _vaultPasswordMap, NodeType as Node } from "../src/authentication/database.js";
 
 describe("In-memory database tests", () => {
-    it("Stores and identifies an outdated token", async () => {
-        await localAddOutdatedToken("test.token.outdated", unixTime() + 300);
+    it("Stores and identifies an outdated token", () => {
+        localAddOutdatedToken("test.token.outdated", unixTime() + 300);
         assert(localIsOutdatedToken("test.token.outdated"));
         assert(!localIsOutdatedToken("test.token.valid"));
     });
     
     it("Verifies that local database correctly purges expired tokens", async () => {
-        await localAddOutdatedToken("test.token.nonexpired", unixTime() + 300);
-        await localAddOutdatedToken("test.token.expired", unixTime() - 60);
-        await localAddOutdatedToken("test.token.expired2", unixTime() - 30);
-        await localAddOutdatedToken("test.token.nonexpired2", unixTime() + 300);
-        await localAddOutdatedToken("test.token.expired3", unixTime() - 90);
+        localAddOutdatedToken("test.token.nonexpired", unixTime() + 300);
+        localAddOutdatedToken("test.token.expired", unixTime() - 60);
+        localAddOutdatedToken("test.token.expired2", unixTime() - 30);
+        localAddOutdatedToken("test.token.nonexpired2", unixTime() + 300);
+        localAddOutdatedToken("test.token.expired3", unixTime() - 90);
 
         // Check for existance
         assert(localIsOutdatedToken("test.token.nonexpired"));
@@ -210,8 +210,8 @@ describe("In-memory database tests", () => {
     });
     
     it("Saves the in memory tokens database to a file and loads from the file", async () => {
-        await localAddOutdatedToken("save.me.tofile", unixTime() + 100);
-        await localAddOutdatedToken("save.me.too", unixTime() + 100);
+        localAddOutdatedToken("save.me.tofile", unixTime() + 100);
+        localAddOutdatedToken("save.me.too", unixTime() + 100);
         assert(localIsOutdatedToken("save.me.tofile"));
         assert(localIsOutdatedToken("save.me.too"));
 

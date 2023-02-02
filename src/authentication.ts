@@ -50,10 +50,10 @@ async function isValidToken(token: string) {
     }
 }
 
-async function outdateToken(token: string, expireAt: number) {
+function outdateToken(token: string, expireAt: number) {
     metaLog("authentication", "INFO",
     `Outdating token ${token}, expiring at ${expireAt}`);
-    await addOutdatedTokenFunction(token, expireAt);
+    addOutdatedTokenFunction(token, expireAt);
 }
 
 function createToken(vaults: string[]) {
@@ -130,13 +130,13 @@ async function setVaultPassword(vault: string, password: string) {
     await setVaultPasswordFunction(vault, hashedPassword);
 }
 
-async function verifyVaultPassword(vault: string, password: string) {
+function verifyVaultPassword(vault: string, password: string) {
     const hashedPassword = hashPassword(password, passwordSalt, iterationCount);
-    return await verifyVaultPasswordFunction(vault, hashedPassword);
+    return verifyVaultPasswordFunction(vault, hashedPassword);
 }
 
-async function vaultExists(vault: string) {
-    return await vaultExistsFunction(vault);
+function vaultExists(vault: string) {
+    return vaultExistsFunction(vault);
 }
 
 async function deleteVaultPassword(vault: string) {

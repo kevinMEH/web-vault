@@ -25,15 +25,8 @@ class LinkedList {
         this.head = this.tail = new Node(value);
     }
     
-    async add(value: TokenPair) {
-        while(!this.setBusy()) { // Try for a lock
-            await new Promise(resolve => setTimeout(resolve, 250)); // Another script is busy, wait 250 ms
-        }
-        
+    add(value: TokenPair) {
         this.tail = this.tail.add(value);
-        
-        // Release locks
-        this.busy = false;
     }
     
     // Atomic function for setting busy to true. Returns false if busy.
@@ -159,7 +152,7 @@ async function loadOutdatedTokensFromFile() {
         const parts = line.split(",");
         const token = parts[0].substring(1, parts[0].length - 1);
         const expireAt = parseInt(parts[1]);
-        await localAddOutdatedToken(token, expireAt);
+        localAddOutdatedToken(token, expireAt);
     }
     
     readlineInterface.close();
@@ -175,6 +168,7 @@ async function saveOutdatedTokensToFile() {
     const tempFilePath = path.join(process.cwd(), "database", "tempOutdatedTokens.csv");
 
     // Attempting temp file creation. Expecting file to be not there.
+    let exit = false;
     const file = await fs.open(tempFilePath, "ax")
     .catch(async error => {
         const message = (error as Error).message;
@@ -186,22 +180,22 @@ async function saveOutdatedTokensToFile() {
             `Encountered unrecognized error "${message}" while opening temp file for saving tokens database. Waiting 15 seconds and retrying...`);
         }
         await new Promise(resolve => setTimeout(resolve, 15000));
-        return await fs.open(tempFilePath, "ax");
-    }).catch(async error => {
+        return fs.open(tempFilePath, "ax");
+    }).catch(error => {
         const message = (error as Error).message;
         if(message.includes("file already exists")) {
             metaLog("database", "ERROR",
             `Trying to save tokens database to file (2nd try), but temp file still exists. Truncating file and continuing.`);
-            return await fs.open(tempFilePath, "w");
+            return fs.open(tempFilePath, "w");
         } else {
             metaLog("database", "ERROR",
             `Encountered unrecognized error "${message}" while opening temp file for saving tokens database (2nd try). Aborting save operation.`);
-            return "EXIT";
+            exit = true;
+            return null;
         }
     });
     
-    if(file === "EXIT") return;
-
+    if(exit || file === null) return;
     
     // Writing to temp file
     let current = tokenList.head.next; // Sentinel is automatically added so is not written.
@@ -258,9 +252,9 @@ async function saveOutdatedTokensToFile() {
 }
 
 // Add outdated token
-async function localAddOutdatedToken(token: string, expireAt: number) {
+function localAddOutdatedToken(token: string, expireAt: number) {
     tokenSet.add(token);
-    await tokenList.add({ token, expireAt });
+    tokenList.add({ token, expireAt });
 }
 
 function localIsOutdatedToken(token: string) {

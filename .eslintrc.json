@@ -7,7 +7,7 @@
     ],
     "plugins": ["@typescript-eslint"],
     "rules": {
-        "require-await": 1,
+        "require-await": 2,
         "@typescript-eslint/no-unused-vars": [
             "warn",
             { "varsIgnorePattern": "_" }
@@ -22,7 +22,9 @@
                 "extendDefaults": true
             }
         ],
-        "@typescript-eslint/no-explicit-any": 0
+        "@typescript-eslint/no-explicit-any": 0,
+        "@typescript-eslint/await-thenable": 1,
+        "no-return-await": "warn"
     },
     "parserOptions": {
         "project": ["./tsconfig.json"] // Specify it only for TypeScript files

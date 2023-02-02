@@ -51,7 +51,7 @@ describe("Testing token authentication module", () => {
     it("Outdates a token", async () => {
         const token = createToken(["log_me_out"]);
         const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string);
-        await outdateToken(token, payload.exp);
+        outdateToken(token, payload.exp);
         assert(!await isValidToken(token));
     });
     
