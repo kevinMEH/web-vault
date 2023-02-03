@@ -26,7 +26,7 @@ process.on("SIGINT", shutdown);
 // ------------------
 
 // Expect error tests
-import expectError from "./expect_error.js";
+import { expectError, asyncExpectError } from "./expect_error.js";
 
 test("Verifying expectError works when no error (using expectError).", expectError(() => {
     const errorFunction = expectError(() => {
@@ -38,7 +38,11 @@ test("Verifying expectError works when no error (using expectError).", expectErr
 
 test("Verifying expectError works on error.", expectError(() => {
     throw new Error("This is a random error.");
-}, "random error"))
+}, "random error"));
+
+test("Verifying expectError works with async functions.", asyncExpectError(async () => {
+    await new Promise((_, reject) => setTimeout(() => reject(new Error("Some random error")), 1000));
+}, "random error"));
 
 // ------------------
 // ------------------
