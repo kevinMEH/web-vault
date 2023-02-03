@@ -25,23 +25,8 @@ process.on("SIGINT", shutdown);
 // ------------------
 // ------------------
 
-// Expects an error, throwing an error if there is no error.
-// The error message can be a substring of the full error message.
-// Returns a function that can be tested.
-function expectError(testFunction: Function, errorMessage: string) {
-    return () => {
-        try {
-            testFunction()
-        } catch(error) {
-            assert((error as Error).message.includes(errorMessage),
-                "Error message \"" + (error as Error).message
-                + "\" does not include the expected error message \""
-                + errorMessage + "\".");
-            return;
-        }
-        throw new Error("Expected error \"" + errorMessage + "\" but found success instead.");
-    }
-}
+// Expect error tests
+import expectError from "./expect_error.js";
 
 test("Verifying expectError works when no error (using expectError).", expectError(() => {
     const errorFunction = expectError(() => {
