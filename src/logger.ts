@@ -23,7 +23,7 @@ async function vaultLog(vaultName: string, message: string) {
 // Returns the name of the log file associated with the current date.
 function logFileNameFromDate() {
     const date = new Date();
-    return date.getUTCFullYear() + "_" + date.getUTCMonth() + "_" + date.getUTCDate() + ".log";
+    return date.getUTCFullYear() + "_" + (1 + date.getUTCMonth()) + "_" + date.getUTCDate() + ".log";
 }
 
 export { metaLog, vaultLog, logFileNameFromDate };
