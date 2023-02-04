@@ -1,4 +1,5 @@
 import { after, describe, it } from "node:test";
+import { asyncExpectError } from "./expect_error.js";
 import assert from "assert";
 
 import { close } from "../src/authentication/redis.js";
@@ -88,6 +89,10 @@ describe("Testing token authentication module", () => {
     after(() => status++);
 });
 
+// ------------------
+// ------------------
+// ------------------
+
 describe("Testing vault authentication functions", () => {
     it("Sets the password for a vault and checks if successful", async () => {
         await setVaultPassword("testing", "password123");
@@ -107,9 +112,68 @@ describe("Testing vault authentication functions", () => {
     });
     
     after(() => status++);
-})
+});
 
-while(status !== 2) {
+// ------------------
+// ------------------
+// ------------------
+
+import fs from "fs/promises";
+import path from "path";
+// Dynamic import because of environment variables
+const { changeVaultPassword, createNewVault, deleteVault } = await import("../src/vault.js");
+
+describe("Vault tests", () => {
+    it("Tests the creation, changing password, and deletion of a vault", async () => {
+        assert(await createNewVault("test-vault", "Password123") === true);
+        assert(await verifyVaultPassword("test-vault", "Password123"));
+        assert(!await verifyVaultPassword("test-vault", "password321"));
+
+        assert(await changeVaultPassword("test-vault", "NiceAndSecure123") === true);
+        assert(await verifyVaultPassword("test-vault", "NiceAndSecure123"));
+        assert(!await verifyVaultPassword("test-vault", "Password123"));
+
+        // Make certain vault and logging directory actually created. Error will be
+        // thrown by .access if the folders does not exist.
+        await fs.access(path.join(process.cwd(), "vaults", "test-vault"));
+        await fs.access(path.join(process.cwd(), "logs", "vaults", "test-vault"));
+        
+        assert(await deleteVault("test-vault") === true);
+        try {
+            await fs.access(path.join(process.cwd(), "vaults", "test-vault"));
+            assert(false); // The vault somehow still exists after deletion.
+        } catch(error) {
+            const message = (error as Error).message;
+            assert(message.includes("no such file"));
+        }
+        
+        assert(await changeVaultPassword("test-vault", "NonexistantVault123") === false);
+    });
+    
+    it("Makes certain that bad vault names will return an error", async () => {
+        await asyncExpectError(async () => {
+            await createNewVault("../hello_world", "password");
+        }, "is not a valid vault name")();
+        await asyncExpectError(async () => {
+            await createNewVault("/hello_world", "password");
+        }, "is not a valid vault name")();
+        await asyncExpectError(async () => {
+            await createNewVault("asdf/hello", "password");
+        }, "is not a valid vault name")();
+        
+        await asyncExpectError(async () => {
+            await deleteVault("bad\\name");
+        }, "is not a valid vault name")();
+    });
+    
+    it("Unsuccessfully delete nonexistant vault", async () => {
+        assert(await deleteVault("nonexistant-vault") === false);
+    });
+    
+    after(() => status++);
+});
+
+while(status !== 3) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 }
 shutdown();
