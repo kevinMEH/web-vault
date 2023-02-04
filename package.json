@@ -8,7 +8,10 @@
     "build": "next build",
     "start": "NEXT_MANUAL_SIG_HANDLE=true next start",
     "lint": "next lint",
-    "testsrc": "ts-node-esm test/test.ts && echo '\n\n\n\n\n' && ts-node-esm test/auth_test.ts && echo '\n\n\n\n\n' && REDIS=true ts-node-esm test/auth_test.ts"
+    "test-singles": "ts-node-esm test/single_tests.ts",
+    "test-context-local": "ts-node-esm test/context_tests.ts",
+    "test-context-redis": "REDIS=true ts-node-esm test/context_tests.ts",
+    "test-all": "npm run test-singles && echo '\n\n\n\n\n' && npm run test-context-local && echo '\n\n\n\n\n' && npm run test-context-redis"
   },
   "dependencies": {
     "@next/font": "13.1.1",
