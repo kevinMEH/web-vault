@@ -149,7 +149,7 @@ describe("Redis database tests", () => {
     });
 });
 
-import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, localSetVaultPassword, saveVaultPasswordsToFile, localVaultExists, loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet, _vaultPasswordMap, NodeType as Node } from "../src/authentication/database.js";
+import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken, localIsOutdatedToken, purgeAllOutdated, localSetVaultPassword, localVaultExists, loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet, _vaultPasswordMap, NodeType as Node } from "../src/authentication/database.js";
 
 describe("In-memory database tests", () => {
     it("Stores and identifies an outdated token", () => {
@@ -220,14 +220,12 @@ describe("In-memory database tests", () => {
     
     it("Saves the in memory vault passwords database to a file and loads from the file", async () => {
         // Setting passwords directly, in reality should be hashed first and local*() should never be called.
-        localSetVaultPassword("test-vault-test", "password112233");
-        localSetVaultPassword("testing2", "Password22");
-        localSetVaultPassword("helloworld", "GoodAndSecure111");
+        // Setting passwords automatically saves
+        await localSetVaultPassword("test-vault-test", "password112233");
+        await localSetVaultPassword("testing2", "Password22");
+        await localSetVaultPassword("helloworld", "GoodAndSecure111");
 
         assert(localVaultExists("test-vault-test"));
-
-        assert(await saveVaultPasswordsToFile() === undefined);
-
         assert(localVaultExists("helloworld"));
 
         _vaultPasswordMap.clear();
@@ -241,10 +239,13 @@ describe("In-memory database tests", () => {
         assert(localVaultExists("helloworld"));
         assert(!localVaultExists("nonexistant-vault"));
         
-        localDeleteVaultPassword("test-vault-test");
-        localDeleteVaultPassword("testing2");
-        localDeleteVaultPassword("helloworld");
-        assert(await saveVaultPasswordsToFile() === undefined);
+        // Deleting passwords automatically saves to file
+        await localDeleteVaultPassword("test-vault-test");
+        await localDeleteVaultPassword("testing2");
+        await localDeleteVaultPassword("helloworld");
+
+        await loadVaultPasswordsFromFile();
+        assert(_vaultPasswordMap.size === 0);
     });
     
     after(() => {
@@ -252,6 +253,9 @@ describe("In-memory database tests", () => {
     })
 });
 
+// ------------------
+// ------------------
+// ------------------
 
 import { hashPassword } from "../src/authentication/password.js";
 

@@ -376,8 +376,9 @@ async function saveVaultPasswordsToFile() {
     metaLog("database", "INFO", "Finished saving vault passwords from in-memory database to file.");
 }
 
-function localSetVaultPassword(vault: string, password: string) {
+async function localSetVaultPassword(vault: string, password: string) {
     vaultPasswordMap.set(vault, password);
+    await saveVaultPasswordsToFile();
 }
 
 function localVerifyVaultPassword(vault: string, password: string) {
@@ -388,8 +389,9 @@ function localVaultExists(vault: string) {
     return vaultPasswordMap.has(vault);
 }
 
-function localDeleteVaultPassword(vault: string) {
+async function localDeleteVaultPassword(vault: string) {
     vaultPasswordMap.delete(vault);
+    await saveVaultPasswordsToFile();
 }
 
 export type NodeType = InstanceType<typeof Node>;
