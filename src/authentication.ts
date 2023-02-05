@@ -25,12 +25,12 @@ const secret = process.env.JWT_SECRET !== undefined ? process.env.JWT_SECRET
     : (() => { throw new Error("The JWT_SECRET environment variable must be specified."); })();
 if(!(/^[a-fA-F0-9]+$/.test(secret))) throw new Error("Secret must be a hex string. (No 0x)");
 
-const addOutdatedTokenFunction = process.env.REDIS ? redisAddOutdatedToken : localAddOutdatedToken;
-const isOutdatedTokenFunction = process.env.REDIS ? redisIsOutdatedToken : localIsOutdatedToken;
-const setVaultPasswordFunction: ((vault: string, password: string) => void | Promise<void>) = process.env.REDIS ? redisSetVaultPassword : localSetVaultPassword;
-const verifyVaultPasswordFunction = process.env.REDIS ? redisVerifyVaultPassword : localVerifyVaultPassword;
-const vaultExistsFunction = process.env.REDIS ? redisVaultExists : localVaultExists;
-const deleteVaultPasswordFunction: ((vault: string) => void | Promise<void>) = process.env.REDIS ? redisDeleteVaultPassword : localDeleteVaultPassword;
+const addOutdatedTokenFunction = process.env.REDIS ? redisAddOutdatedToken : (token: string, expireAt: number) => Promise.resolve(localAddOutdatedToken(token, expireAt));
+const isOutdatedTokenFunction = process.env.REDIS ? redisIsOutdatedToken : (token: string) => Promise.resolve(localIsOutdatedToken(token));
+const setVaultPasswordFunction = process.env.REDIS ? redisSetVaultPassword : localSetVaultPassword;
+const verifyVaultPasswordFunction = process.env.REDIS ? redisVerifyVaultPassword : (vault: string, password: string) => Promise.resolve(localVerifyVaultPassword(vault, password));
+const vaultExistsFunction = process.env.REDIS ? redisVaultExists : (vault: string) => Promise.resolve(localVaultExists(vault));
+const deleteVaultPasswordFunction = process.env.REDIS ? redisDeleteVaultPassword : localDeleteVaultPassword;
 
 async function isValidToken(token: string) {
     if(await isOutdatedTokenFunction(token)) return false;
