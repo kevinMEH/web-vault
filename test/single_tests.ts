@@ -53,7 +53,7 @@ import { vaultLog, logFileNameFromDate } from "../src/logger.js";
 test("Logging to a file", async () => {
     const logFileName = logFileNameFromDate();
     const message = "This is a test message.";
-    await vaultLog(".", "This is a test message.");
+    await vaultLog(".", "INFO", "This is a test message.");
     const logFilePath = path.join("./logs/vaults", logFileName);
     const contents: string = await fs.readFile(logFilePath, { encoding: "utf8" } );
     fs.rm(logFilePath);

@@ -128,6 +128,8 @@ const iterationCount = parseInt(process.env.ITERATION_COUNT as string) || 123456
 async function setVaultPassword(vault: string, password: string) {
     const hashedPassword = hashPassword(password, passwordSalt, iterationCount);
     await setVaultPasswordFunction(vault, hashedPassword);
+    metaLog("authentication", "INFO",
+    `Changed vault ${vault} password. (Hash: ${hashedPassword})`);
 }
 
 function verifyVaultPassword(vault: string, password: string) {
@@ -141,6 +143,8 @@ function vaultExists(vault: string) {
 
 async function deleteVaultPassword(vault: string) {
     await deleteVaultPasswordFunction(vault);
+    metaLog("authentication", "INFO",
+    `Deleted vault ${vault} password.`);
 }
 
 export {

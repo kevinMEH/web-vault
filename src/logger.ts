@@ -12,11 +12,11 @@ async function metaLog(name: "database" | "authentication" | "admin", type: "ERR
 // Logs a message related to a specific vault.
 // Vault log directory should already exist.
 // TODO: Add configuration for logging, ex: date format, log file names
-async function vaultLog(vaultName: string, message: string) {
+async function vaultLog(vaultName: string, type: "ERROR" | "WARNING" | "INFO", message: string) {
     const filePath = path.join(baseLoggingDirectory, "vaults", vaultName, logFileNameFromDate());
     // TODO: Switch to file descriptors and have array of file
     // descriptors to read and write to. (Performance reasons)
-    message = (new Date()).toUTCString() + "\n" + message + "\n\n";
+    message = (new Date()).toUTCString() + "\n" + type + ": " + message + "\n\n";
     await fs.appendFile(filePath, message, { mode: 0o640, flag: "a" });
 }
 
