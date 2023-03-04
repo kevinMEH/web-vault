@@ -31,7 +31,8 @@ async function createNewVault(vaultName: string, password: string) {
         await fs.mkdir(path.join(baseVaultDirectory, vaultName));
     } catch(error) {
         const message = (error as Error).message;
-        if(message.includes("already exists")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "EEXIST") {
             metaLog("admin", "ERROR",
             `Tried to create new vault directory ${vaultName} inside ${baseVaultDirectory}, but directory already exists. Aborting...`);
         } else {
@@ -44,7 +45,8 @@ async function createNewVault(vaultName: string, password: string) {
         await fs.mkdir(path.join(baseVaultLoggingDirectory, vaultName));
     } catch(error) {
         const message = (error as Error).message;
-        if(message.includes("already exists")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "EEXIST") {
             metaLog("admin", "INFO",
             `Tried to create logging directory for newly created vault ${vaultName} inside ${baseVaultLoggingDirectory}, but directory already exists. This may be because the logging directory was already created from a previous creation of this same vault.`);
         } else {
@@ -82,7 +84,8 @@ async function deleteVault(vaultName: string) {
     .then(() => success = true)
     .catch(error => {
         const message = (error as Error).message;
-        if(message.includes("no such file")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
             metaLog("admin", "WARNING",
             `Trying to delete ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} but the vault does not exist.`);
         } else {

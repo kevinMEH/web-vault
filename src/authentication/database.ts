@@ -89,7 +89,8 @@ if(process.env.PRODUCTION && process.env.REDIS == undefined) {
         await loadOutdatedTokensFromFile();
     } catch(error) {
         const message = (error as Error).message;
-        if(message.includes("no such file")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
             metaLog("database", "WARNING", "No outdated tokens database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
         } else {
             metaLog("database", "ERROR",
@@ -102,7 +103,8 @@ if(process.env.PRODUCTION && process.env.REDIS == undefined) {
         await loadVaultPasswordsFromFile();
     } catch(error) {
         const message = (error as Error).message;
-        if(message.includes("no such file")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
             metaLog("database", "WARNING", "No vault passwords database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
         } else {
             metaLog("database", "ERROR",
@@ -172,7 +174,8 @@ async function saveOutdatedTokensToFile() {
     const file = await fs.open(tempFilePath, "ax")
     .catch(async error => {
         const message = (error as Error).message;
-        if(message.includes("file already exists")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "EEXIST") {
             metaLog("database", "ERROR",
             `Trying to save tokens database to file, but temp file already exists. This means that there is currently an ongoing tokens database save operation, or that the last operation has completed unsuccessfully. Waiting 15 seconds and retrying...`);
         } else {
@@ -183,7 +186,8 @@ async function saveOutdatedTokensToFile() {
         return fs.open(tempFilePath, "ax");
     }).catch(error => {
         const message = (error as Error).message;
-        if(message.includes("file already exists")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "EEXIST") {
             metaLog("database", "ERROR",
             `Trying to save tokens database to file (2nd try), but temp file still exists. Truncating file and continuing.`);
             return fs.open(tempFilePath, "w");
@@ -216,7 +220,8 @@ async function saveOutdatedTokensToFile() {
 
     await fs.rename(realFilePath, oldFilePath).catch(error => {
         const message = (error as Error).message;
-        if(message.includes("no such file")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
             if(!firstTokenSave) {
                 metaLog("database", "WARNING",
                 `outdatedTokens.csv is somehow nonexistant. Ignoring and continuing.`);
@@ -233,7 +238,8 @@ async function saveOutdatedTokensToFile() {
     });
     await fs.unlink(oldFilePath).catch(error => {
         const message = (error as Error).message;
-        if(message.includes("no such file")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
             if(!firstTokenSave) {
                 metaLog("database", "ERROR",
                 `There was an error unlinking outdatedTokens.csv.old because it does not exist.`);
@@ -341,7 +347,8 @@ async function saveVaultPasswordsToFile() {
     const oldFilePath = path.join(process.cwd(), "database", "vaultPasswords.csv.old");
     await fs.rename(realFilePath, oldFilePath).catch(error => {
         const message = (error as Error).message;
-        if(message.includes("no such file")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
             if(!firstVaultSave) {
                 metaLog("database", "WARNING",
                 `vaultPasswords.csv is somehow nonexistant. Ignoring and continuing.`);
@@ -358,7 +365,8 @@ async function saveVaultPasswordsToFile() {
     });
     await fs.unlink(oldFilePath).catch(error => {
         const message = (error as Error).message;
-        if(message.includes("no such file")) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
             if(!firstVaultSave) {
                 metaLog("database", "ERROR",
                 `There was an error unlinking vaultPasswords.csv.old because it does not exist.`);
