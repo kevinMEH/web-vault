@@ -44,12 +44,15 @@ const baseVaultLoggingDirectory = process.env.LOGGING_DIRECTORY || path.join(pro
  */
 async function createNewVault(vaultName: string, password: string): Promise<CustomError | null> {
     if(!/^([a-z]|[A-Z]|[0-9]|_|-)+$/.test(vaultName)) {
+        metaLog("admin", "ERROR",
+        `Tried to create a new vault ${vaultName}, but the name is not a valid name.`);
         return new CustomError(
             `${vaultName} is not a valid vault name. The name may only consist of uppercase letters, lowercase letters, numbers, underscores (_), and dashes (-).`,
             "ERROR",
             "INVALID_NAME"
         );
     }
+
     try {
         await fs.mkdir(path.join(baseVaultDirectory, vaultName));
     } catch(error) {
@@ -69,7 +72,7 @@ async function createNewVault(vaultName: string, password: string): Promise<Cust
             return new CustomError(
                 message,
                 "ERROR",
-                code || "NO_ERROR_CODE"
+                code
             );
         }
     }
@@ -83,56 +86,95 @@ async function createNewVault(vaultName: string, password: string): Promise<Cust
         if(code === "EEXIST") {
             metaLog("admin", "INFO",
             `Tried to create logging directory for newly created vault ${vaultName} inside ${baseVaultLoggingDirectory}, but directory already exists. This may be because the logging directory was already created from a previous creation of this same vault.`);
-            returnValue = new CustomError(message, "INFO", "LOGGING_DIRECTORY_EXISTS");
+            returnValue = new CustomError(`Trying to create a logging directory for newly created vault ${vaultName}, but a directory already exists. This is normal if a vault with the same name has already been created before.`, "INFO", "LOGGING_DIRECTORY_EXISTS");
         } else {
             metaLog("admin", "ERROR",
             `Tried to create logging directory for newly created vault ${vaultName} inside ${baseVaultLoggingDirectory}, but encountered unrecognized error "${message}" instead. Please check if the logging directory has been created, and if not, create it manually.`);
-            returnValue = new CustomError(message, "ERROR", code || "NO_ERROR_CODE");
+            returnValue = new CustomError(message, "ERROR", code);
         }
     }
     await setVaultPassword(vaultName, password);
-    metaLog("admin", "INFO",
-    `Created new vault ${vaultName} in ${baseVaultDirectory} and logging directory in ${baseVaultLoggingDirectory}.`);
+
+    if(returnValue == null) {
+        metaLog("admin", "INFO",
+        `Created new vault ${vaultName} in ${baseVaultDirectory} and logging directory in ${baseVaultLoggingDirectory}.`);
+    } else {
+        metaLog("admin", "INFO",
+        `Created new vault ${vaultName} in ${baseVaultDirectory} and logging directory in ${baseVaultLoggingDirectory} with warnings / errors.`);
+    }
     return returnValue;
 }
 
 
-// Changes the vault's password.
-// Returns true on successful change, false otherwise. Returns false if vault does not exist.
-async function changeVaultPassword(vaultName: string, password: string) {
-    if(!await vaultExists(vaultName)) return false;
+/**
+ * Changes the vault's password.
+ * Returns true on successful change, false if vault does not exist.
+ * 
+ * @param vaultName 
+ * @param password 
+ * @returns 
+ */
+async function changeVaultPassword(vaultName: string, password: string): Promise<boolean> {
+    if(!await vaultExists(vaultName)) {
+        metaLog("admin", "INFO", `Tried to change vault ${vaultName} password, but the vault does not exist in the database.`);
+        return false;
+    }
     await setVaultPassword(vaultName, password);
-    metaLog("admin", "INFO",
-    `Changed vault ${vaultName} password.`);
+    metaLog("admin", "INFO", `Changed vault ${vaultName} password.`);
     return true;
 }
 
 
-// Will throw error on invalid vault name.
-// Returns true on success, false otherwise.
-async function deleteVault(vaultName: string) {
+/**
+ * Deletes a vault.
+ * 
+ * Returns an error on invalid vault name. (Not base64url string) (`INVALID_NAME`)
+ * 
+ * Returns an error if the vault does not exist in the database. (`VAULT_NONEXISTANT`)
+ * Deletion will nonetheless proceed.
+ * 
+ * Returns an error if the vault directory does not exist. (`VAULT_DIRECTORY_NONEXISTANT`)
+ * 
+ * @param vaultName 
+ * @returns Promise<CustomError | null>
+ */
+async function deleteVault(vaultName: string): Promise<CustomError | null> {
+    let returnValue = null;
     if(!/^([a-z]|[A-Z]|[0-9]|_|-)+$/.test(vaultName)) {
-        throw new Error(`${vaultName} is not a valid vault name. The name may only consist of uppercase letters, lowercase letters, numbers, underscores (_), and dashes (-).`);
+        return new CustomError(`${vaultName} is not a valid vault name. The name may only consist of uppercase letters, lowercase letters, numbers, underscores (_), and dashes (-).`,
+            "ERROR", "INVALID_NAME");
     }
-    await deleteVaultPassword(vaultName);
-    let success = false;
-    await fs.rm(path.join(baseVaultDirectory, vaultName), { recursive: true })
-    .then(() => success = true)
-    .catch(error => {
+    if(!await vaultExists(vaultName)) {
+        metaLog("admin", "ERROR", `${vaultName} does not exist in the database. Deletion still proceeding.`);
+        returnValue = new CustomError(`${vaultName} does not exist in the database.`, "ERROR", "VAULT_NONEXISTANT");
+    } else {
+        await deleteVaultPassword(vaultName);
+    }
+
+    try {
+        await fs.rm(path.join(baseVaultDirectory, vaultName), { recursive: true });
+    } catch(error) {
         const message = (error as Error).message;
         const code = (error as NodeJS.ErrnoException).code;
         if(code === "ENOENT") {
             metaLog("admin", "WARNING",
             `Trying to delete ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} but the vault does not exist.`);
+            returnValue = new CustomError(`${vaultName} does not have a corresponding directory in ${baseVaultDirectory}`, "ERROR", "VAULT_DIRECTORY_NONEXISTANT");
         } else {
             metaLog("admin", "ERROR",
             `Trying to delete ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} but encountered unrecognized error "${message}".`);
+            returnValue = new CustomError(message, "ERROR", code);
         }
-    })
-    if(!success) return false;
-    metaLog("admin", "INFO",
-    `Successfully deleted vault ${vaultName} at ${path.join(baseVaultDirectory, vaultName)}.`);
-    return true;
+    }
+    
+    if(returnValue == null) {
+        metaLog("admin", "INFO",
+        `Successfully deleted vault ${vaultName} at ${path.join(baseVaultDirectory, vaultName)}.`);
+    } else {
+        metaLog("admin", "INFO",
+        `Deleted vault ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} with warnings / errors.`);
+    }
+    return returnValue;
 }
 
 export { createNewVault, changeVaultPassword, deleteVault };
