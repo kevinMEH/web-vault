@@ -4,6 +4,7 @@ import readline from "readline/promises";
 import path from "path";
 import { unixTime } from "../helper.js"
 import { metaLog } from "../logger.js";
+import CustomError from "../custom_error.js";
 
 const purgeInterval = parseInt(process.env.PURGE_INTERVAL as string) || 60 * 60 * 24; // Default is every day
 
@@ -137,9 +138,12 @@ if(process.env.PRODUCTION && process.env.REDIS == undefined) {
 
 
 
-// File database/outdatedTokens.csv must exist for this operation to succeed.
-// An uncatchable error will be thrown if the file does not exist. Do not try
-// catching it. TODO: In the future, try and handle this error
+/**
+ * File database/outdatedTokens.csv must exist for this operation to succeed.
+ * 
+ * An uncatchable error will be thrown if the file does not exist. Do not try
+ * catching it. TODO: In the future, try and handle this error.
+ */
 async function loadOutdatedTokensFromFile() {
     metaLog("database", "INFO", `Loading outdated tokens into memory from file... (${outdatedTokensFile})`);
 
@@ -163,53 +167,60 @@ async function loadOutdatedTokensFromFile() {
     metaLog("database", "INFO", "Finished loading outdated tokens from file.");
 }
 
-async function saveOutdatedTokensToFile() {
+/**
+ * Saves outdated tokens from the local database to a file.
+ * 
+ * Returns an array of CustomErrors. If successful, the array will be empty.
+ * 
+ * Errors: `OUTDATEDTOKENS_NONEXISTANT`, `OUTDATEDTOKENS_OLD_NONEXISTANT`
+ * 
+ * @returns Promise<Array<CustomError>>
+ */
+async function saveOutdatedTokensToFile(): Promise<Array<CustomError>> {
     metaLog("database", "INFO", "Saving in-memory outdated tokens database to file...")
     // We will write to a temp file and replace the main file with temp file
     // after we finish writing.
     const tempFilePath = path.join(process.cwd(), "database", "tempOutdatedTokens.csv");
 
     // Attempting temp file creation. Expecting file to be not there.
-    let exit = false;
-    const file = await fs.open(tempFilePath, "ax")
-    .catch(async error => {
+    let file: fs.FileHandle;
+    try {
+        file = await fs.open(tempFilePath, "wx")
+    } catch(error) {
         const message = (error as Error).message;
         const code = (error as NodeJS.ErrnoException).code;
         if(code === "EEXIST") {
-            metaLog("database", "ERROR",
-            `Trying to save tokens database to file, but temp file already exists. This means that there is currently an ongoing tokens database save operation, or that the last operation has completed unsuccessfully. Waiting 15 seconds and retrying...`);
+            const reason = `Trying to save tokens database to file, but temp file already exists. This means that there is currently an ongoing tokens database save operation, or that the last operation has completed unsuccessfully. Aborting...`;
+            metaLog("database", "ERROR", reason);
+            return [ new CustomError(reason, "ERROR", "TEMP_FILE_EXISTS") ];
         } else {
-            metaLog("database", "ERROR",
-            `Encountered unrecognized error "${message}" while opening temp file for saving tokens database. Waiting 15 seconds and retrying...`);
+            const reason = `Encountered unrecognized error "${message}" while opening temp file for saving tokens database. Aborting...`;
+            metaLog("database", "ERROR", reason);
+            return [ new CustomError(reason, "ERROR", code) ];
         }
-        await new Promise(resolve => setTimeout(resolve, 15000));
-        return fs.open(tempFilePath, "ax");
-    }).catch(error => {
-        const message = (error as Error).message;
-        const code = (error as NodeJS.ErrnoException).code;
-        if(code === "EEXIST") {
-            metaLog("database", "ERROR",
-            `Trying to save tokens database to file (2nd try), but temp file still exists. Truncating file and continuing.`);
-            return fs.open(tempFilePath, "w");
-        } else {
-            metaLog("database", "ERROR",
-            `Encountered unrecognized error "${message}" while opening temp file for saving tokens database (2nd try). Aborting save operation.`);
-            exit = true;
-            return null;
-        }
-    });
-    
-    if(exit || file === null) return;
-    
-    // Writing to temp file
-    let current = tokenList.head.next; // Sentinel is automatically added so is not written.
-    while(current) {
-        const value = current.value;
-        await file.appendFile(`"${value.token}",${value.expireAt}\n`);
-        current = current.next;
     }
-    await file.close();
     
+
+    // Writing to temp file
+    try {
+        let current = tokenList.head.next; // Sentinel is automatically added so is not written.
+        while(current) {
+            const value = current.value;
+            await file.appendFile(`"${value.token}",${value.expireAt}\n`);
+            current = current.next;
+        }
+        await file.close();
+    } catch(error) {
+        const message = (error as Error).message;
+        const reason = `Trying to append oudated tokens to temp file, but encountered error "${message}" while writing. Aborting...`;
+        metaLog("database", "ERROR", reason);
+        await file.close();
+        await fs.unlink(tempFilePath);
+        return [ new CustomError(message, "ERROR", (error as NodeJS.ErrnoException).code) ];
+    }
+    
+
+    const errors: CustomError[] = [];
 
     // Replacing main file with temp file
     // Main file -> Old file
@@ -217,36 +228,41 @@ async function saveOutdatedTokensToFile() {
     // Unlink Old file
     const realFilePath = outdatedTokensFile;
     const oldFilePath = path.join(process.cwd(), "database", "outdatedTokens.csv.old");
-
     await fs.rename(realFilePath, oldFilePath).catch(error => {
         const message = (error as Error).message;
         const code = (error as NodeJS.ErrnoException).code;
         if(code === "ENOENT") {
             if(!firstTokenSave) {
-                metaLog("database", "WARNING",
-                `outdatedTokens.csv is somehow nonexistant. Ignoring and continuing.`);
+                const reason = `outdatedTokens.csv is somehow nonexistant. Ignoring and continuing.`;
+                metaLog("database", "WARNING", reason);
+                errors.push(new CustomError(reason, "WARNING", "OUTDATEDTOKENS_NONEXISTANT"));
             }
         } else {
-            metaLog("database", "ERROR",
-            `Encountered unrecognized error "${message}" while renaming outdatedTokens.csv.`);
+            const reason = `Encountered unrecognized error "${message}" while renaming outdatedTokens.csv.`;
+            metaLog("database", "ERROR", reason);
+            errors.push(new CustomError(reason, "ERROR", code));
         }
     });
     await fs.rename(tempFilePath, realFilePath).catch(error => {
         const message = (error as Error).message;
-        metaLog("database", "ERROR",
-        `There as an error "${message}" renaming tempOutdatedTokens.csv to outdatedTokens.csv.`)
+        const code = (error as NodeJS.ErrnoException).code;
+        const reason = `There as an error "${message}" renaming tempOutdatedTokens.csv to outdatedTokens.csv.`;
+        metaLog("database", "ERROR", reason);
+        errors.push(new CustomError(reason, "ERROR", code));
     });
     await fs.unlink(oldFilePath).catch(error => {
         const message = (error as Error).message;
         const code = (error as NodeJS.ErrnoException).code;
         if(code === "ENOENT") {
             if(!firstTokenSave) {
-                metaLog("database", "ERROR",
-                `There was an error unlinking outdatedTokens.csv.old because it does not exist.`);
+                const reason = `There was an error unlinking outdatedTokens.csv.old because it does not exist.`;
+                metaLog("database", "ERROR", reason);
+                errors.push(new CustomError(reason, "ERROR", "OUTDATEDTOKENS_OLD_NONEXISTANT"));
             }
         } else {
-            metaLog("database", "ERROR",
-            `Encountered unrecognized error "${message}" while unlinking outdatedTokens.csv.old.`);
+            const reason = `Encountered unrecognized error "${message}" while unlinking outdatedTokens.csv.old.`;
+            metaLog("database", "ERROR", reason);
+            errors.push(new CustomError(reason, "ERROR", code));
         }
     });
 
@@ -254,10 +270,20 @@ async function saveOutdatedTokensToFile() {
         firstTokenSave = false;
     }
 
-    metaLog("database", "INFO", `Finished saving in-memory outdated tokens database to file.`);
+    if(errors.length == 0) {
+        metaLog("database", "INFO", `Successfully saved in-memory outdated tokens database to file.`);
+    } else {
+        metaLog("database", "INFO", `Saved in-memory outdated tokens database to file with warnings / errors.`);
+    }
+    return errors;
 }
 
-// Add outdated token
+/**
+ * Adds an outdated token to the local database.
+ * 
+ * @param token 
+ * @param expireAt 
+ */
 function localAddOutdatedToken(token: string, expireAt: number) {
     tokenSet.add(token);
     tokenList.add({ token, expireAt });
@@ -292,9 +318,12 @@ async function purgeAllOutdated() {
 
 
 
-// File database/vaultPasswords.csv must exist for this operation to succeed.
-// An uncatchable error will be thrown if the file does not exist. Do not try
-// catching it. TODO: In the future, try and handle this error
+/**
+ * File database/vaultPasswords.csv must exist for this operation to succeed.
+ * 
+ * An uncatchable error will be thrown if the file does not exist. Do not try
+ * catching it. TODO: In the future, try and handle this error.
+ */
 async function loadVaultPasswordsFromFile() {
     metaLog("database", "INFO", `Loading vault passwords into memory from file... (${vaultPasswordFile})`);
     
@@ -316,32 +345,51 @@ async function loadVaultPasswordsFromFile() {
     metaLog("database", "INFO", "FInished loading vault passwords from file.");
 }
 
-// Will be called every time vault is created, password is changed, or vault is removed.
-// Should be relatively fast, and each of the operations above will be performed sequentially
-// so there should be no conflicts.
-// Returns an explanation message if unsuccessful, otherwise returns undefined.
-async function saveVaultPasswordsToFile() {
+/**
+ * Will be called every time vault is created, password is changed, or vault is removed.
+ * 
+ * Should be relatively fast, and each of the operations above will be performed sequentially
+ * so there should be no conflicts.
+ * 
+ * Returns an array of CustomErrors. If successful, the array will be empty..
+ * 
+ * Errors: `VAULTPASSWORD_NONEXISTANT`, `VAULTPASSWORDS_OLD_NONEXISTANT`
+ * 
+ * @returns Promise<Array<CustomError>>
+ */
+async function saveVaultPasswordsToFile(): Promise<Array<CustomError>> {
     metaLog("database", "INFO", "Saving vault passwords to file...");
     // Write to temp file, replace main with temp
     const tempFilePath = path.join(process.cwd(), "database", "tempVaultPasswords.csv");
     
-    let reason = "";
-    const file = await fs.open(tempFilePath, "w")
-    .catch(error => {
-        reason = `Trying to save vault passwords to temp file, but encountered unrecognized error "${(error as Error).message}" while opening temp file. Aborting...`;
+    let file: fs.FileHandle;
+    try {
+        file = await fs.open(tempFilePath, "w")
+    } catch(error) {
+        const message = (error as Error).message;
+        const reason = `Trying to save vault passwords to temp file, but encountered unrecognized error "${message}" while opening temp file. Aborting...`;
         metaLog("database", "ERROR", reason);
-    }) as fs.FileHandle;
-    if(reason !== ""){
-        return reason;
+        return [ new CustomError(reason, "ERROR", (error as NodeJS.ErrnoException).code) ];
     }
 
-
-    // Writing to temp file
-    for(const [vault, password] of vaultPasswordMap) {
-        await file.appendFile(`${vault},${password}\n`);
-    }
-    await file.close();
     
+    // Writing to temp file
+    try {
+        for(const [vault, password] of vaultPasswordMap) {
+            await file.appendFile(`${vault},${password}\n`);
+        }
+        await file.close();
+    } catch(error) {
+        const message = (error as Error).message;
+        const reason = `Trying to write vault password pairs to temp file, but encountered error "${message}" while writing. Aborting...`;
+        metaLog("database", "ERROR", reason);
+        await file.close();
+        await fs.unlink(tempFilePath);
+        return [ new CustomError(message, "ERROR", (error as NodeJS.ErrnoException).code) ];
+    }
+    
+
+    const errors: CustomError[] = [];
 
     const realFilePath = vaultPasswordFile;
     const oldFilePath = path.join(process.cwd(), "database", "vaultPasswords.csv.old");
@@ -350,30 +398,36 @@ async function saveVaultPasswordsToFile() {
         const code = (error as NodeJS.ErrnoException).code;
         if(code === "ENOENT") {
             if(!firstVaultSave) {
-                metaLog("database", "WARNING",
-                `vaultPasswords.csv is somehow nonexistant. Ignoring and continuing.`);
+                const reason = `vaultPasswords.csv is somehow nonexistant. Ignoring and continuing.`
+                metaLog("database", "WARNING", reason);
+                errors.push(new CustomError(reason, "WARNING", "VAULTPASSWORDS_NONEXISTANT"));
             }
         } else {
-            metaLog("database", "ERROR",
-            `Encountered unrecognized error "${message}" while renaming vaultPasswords.csv.`)
+            const reason = `Encountered unrecognized error "${message}" while renaming vaultPasswords.csv.`;
+            metaLog("database", "ERROR", reason);
+            errors.push(new CustomError(reason, "ERROR", code));
         }
     });
     await fs.rename(tempFilePath, realFilePath).catch(error => {
         const message = (error as Error).message;
-        metaLog("database", "ERROR",
-        `There was an error "${message}" renaming tempVaultPasswords.csv to vaultPasswords.csv.`);
+        const code = (error as NodeJS.ErrnoException).code;
+        const reason = `There was an error "${message}" renaming tempVaultPasswords.csv to vaultPasswords.csv.`;
+        metaLog("database", "ERROR", reason);
+        errors.push(new CustomError(reason, "ERROR", code));
     });
     await fs.unlink(oldFilePath).catch(error => {
         const message = (error as Error).message;
         const code = (error as NodeJS.ErrnoException).code;
         if(code === "ENOENT") {
             if(!firstVaultSave) {
-                metaLog("database", "ERROR",
-                `There was an error unlinking vaultPasswords.csv.old because it does not exist.`);
+                const reason = `There was an error unlinking vaultPasswords.csv.old because it does not exist.`;
+                metaLog("database", "ERROR", reason);
+                errors.push(new CustomError(reason, "ERROR", "VAULTPASSWORDS_OLD_NONEXISTANT"))
             }
         } else {
-            metaLog("database", "ERROR",
-            `Encountered unrecognized error "${message}" while unlinking vaultPasswords.csv.old.`);
+            const reason = `Encountered unrecognized error "${message}" while unlinking vaultPasswords.csv.old.`;
+            metaLog("database", "ERROR", reason);
+            errors.push(new CustomError(reason, "ERROR", code));
         }
     });
         
@@ -381,7 +435,12 @@ async function saveVaultPasswordsToFile() {
         firstVaultSave = false;
     }
     
-    metaLog("database", "INFO", "Finished saving vault passwords from in-memory database to file.");
+    if(errors.length == 0) {
+        metaLog("database", "INFO", "Successfully saved vault passwords from in-memory database to file.");
+    } else {
+        metaLog("database", "INFO", "Saved vault passwords from in-memory database to file with warnings / errors.");
+    }
+    return errors;
 }
 
 async function localSetVaultPassword(vault: string, password: string) {
