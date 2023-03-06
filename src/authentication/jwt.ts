@@ -62,7 +62,7 @@ class JWT {
         return this;
     }
     
-    getToken(secret?: string) {
+    getToken(secret?: string): string {
         if(this.token === "") {
             if(secret === undefined) {
                 throw new Error("The JSON Web Token has not been finalized yet. (Provide a secret to automatically finalize.)");
@@ -82,7 +82,7 @@ class JWT {
      * @param secret Optional secret if the token has not been finalized yet.
      * @returns 
      */
-    getEncryptedToken(aesKey: string, secret?: string) {
+    getEncryptedToken(aesKey: string, secret?: string): string {
         if(this.token === "") {
             if(secret === undefined) {
                 throw new Error("The JSON Web Token has not been finalized yet.");
@@ -110,12 +110,13 @@ class JWT {
      * Returns false if the JWT format is invalid (not 3 parts separated by dots).
      * 
      * Throws a CustomError if the secret is not a compact hex string. (`NOT_HEX_STRING`)
+     * This means setup error.
      * 
      * @param token 
      * @param secret The secret in the form of a compact hex string.
      * @returns 
      */
-    static #verify(token: string, secret: string): boolean | CustomError {
+    static #verify(token: string, secret: string): boolean {
         if(!(/^[a-fA-F0-9]+$/.test(secret))) {
             throw new CustomError("Secret must be a hex string. (No 0x)", "ERROR", "NOT_HEX_STRING");
         }
@@ -141,7 +142,7 @@ class JWT {
      * 
      * Returns null if the token does not verify. Ex: invalid format
      * 
-     * Throws an error on invalid secret.
+     * Throws an error on invalid secret. Error means setup error.
      * 
      * Note on payload structure: Assuming that we issued the token and sign it
      * with our signature, we can guarantee that the token structure is as we
@@ -149,7 +150,7 @@ class JWT {
      * 
      * @param token 
      * @param secret Must be hex string
-     * @returns [Header, Payload] | CustomError
+     * @returns [Header, Payload] | null
      */
     static unwrap(token: string, secret: string): [Header, Payload] | null {
         if(!JWT.#verify(token, secret)) {
@@ -171,9 +172,9 @@ class JWT {
      * Returns null if the token does not verify. Ex: invalid
      * format, bad initialization vector.
      * 
-     * Throws an error on invalid AES key
+     * Throws an error on invalid AES key. Error means setup error.
      * 
-     * Throws an error on invalid secret.
+     * Throws an error on invalid secret. Error means setup error.
      * 
      * @param encryptedToken 
      * @param aesKey Must be 64 character hex string

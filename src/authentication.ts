@@ -67,8 +67,15 @@ function createToken(vaults: string[]) {
     return token;
 }
 
-// Returns a new token (with updated expirations) with the vault added.
-// MUST VERIFY TOKEN IS VALID before calling this function.
+/**
+ * Returns a new token (with updated expirations) with the vault added.
+ * 
+ * MUST VERIFY TOKEN IS VALID BEFORE CALLING!!!
+ * 
+ * @param token 
+ * @param vault 
+ * @returns 
+ */
 function addNewVaultToToken(token: string, vault: string) {
     metaLog("authentication", "INFO",
     `Adding new vault ${vault} to token ${token}`);
@@ -80,9 +87,17 @@ function addNewVaultToToken(token: string, vault: string) {
     return createToken(currentVaults);
 }
 
-// Returns a new token (with updated expirations) with the vault removed.
-// MUST VERIFY TOKEN IS VALID before calling this function.
-// A token with an empty array as its "vaults" field is safe.
+/**
+ * Returns a new token (with updated expirations) with the vault removed.
+ * 
+ * A token with an empty array as its "vaults" field is safe.
+ * 
+ * MUST VERIFY TOKEN IS VALID BEFORE CALLING!!!
+ * 
+ * @param token 
+ * @param vault 
+ * @returns 
+ */
 function removeVaultFromToken(token: string, vault: string) {
     metaLog("authentication", "INFO",
     `Removing vault ${vault} from token ${token}`);
@@ -94,10 +109,17 @@ function removeVaultFromToken(token: string, vault: string) {
     return createToken(currentVaults);
 }
 
-// Issues a new token with updated expiration.
-// MUST VERIFY TOKEN IS VALID before calling this function.
-// Useful for short lived expirations for extra security, but refreshes
-// every time the user logs back in / accesses vault.
+/**
+ * Issues a new token with updated expiration.
+ * 
+ * Useful for short lived expirations for extra security, but refreshes every time
+ * the user logs back in / accesses vault.
+ * 
+ * MUST VERIFY TOKEN IS VALID BEFORE CALLING!!!
+ * 
+ * @param token 
+ * @returns 
+ */
 function refreshTokenExpiration(token: string) {
     metaLog("authentication", "INFO",
     `Refreshing token ${token}`);
