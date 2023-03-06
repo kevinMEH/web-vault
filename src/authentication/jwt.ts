@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHmac, randomFillSync } from "crypto";
+import CustomError from "../custom_error.js";
 import { unixTime } from "../helper.js";
 
 type Header = {
@@ -45,7 +46,10 @@ class JWT {
         return this;
     }
     
-    // Secret must be compact hex string.
+    /**
+     * @param secret The secret represented as a compact hex string (No 0x)
+     * @returns this, the finalized JWT object.
+     */
     finalize(secret: string) {
         if(!(/^[a-fA-F0-9]+$/.test(secret))) {
             throw new Error("Secret must be a hex string. (No 0x)");
@@ -70,10 +74,14 @@ class JWT {
     }
     
     static algorithm = "aes-256-cbc";
-    // Encrypts token using AES.
-    // 1st part of token will be the initialization vector,
-    // 2nd part will be the encrypted token. Separated by a "."
-    // AES key must be compact hex string
+    /**
+     * Encrypts token using AES. 1st part of token will be the initialization vector,
+     * 2nd part will be the encrypted token. Parts separated by a ".".
+     * 
+     * @param aesKey Compact hex string representation of the AES key.
+     * @param secret Optional secret if the token has not been finalized yet.
+     * @returns 
+     */
     getEncryptedToken(aesKey: string, secret?: string) {
         if(this.token === "") {
             if(secret === undefined) {
@@ -94,13 +102,26 @@ class JWT {
     }
     
 
-    static #verify(token: string, secret: string) {
+    /**
+     * Given a secret, verifies the JWT.
+     * 
+     * Returns true / false if the JWT is verified or not.
+     * 
+     * Returns false if the JWT format is invalid (not 3 parts separated by dots).
+     * 
+     * Throws a CustomError if the secret is not a compact hex string. (`NOT_HEX_STRING`)
+     * 
+     * @param token 
+     * @param secret The secret in the form of a compact hex string.
+     * @returns 
+     */
+    static #verify(token: string, secret: string): boolean | CustomError {
+        if(!(/^[a-fA-F0-9]+$/.test(secret))) {
+            throw new CustomError("Secret must be a hex string. (No 0x)", "ERROR", "NOT_HEX_STRING");
+        }
         const parts: string[] = token.split(".");
         if(parts.length !== 3) {
-            throw new Error("Invalid JSON Web Token format.");
-        }
-        if(!(/^[a-fA-F0-9]+$/.test(secret))) {
-            throw new Error("Secret must be a hex string. (No 0x)");
+            return false;
         }
         const body = parts[0] + "." + parts[1];
         const hmac = createHmac("sha256", Buffer.from(secret, "hex"));
@@ -109,40 +130,69 @@ class JWT {
         return signature === parts[2];
     }
     
-    // Token will be verified before unwrapping.
-    // Header and payload structure will not be verified.
-    // Expiration will not be checked.
-    // Throws error on bad token, secret, or signature.
-    // 
-    // Note on payload structure: Assuming that we issue the token, we should know
-    // and be able to expect the format the token is in. If user tries to pass in
-    // a token with modified header keys and values, the signature will not verify
-    // and an error will be thrown before the bad payload and header is returned.
-    static unwrap(token: string, secret: string): [Header, Payload] {
+    /**
+     * Token will be verified before unwrapping.
+     * 
+     * Header and payload structure will not be verified.
+     * 
+     * Expiration will not be checked.
+     * 
+     * Returns the Header and Payload on success.
+     * 
+     * Returns null if the token does not verify. Ex: invalid format
+     * 
+     * Throws an error on invalid secret.
+     * 
+     * Note on payload structure: Assuming that we issued the token and sign it
+     * with our signature, we can guarantee that the token structure is as we
+     * issued or else the signature will not match.
+     * 
+     * @param token 
+     * @param secret Must be hex string
+     * @returns [Header, Payload] | CustomError
+     */
+    static unwrap(token: string, secret: string): [Header, Payload] | null {
         if(!JWT.#verify(token, secret)) {
-            throw new Error("Token signature does not match header and body.");
+            return null;
         }
         const parts = token.split(".");
         return [objectFromBase64(parts[0]) as Header, objectFromBase64(parts[1]) as Payload];
     }
     
-    // Token will be decrypted, verified, and unwrapped.
-    // Header and payload structure will not be verified.
-    // Expiration will not be checked.
-    // Will throw error on bad token structure, bad initialization vector.
-    static unwarpEncrypted(encryptedToken: string, aesKey: string, secret: string): [Header, Payload] {
+    /**
+     * Token will be decrypted, verified, and unwrapped.
+     * 
+     * Header and payload structure will not be verified.
+     * 
+     * Expiration will not be checked.
+     * 
+     * Returns the Header and Payload on success.
+     * 
+     * Returns null if the token does not verify. Ex: invalid
+     * format, bad initialization vector.
+     * 
+     * Throws an error on invalid AES key
+     * 
+     * Throws an error on invalid secret.
+     * 
+     * @param encryptedToken 
+     * @param aesKey Must be 64 character hex string
+     * @param secret Must be hex string
+     * @returns 
+     */
+    static unwarpEncrypted(encryptedToken: string, aesKey: string, secret: string): [Header, Payload] | null {
         if(!(/^[a-fA-F0-9]+$/.test(aesKey)) || aesKey.length != 64) { // Using AES 256
             throw new Error("AES key must be a hex string length 64 (256 bits). (No 0x)");
         }
-
+        
         const encryptedParts = encryptedToken.split(".");
         if(encryptedParts.length !== 2) {
-            throw new Error("Invalid encrypted token format.");
+            return null;
         }
 
         const initVector = Uint8Array.from(Buffer.from(encryptedParts[0], "base64url"));
         if(initVector.length !== 16) {
-            throw new Error("Bad initialization vector length. Expected 16 unsigned 8 bit integers, received " + initVector.length + ".");
+            return null;
         }
 
         const decipher = createDecipheriv(JWT.algorithm, Buffer.from(aesKey, "hex"), initVector);
