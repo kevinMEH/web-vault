@@ -66,7 +66,7 @@ test("Logging to a file", async () => {
 // ------------------
 // ------------------
 
-import JWT from "../src/authentication/jwt.js";
+import JWT, { Header, Payload } from "../src/authentication/jwt.js";
 
 describe("JSON Web Token tests", () => {
     it("Generates a JWT", () => {
@@ -80,7 +80,7 @@ describe("JSON Web Token tests", () => {
     
     it("Verifies and extracts header and payload from JWT", () => {
         const [header, payload] = JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
-            "4B6576696E20697320636F6F6C");
+            "4B6576696E20697320636F6F6C") as [Header, Payload];
         assert(header.alg === "HS256");
         assert(header.typ !== "asd")
         assert(payload.issuerIsCool === true);
@@ -88,24 +88,28 @@ describe("JSON Web Token tests", () => {
         assert(payload.sub === undefined);
     })
 
-    it("Identifies incorrect signature and returns an error", expectError(() => {
-        JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJi",
-            "4B6576696E20697320636F6F6C");
-    }, "Token signature does not match header and body"));
+    it("Returns null on incorrect signature", () => {
+        assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJi",
+            "4B6576696E20697320636F6F6C") === null);
+    });
 
-    it("Identifies incorrect signature and returns an error", expectError(() => {
-        JWT.unwrap("bad.token.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
-            "4B6576696E20697320636F6F6C");
-    }, "Token signature does not match header and body"));
+    it("Returns null on incorrect signature", () => {
+        assert(JWT.unwrap("bad.token.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
+            "4B6576696E20697320636F6F6C") === null);
+    });
 
-    it("Correct signature but incorrect secret returns an error", expectError(() => {
-        JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
-            "4B6576696E20697320636F6F6D");
-    }, "Token signature does not match header and body"));
+    it("Returns null on correct signature but incorrect secret", () => {
+        assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
+            "4B6576696E20697320636F6F6D") === null);
+    });
 
-    it("Detects bad token formatting", expectError(() => {
-        JWT.unwrap("bad.token", "4B6576696E20697320636F6F6C");
-    }, "Invalid JSON Web Token format."));
+    it("Returns null on bad token formatting", () => {
+        assert(JWT.unwrap("bad.token", "4B6576696E20697320636F6F6C") === null);
+    });
+    
+    it("Throws error on bad secret", expectError(() => {
+        JWT.unwrap("asdf.asdf.asdf", "Z");
+    }, "must be a hex string"));
     
     it("Encrypts and decrypts token using AES 256", () => {
         const aesKey = "546869732069732061203634206368617261637465722068657820737472696e";
@@ -115,7 +119,7 @@ describe("JSON Web Token tests", () => {
             .getEncryptedToken(aesKey, secret);
         assert(encryptedToken.split(".").length === 2);
         
-        const [header, payload] = JWT.unwarpEncrypted(encryptedToken, aesKey, secret);
+        const [header, payload] = JWT.unwarpEncrypted(encryptedToken, aesKey, secret) as [Header, Payload];
         assert(header.typ === "JWT");
         assert(payload.iss === "Kevin");
         assert(payload.asdf === undefined);
