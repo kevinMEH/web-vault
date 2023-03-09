@@ -31,12 +31,11 @@ const baseVaultLoggingDirectory = process.env.LOGGING_DIRECTORY || path.join(pro
  * 
  * Vault logging directory may exist, as previously deleted vaults will retain their
  * logging directory for debugging and security purposes. If that happens, the creation
- * will proceed, but an INFO message will be returned.
- * (`LOGGING_DIRECTORY_EXISTS`)
+ * will proceed and nothing will be returned.
  * 
  * If an unknown error is encountered, that error will be returned.
  * 
- * Returns any errors / infos if any were encountered, or null if everything goes successfully.
+ * Returns any errors if any were encountered, or null if everything goes successfully.
  * 
  * @param vaultName 
  * @param password 
@@ -86,7 +85,6 @@ async function createNewVault(vaultName: string, password: string): Promise<Cust
         if(code === "EEXIST") {
             metaLog("admin", "INFO",
             `Tried to create logging directory for newly created vault ${vaultName} inside ${baseVaultLoggingDirectory}, but directory already exists. This may be because the logging directory was already created from a previous creation of this same vault.`);
-            returnValue = new CustomError(`Trying to create a logging directory for newly created vault ${vaultName}, but a directory already exists. This is normal if a vault with the same name has already been created before.`, "INFO", "LOGGING_DIRECTORY_EXISTS");
         } else {
             metaLog("admin", "ERROR",
             `Tried to create logging directory for newly created vault ${vaultName} inside ${baseVaultLoggingDirectory}, but encountered unrecognized error "${message}" instead. Please check if the logging directory has been created, and if not, create it manually.`);
@@ -136,17 +134,18 @@ async function changeVaultPassword(vaultName: string, password: string): Promise
  * Returns an error if the vault directory does not exist. (`VAULT_DIRECTORY_NONEXISTANT`)
  * 
  * @param vaultName 
- * @returns Promise<CustomError | null>
+ * @returns Promise<Array<CustomError>>
  */
-async function deleteVault(vaultName: string): Promise<CustomError | null> {
-    let returnValue = null;
+async function deleteVault(vaultName: string): Promise<Array<CustomError>> {
     if(!/^([a-z]|[A-Z]|[0-9]|_|-)+$/.test(vaultName)) {
-        return new CustomError(`${vaultName} is not a valid vault name. The name may only consist of uppercase letters, lowercase letters, numbers, underscores (_), and dashes (-).`,
-            "ERROR", "INVALID_NAME");
+        return [ new CustomError(`${vaultName} is not a valid vault name. The name may only consist of uppercase letters, lowercase letters, numbers, underscores (_), and dashes (-).`,
+            "ERROR", "INVALID_NAME") ];
     }
+    
+    const returnValue: Array<CustomError> = [];
     if(!await vaultExists(vaultName)) {
         metaLog("admin", "ERROR", `${vaultName} does not exist in the database. Deletion still proceeding.`);
-        returnValue = new CustomError(`${vaultName} does not exist in the database.`, "ERROR", "VAULT_NONEXISTANT");
+        returnValue.push(new CustomError(`${vaultName} does not exist in the database.`, "ERROR", "VAULT_NONEXISTANT"));
     } else {
         await deleteVaultPassword(vaultName);
     }
@@ -159,11 +158,11 @@ async function deleteVault(vaultName: string): Promise<CustomError | null> {
         if(code === "ENOENT") {
             metaLog("admin", "WARNING",
             `Trying to delete ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} but the vault does not exist.`);
-            returnValue = new CustomError(`${vaultName} does not have a corresponding directory in ${baseVaultDirectory}`, "ERROR", "VAULT_DIRECTORY_NONEXISTANT");
+            returnValue.push(new CustomError(`${vaultName} does not have a corresponding directory in ${baseVaultDirectory}`, "ERROR", "VAULT_DIRECTORY_NONEXISTANT"));
         } else {
             metaLog("admin", "ERROR",
             `Trying to delete ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} but encountered unrecognized error "${message}".`);
-            returnValue = new CustomError(message, "ERROR", code);
+            returnValue.push(new CustomError(message, "ERROR", code));
         }
     }
     
