@@ -2,17 +2,19 @@ import { createCipheriv, createDecipheriv, createHmac, randomFillSync } from "cr
 import CustomError from "../custom_error.js";
 import { unixTime } from "../helper.js";
 
-type Header = {
+export type Header = {
     alg: string,
     typ: string
 };
 
-type Payload = {
+export type Payload = {
     iss: string,
     exp: number,
     iat: number,
     [key: string]: any
 };
+
+export type UnwrappedToken = [Header, Payload, string];
 
 class JWT {
 

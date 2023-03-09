@@ -1,4 +1,4 @@
-import JWT from "./authentication/jwt.js";
+import JWT, { UnwrappedToken } from "./authentication/jwt.js";
 import {
     localAddOutdatedToken,
     localDeleteVaultPassword,
@@ -32,22 +32,13 @@ const verifyVaultPasswordFunction = process.env.REDIS ? redisVerifyVaultPassword
 const vaultExistsFunction = process.env.REDIS ? redisVaultExists : (vault: string) => Promise.resolve(localVaultExists(vault));
 const deleteVaultPasswordFunction = process.env.REDIS ? redisDeleteVaultPassword : localDeleteVaultPassword;
 
-async function isValidToken(token: string) {
-    if(await isOutdatedTokenFunction(token)) return false;
-    try {
-        const [_header, payload] = JWT.unwrap(token, secret);
-        return payload.exp > unixTime();
-    } catch(error) {
-        const errorMessage = (error as Error).message;
-        if(errorMessage === "Token signature does not match header and body.")
-            return false;
-        if(errorMessage === "Invalid JSON Web Token format.")
-            return false;
-        
-        metaLog("authentication", "ERROR",
-        `Encountered unknown error "${errorMessage}" while validating token "${token}". Returned false.`);
-        return false;
-    }
+async function getUnwrappedToken(token: string): Promise<UnwrappedToken | null> {
+    if(await isOutdatedTokenFunction(token)) return null;
+    const unwrapped = JWT.unwrap(token, secret);
+    if(unwrapped == null) return null;
+    const [header, payload] = unwrapped;
+    if(payload.exp < unixTime()) return null;
+    return [header, payload, token];
 }
 
 function outdateToken(token: string, expireAt: number) {
@@ -72,14 +63,13 @@ function createToken(vaults: string[]) {
  * 
  * MUST VERIFY TOKEN IS VALID BEFORE CALLING!!!
  * 
- * @param token 
+ * @param unwrappedToken 
  * @param vault 
- * @returns 
+ * @returns New token as a base64url string
  */
-function addNewVaultToToken(token: string, vault: string) {
-    metaLog("authentication", "INFO",
-    `Adding new vault ${vault} to token ${token}`);
-    const [_header, payload] = JWT.unwrap(token, secret);
+function addNewVaultToToken(unwrappedToken: UnwrappedToken, vault: string): string {
+    const [_header, payload, token] = unwrappedToken;
+    metaLog("authentication", "INFO", `Adding new vault ${vault} to token ${token}`);
     const currentVaults = payload.vaults;
     if(!currentVaults.includes(vault))
         currentVaults.push(vault);
@@ -90,18 +80,18 @@ function addNewVaultToToken(token: string, vault: string) {
 /**
  * Returns a new token (with updated expirations) with the vault removed.
  * 
- * A token with an empty array as its "vaults" field is safe.
+ * A token with an empty array as its "vaults" field is safe. An invalid vault is safe.
  * 
  * MUST VERIFY TOKEN IS VALID BEFORE CALLING!!!
  * 
- * @param token 
+ * @param unwrappedToken 
  * @param vault 
  * @returns 
  */
-function removeVaultFromToken(token: string, vault: string) {
+function removeVaultFromToken(unwrappedToken: UnwrappedToken, vault: string) {
+    const [_header, payload, token] = unwrappedToken;
     metaLog("authentication", "INFO",
     `Removing vault ${vault} from token ${token}`);
-    const [_header, payload] = JWT.unwrap(token, secret);
     const currentVaults: string[] = payload.vaults;
     const index = currentVaults.indexOf(vault);
     if(index !== -1) currentVaults.splice(index, 1);
@@ -117,13 +107,12 @@ function removeVaultFromToken(token: string, vault: string) {
  * 
  * MUST VERIFY TOKEN IS VALID BEFORE CALLING!!!
  * 
- * @param token 
- * @returns 
+ * @param unwrappedToken
+ * @returns The updated token as a string
  */
-function refreshTokenExpiration(token: string) {
-    metaLog("authentication", "INFO",
-    `Refreshing token ${token}`);
-    const [_header, payload] = JWT.unwrap(token, secret);
+function refreshTokenExpiration(unwrappedToken: UnwrappedToken): string {
+    const [_header, payload, token] = unwrappedToken;
+    metaLog("authentication", "INFO",`Refreshing token ${token}`);
     const vaults = payload.vaults;
     outdateToken(token, payload.exp);
     return createToken(vaults);
@@ -170,7 +159,7 @@ async function deleteVaultPassword(vault: string) {
 }
 
 export {
-    isValidToken,
+    getUnwrappedToken,
     createToken,
     addNewVaultToToken,
     removeVaultFromToken,
