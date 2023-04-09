@@ -272,6 +272,182 @@ describe("Tests hashing for password", () => {
     });
 });
 
+import { File, Directory } from "../src/vfs.js";
+
+describe("Tests virtual file system", () => {
+    it("Basic File and Directory tests", () => {
+        const file = new File("hello.txt", 40);
+        const file2 = new File("world.png", 8044);
+        const directory = new Directory("project", [file, file2]);
+        assert(directory.getAny("hello.txt") === file);
+        directory.removeEntry(file, false);
+        assert(directory.getAny("hello.txt") === null);
+    });
+    
+    it("Tests duplication", () => {
+        const file = new File("hello.txt", 40);
+        const file2 = new File("world.png", 8044);
+        const directory = new Directory("project", [file, file2]);
+        
+        const dupedFile = file.duplicate();
+        assert(dupedFile !== file);
+        assert(dupedFile.name === file.name);
+        assert(dupedFile.byteSize === file.byteSize);
+        
+        const dupedDirectory = directory.duplicate();
+        assert(directory !== dupedDirectory);
+        assert(directory.getFile("hello.txt"));
+        assert(dupedDirectory.getFile("hello.txt"));
+        assert(dupedDirectory.getFile("hello.txt") !== directory.getFile("hello.txt"));
+        assert(dupedDirectory.getFile("hello.txt")?.byteSize === directory.getFile("hello.txt")?.byteSize);
+    });
+    
+    it("Tests flattening and reattaching", () => {
+        const file1 = new File("hello.txt", 40);
+        const file2 = new File("world.png", 8044);
+        const directory = new Directory("project", [file1, file2]);
+        
+        const other1 = new File("other", 8);
+        const other2 = new File("another", 3);
+        const otherDirectory = new Directory("other_stuff", [other1, other2]);
+        const otherParent = new Directory("other_parent", [otherDirectory]);
+        
+        const root = new Directory("root", [directory, otherParent]);
+        
+        const fullFlatRoot = root.flat(10);
+        
+        const root2 = new Directory("root", []);
+        root2.update(fullFlatRoot);
+        
+        assert(root2.getDirectory("project") !== null);
+        assert(root2.getDirectory("other_parent") !== null);
+
+        assert(root2.getDirectory("project")?.contents.length === 2);
+        assert(root2.getDirectory("project")?.getFile("hello.txt"));
+        assert(root2.getDirectory("project")?.getFile("world.png"));
+        assert(root2.getDirectory("project")?.getFile("hello.txt")?.byteSize === 40);
+        assert(root2.getDirectory("project")?.getFile("world.png")?.byteSize === 8044);
+        
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff"));
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other"));
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another"));
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.byteSize === 8);
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize === 3);
+    });
+    
+    it("Testing stringifying, parsing, and reattaching", () => {
+        const file1 = new File("hello.txt", 40);
+        const file2 = new File("world.png", 8044);
+        const directory = new Directory("project", [file1, file2]);
+        
+        const other1 = new File("other", 8);
+        const other2 = new File("another", 3);
+        const otherDirectory = new Directory("other_stuff", [other1, other2]);
+        const otherParent = new Directory("other_parent", [otherDirectory]);
+        
+        const root = new Directory("root", [directory, otherParent]);
+        
+        const stringifiedRoot = root.stringify(10);
+        const parsedRoot = JSON.parse(stringifiedRoot);
+        
+        const root2 = new Directory("root", []);
+        root2.update(parsedRoot);
+        
+        assert(root2.getDirectory("project") !== null);
+        assert(root2.getDirectory("other_parent") !== null);
+
+        assert(root2.getDirectory("project")?.contents.length === 2);
+        assert(root2.getDirectory("project")?.getFile("hello.txt"));
+        assert(root2.getDirectory("project")?.getFile("world.png"));
+        assert(root2.getDirectory("project")?.getFile("hello.txt")?.byteSize === 40);
+        assert(root2.getDirectory("project")?.getFile("world.png")?.byteSize === 8044);
+        
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff"));
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other"));
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another"));
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.byteSize === 8);
+        assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize === 3);
+    });
+    
+    it("Tests partially flattened root", () => {
+        const file1 = new File("hello.txt", 40);
+        const file2 = new File("world.png", 8044);
+        const directory = new Directory("project", [file1, file2]);
+        
+        const other1 = new File("other", 8);
+        const other2 = new File("another", 3);
+        const otherDirectory = new Directory("other_stuff", [other1, other2]);
+        const otherParent = new Directory("other_parent", [otherDirectory]);
+        
+        const root = new Directory("root", [directory, otherParent]);
+        
+        const rootDepth0 = new Directory("root", []);
+        rootDepth0.update(root.flat(0));
+        assert(root.contents.length === 2);
+        assert(rootDepth0.contents.length === 0);
+        
+        const rootDepth1 = new Directory("root", []);
+        rootDepth1.update(root.flat(1));
+        assert(rootDepth1.contents.length === 2);
+        assert(rootDepth1.getDirectory("project"));
+        assert(rootDepth1.getDirectory("project")?.contents.length === 0);
+        assert(rootDepth1.getDirectory("other_parent"));
+        assert(rootDepth1.getDirectory("other_parent")?.contents.length === 0);
+        
+        const rootDepth2 = new Directory("root", []);
+        rootDepth2.update(root.flat(2));
+        assert(rootDepth2.contents.length === 2);
+        assert(rootDepth2.getDirectory("other_parent"));
+        assert(rootDepth2.getDirectory("other_parent")?.contents.length === 1);
+        assert(rootDepth2.getDirectory("other_parent")?.getDirectory("other_stuff")?.contents.length === 0);
+        
+        const rootDepthAll = new Directory("root", []);
+        rootDepthAll.update(root.flat(99));
+        assert(rootDepthAll.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another"));
+        assert(rootDepthAll.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize === other2.byteSize);
+    })
+    
+    it("Tests root self-updating multiple times", () => {
+        const file1 = new File("hello.txt", 40);
+        const file2 = new File("world.png", 8044);
+        const directory = new Directory("project", [file1, file2]);
+        
+        const other1 = new File("other", 8);
+        const other2 = new File("another", 3);
+        const otherDirectory = new Directory("other_stuff", [other1, other2]);
+        const otherParent = new Directory("other_parent", [otherDirectory]);
+        
+        const root = new Directory("root", [directory, otherParent]);
+        
+        const newRoot = new Directory("root", []);
+
+        const rootDepthAll = root.flat(10);
+        newRoot.update(rootDepthAll);
+        assert(newRoot.getDirectory("project"));
+        assert(newRoot.getDirectory("project")?.contents.length === 2);
+        assert(newRoot.getDirectory("project")?.getFile("hello.txt"));
+        
+        const rootDepth0 = root.flat(0);
+        newRoot.update(rootDepth0);
+        assert(newRoot.contents.length === 0);
+        assert(newRoot.lastModified.toJSON() === root.lastModified.toJSON());
+        
+        const rootDepth1 = root.flat(1);
+        newRoot.update(rootDepth1);
+        assert((newRoot.contents.length as any) === 2);
+        assert(newRoot.getDirectory("other_parent"));
+        assert(newRoot.getDirectory("other_parent")?.contents.length === 0);
+        
+        root.removeEntry(directory, false);
+        
+        const rootDepth2 = root.flat(2);
+        newRoot.update(rootDepth2);
+        assert((newRoot.contents.length as any) === 1);
+        assert(newRoot.getDirectory("other_parent"));
+        assert(newRoot.getDirectory("other_parent")?.contents.length === 1);
+    });
+})
+
 while(status !== 2) {
     await new Promise(resolve => setTimeout(resolve, 1000));
 }
