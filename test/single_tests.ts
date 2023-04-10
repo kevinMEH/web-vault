@@ -446,7 +446,32 @@ describe("Tests virtual file system", () => {
         assert(newRoot.getDirectory("other_parent"));
         assert(newRoot.getDirectory("other_parent")?.contents.length === 1);
     });
-})
+});
+
+import { generateVFS } from "../src/vfs_helpers.js";
+
+describe("Tests Virtual File System helpers", () => {
+    it("Tests generation of VFS", async () => {
+        // This project's root
+        const projectRoot = await generateVFS(".");
+
+        assert(projectRoot.getDirectory("test"));
+        assert(projectRoot.getDirectory("test")?.contents.length === 3);
+        assert(projectRoot.getDirectory("test")?.getFile("context_tests.ts"));
+        assert(projectRoot.getDirectory("test")?.getFile("context_tests.ts")?.lastModified.toJSON()
+            === new Date((await fs.stat("./test/context_tests.ts")).mtime).toJSON());
+        assert(projectRoot.getDirectory("test")?.getFile("expect_error.ts"));
+        assert(projectRoot.getDirectory("test")?.getFile("expect_error.ts")?.lastModified.toJSON()
+            === new Date((await fs.stat("./test/expect_error.ts")).mtime).toJSON());
+        assert(projectRoot.getDirectory("test")?.getFile("single_tests.ts"));
+        assert(projectRoot.getDirectory("test")?.getFile("single_tests.ts")?.lastModified.toJSON()
+            === new Date((await fs.stat("./test/single_tests.ts")).mtime).toJSON());
+
+        assert(projectRoot.getDirectory("src"));
+        assert(projectRoot.getDirectory("vaults"));
+        assert(projectRoot.getDirectory("logs"));
+    });
+});
 
 while(status !== 2) {
     await new Promise(resolve => setTimeout(resolve, 1000));
