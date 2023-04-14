@@ -148,7 +148,13 @@ function verifyVaultPassword(vault: string, password: string) {
     return verifyVaultPasswordFunction(vault, hashedPassword);
 }
 
-function vaultExists(vault: string) {
+/**
+ * Checks if vault exists in the database
+ * 
+ * @param vault 
+ * @returns 
+ */
+function vaultExistsDatabase(vault: string) {
     return vaultExistsFunction(vault);
 }
 
@@ -167,6 +173,6 @@ export {
     refreshTokenExpiration,
     setVaultPassword,
     verifyVaultPassword,
-    vaultExists,
+    vaultExistsDatabase,
     deleteVaultPassword
 };
