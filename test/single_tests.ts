@@ -456,20 +456,17 @@ describe("Tests Virtual File System helpers", () => {
         const projectRoot = await generateVFS(".");
 
         assert(projectRoot.getDirectory("test"));
-        assert(projectRoot.getDirectory("test")?.contents.length === 3);
-        assert(projectRoot.getDirectory("test")?.getFile("context_tests.ts"));
-        assert(projectRoot.getDirectory("test")?.getFile("context_tests.ts")?.lastModified.toJSON()
-            === new Date((await fs.stat("./test/context_tests.ts")).mtime).toJSON());
-        assert(projectRoot.getDirectory("test")?.getFile("expect_error.ts"));
-        assert(projectRoot.getDirectory("test")?.getFile("expect_error.ts")?.lastModified.toJSON()
-            === new Date((await fs.stat("./test/expect_error.ts")).mtime).toJSON());
         assert(projectRoot.getDirectory("test")?.getFile("single_tests.ts"));
         assert(projectRoot.getDirectory("test")?.getFile("single_tests.ts")?.lastModified.toJSON()
             === new Date((await fs.stat("./test/single_tests.ts")).mtime).toJSON());
+        assert(projectRoot.getDirectory("test")?.getFile("expect_error.ts"));
+        assert(projectRoot.getDirectory("test")?.getFile("expect_error.ts")?.lastModified.toJSON()
+            === new Date((await fs.stat("./test/expect_error.ts")).mtime).toJSON());
 
         assert(projectRoot.getDirectory("src"));
         assert(projectRoot.getDirectory("vaults"));
         assert(projectRoot.getDirectory("logs"));
+        assert(projectRoot.getDirectory("logs")?.contents.length === 4);
     });
 });
 
