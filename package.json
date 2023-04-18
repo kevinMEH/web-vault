@@ -16,6 +16,9 @@
 
     "vault_tests_local": "ts-node-esm test/vault_tests.ts",
     "vault_tests_redis": "REDIS=true ts-node-esm test/vault_tests.ts",
+    
+    "controller_tests_local": "ts-node-esm test/controller_tests.ts",
+    "controller_tests_redis": "REDIS=true ts-node-esm test/controller_tests.ts",
 
     "test-all": "bash test/test_all.sh"
   },

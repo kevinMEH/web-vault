@@ -10,6 +10,7 @@ import fs from "fs/promises";
 import path from "path";
 import { metaLog } from "./logger.js";
 import { deleteVaultPassword, setVaultPassword, vaultExistsDatabase } from "./authentication.js";
+import { deleteVaultVFS, newVaultVFS } from "./controller.js";
 
 import CustomError from "./custom_error.js";
 
@@ -75,6 +76,8 @@ async function createNewVault(vaultName: string, password: string): Promise<Cust
             );
         }
     }
+    
+    await newVaultVFS(vaultName);
 
     let returnValue: CustomError | null = null;
     try {
@@ -148,6 +151,10 @@ async function deleteVault(vaultName: string): Promise<Array<CustomError>> {
         returnValue.push(new CustomError(`${vaultName} does not exist in the database.`, "ERROR", "VAULT_NONEXISTANT"));
     } else {
         await deleteVaultPassword(vaultName);
+    }
+    
+    if(!deleteVaultVFS(vaultName)) {
+        metaLog("admin", "ERROR", `${vaultName} VFS somehow does not exist. Deletion still proceeding.`);
     }
 
     try {

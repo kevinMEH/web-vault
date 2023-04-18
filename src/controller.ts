@@ -24,4 +24,140 @@ const baseVaultDirectory = process.env.VAULT_DIRECTORY || path.join(process.cwd(
 
 
 
-export { validNameRegex, validPathRegex };
+
+const vaultMap: Map<string, Directory> = new Map();
+await initializeVaults();
+
+
+
+
+// -------------------
+// -------------------
+// -------------------
+
+
+
+
+/**
+ * Initializes vaults based on the folders in the Base Vault Directory
+ */
+async function initializeVaults(): Promise<void> {
+    const vaults = await fs.readdir(baseVaultDirectory);
+    for(const vault of vaults) {
+        const vaultVFS = await generateVFS(path.join(baseVaultDirectory, vault));
+        vaultMap.set(vault, vaultVFS);
+    }
+}
+
+async function newVaultVFS(vault: string): Promise<void> {
+    const vaultVFS = await generateVFS(path.join(baseVaultDirectory, vault));
+    vaultMap.set(vault, vaultVFS);
+}
+
+/**
+ * Returns true if the vault exists and has been deleted, false if the vault does not exist.
+ * 
+ * @param vault 
+ * @returns 
+ */
+function deleteVaultVFS(vault: string): boolean {
+    return vaultMap.delete(vault);
+}
+
+/**
+ * Another test for a vault's existance, but this time depending on if the
+ * vault directory exists (based on the initializeVaults function) rather
+ * than if there is a database entry.
+ * 
+ * @param vault - Vault name string
+ * @returns
+ */
+function vaultDirectoryExists(vault: string): boolean {
+    return vaultMap.has(vault);
+}
+
+
+
+
+
+/**
+ * Returns the first directory of the path. Paths should be of the form:
+ * vault/folder/folder/file
+ * 
+ * Will not resolve dots, check for valid paths, check for valid vault, etc.
+ * But validate will take care of all of that. Specifically, it will check that
+ * it is inside the baseVaultDirectory already.
+ * 
+ * @param filePath 
+ * @returns 
+ */
+function getVaultFromPath(filePath: ValidatedPath): string {
+    return filePath.split("/")[0];
+}
+
+/**
+ * The file path should be of this form:
+ * vault/folder/folder/file
+ * 
+ * The validate function checks that the path is valid and if the vault exists.
+ * 
+ * Returns the resolved path or null if the path is bad.
+ * 
+ * @param filePath 
+ * @returns ValidatedPath | null
+ */
+function validate(filePath: string): ValidatedPath | null {
+    if(filePath.charAt(filePath.length - 1) === "/") {
+        // If for whatever reason ends in a /, remove it
+        filePath = filePath.substring(0, filePath.length - 1);
+    }
+    if(false === validPathRegex.test(filePath)) {
+        return null;
+    }
+    const vault = getVaultFromPath(filePath as ValidatedPath);
+    if(!vaultDirectoryExists(vault)) {
+        return null;
+    }
+    return filePath as ValidatedPath;
+}
+
+function getVaultVFS(vault: string): Directory | null {
+    const maybeDirectory = vaultMap.get(vault);
+    if(maybeDirectory !== undefined) return maybeDirectory;
+    else return null;
+}
+
+// function getContentsAt(path: ValidatedPath): (File | Directory)[] | null {
+//     const directories = path.split("/");
+//     let last: Directory | null | undefined = getVaultVFS(getVaultFromPath(directories[0] as ValidatedPath));
+//     for(let i = 1; i < directories.length; i++) {
+//         last = last?.getDirectory(directories[i]);
+//     }
+//     if(last === null || last === undefined) return null;
+//     return last.contents;
+// }
+
+function getDirectoryAt(path: ValidatedPath | null): Directory | null {
+    if(path === null) return null;
+    const directories = path.split("/");
+    let last: Directory | null | undefined = getVaultVFS(getVaultFromPath(directories[0] as ValidatedPath));
+    for(let i = 1; i < directories.length; i++) {
+        last = last?.getDirectory(directories[i]);
+    }
+    if(last === null || last === undefined) return null;
+    return last;
+}
+
+function getFileAt(path: ValidatedPath | null): File | null {
+    if(path === null) return null;
+    const directories = path.split("/");
+    let last: Directory | null | undefined = getVaultVFS(getVaultFromPath(directories[0] as ValidatedPath));
+    for(let i = 1; i < directories.length - 1; i++) {
+        last = last?.getDirectory(directories[i]);
+    }
+    const file: File | null | undefined = last?.getFile(directories[directories.length - 1]);
+    if(file === null || file === undefined) return null;
+    return file;
+}
+
+export { validNameRegex, validPathRegex, newVaultVFS, deleteVaultVFS, vaultDirectoryExists, validate, getDirectoryAt, getFileAt };

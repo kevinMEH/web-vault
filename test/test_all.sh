@@ -6,6 +6,9 @@ tests=(
 
     "vault_tests_local"
     "vault_tests_redis"
+    
+    "controller_tests_local"
+    "controller_tests_redis"
 )
 
 for item in "${tests[@]}"; do
