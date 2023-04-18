@@ -8,10 +8,16 @@
     "build": "next build",
     "start": "NEXT_MANUAL_SIG_HANDLE=true next start",
     "lint": "next lint",
-    "test-singles": "ts-node-esm test/single_tests.ts",
-    "test-context-local": "ts-node-esm test/context_tests.ts",
-    "test-context-redis": "REDIS=true ts-node-esm test/context_tests.ts",
-    "test-all": "npm run test-singles && echo '\n\n\n\n\n' && npm run test-context-local && echo '\n\n\n\n\n' && npm run test-context-redis"
+
+    "single_tests": "ts-node-esm test/single_tests.ts",
+
+    "auth_tests_local": "ts-node-esm test/auth_tests.ts",
+    "auth_tests_redis": "REDIS=true ts-node-esm test/auth_tests.ts",
+
+    "vault_tests_local": "ts-node-esm test/vault_tests.ts",
+    "vault_tests_redis": "REDIS=true ts-node-esm test/vault_tests.ts",
+
+    "test-all": "bash test/test_all.sh"
   },
   "dependencies": {
     "@next/font": "13.1.1",
