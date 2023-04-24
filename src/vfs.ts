@@ -270,31 +270,26 @@ class Directory {
     }
 
     /**
-     * Attach a new directory to the current one if it doesn't exist, if
-     * it exists then updates that directory with the object passed in.
+     * Attach a new entry to the current one given it does not exist.
+     * 
+     * About preexisting files and directories: Attach will only be called from
+     * update IF no item with the same name exists, so it is safe to assume the
+     * item and its name is unique in this directory.
      * 
      * This is used for client side updating of virtual file system.
      * 
      * @param flatItem 
      */
-    attach(flatItem: FlatFile | FlatDirectory): void {
-        const maybeCurrent = flatItem.isDirectory
-            ? this.getDirectory(flatItem.name)
-            : this.getFile(flatItem.name);
-        if(maybeCurrent !== null) {
-            // Attaching an existing file, just update
-            maybeCurrent.update(flatItem as any);
+    private attach(flatItem: FlatFile | FlatDirectory): void {
+        if(flatItem.isDirectory) {
+            // Create new directory, and then update itself.
+            const newDirectory = new Directory(flatItem.name, []);
+            newDirectory.update(flatItem as FlatDirectory);
+            this.addEntry(newDirectory, false);
         } else {
-            if(flatItem.isDirectory) {
-                // Create new directory, and then update itself.
-                const newDirectory = new Directory(flatItem.name, []);
-                newDirectory.update(flatItem as FlatDirectory);
-                this.addEntry(newDirectory, false);
-            } else {
-                // Create new file from flatFile
-                const newFile = new File(flatItem.name, (flatItem as FlatFile).byteSize, flatItem.lastModified);
-                this.addEntry(newFile, false);
-            }
+            // Create new file from flatFile
+            const newFile = new File(flatItem.name, (flatItem as FlatFile).byteSize, flatItem.lastModified);
+            this.addEntry(newFile, false);
         }
     }
     
@@ -312,10 +307,8 @@ class Directory {
         const newContents: (File | Directory)[] = [];
         const toAttach: (FlatFile | FlatDirectory)[] = [];
         for(const item of flatDirectory.contents) {
-            const maybeCurrent = item.isDirectory
-                ? this.getDirectory(item.name)
-                : this.getFile(item.name);
-            if(maybeCurrent !== null) {
+            const maybeCurrent = this.getAny(item.name);
+            if(maybeCurrent !== null && maybeCurrent.isDirectory === item.isDirectory) {
                 // Update existing, and push to new contents
                 maybeCurrent.update(item as any);
                 newContents.push(maybeCurrent);
