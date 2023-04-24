@@ -3,7 +3,7 @@ import path from "path";
 
 const baseLoggingDirectory = process.env.LOGGING_DIRECTORY || path.join(process.cwd(), "logs");
 
-async function metaLog(name: "database" | "authentication" | "admin", type: "ERROR" | "WARNING" | "INFO", message: string) {
+async function metaLog(name: "database" | "authentication" | "admin" | "vfs", type: "ERROR" | "WARNING" | "INFO", message: string) {
     const filePath = path.join(baseLoggingDirectory, name, logFileNameFromDate());
     message = (new Date()).toUTCString() + "\n" + type + ": " + message + "\n\n";
     await fs.appendFile(filePath, message, { mode: 0o640, flag: "a" });
