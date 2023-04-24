@@ -182,19 +182,28 @@ class Directory {
      * RealChange should be true only when updating the Directory after
      * performing serverside file operations.
      * 
-     * @param item 
+     * @param entry 
      * @param realChange 
      * @returns 
      */
-    removeEntry(item: File | Directory, realChange: boolean): boolean {
-        const index = this.contents.indexOf(item);
+    removeEntry(entry: File | Directory | string, realChange: boolean): boolean {
+        if(typeof entry === "string") {
+            for(let i = 0; i < this.contents.length; i++) {
+                if(this.contents[i].name === entry) {
+                    this.contents.splice(i, 1);
+                    if(realChange) this.modifiedNow();
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            const index = this.contents.indexOf(entry);
         if(index === -1) return false;
         
         this.contents.splice(index, 1);
-        if(realChange) {
-            this.modifiedNow();
-        }
+            if(realChange) this.modifiedNow();
         return true;
+    }
     }
     
     duplicate(newName: string = this.name): Directory {
