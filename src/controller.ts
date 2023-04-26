@@ -9,6 +9,7 @@ import { File, Directory } from "./vfs.js";
 import { generateVFS } from "./vfs_helpers.js";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
+export type VaultPath = ValidatedPath & { __type: "VaultPath" };
 
 /**
  * Allowed characters: Alpha numerical, "_", "-", ".", " "
@@ -72,8 +73,8 @@ function deleteVaultVFS(vault: string): boolean {
  * @param vault - Vault name string
  * @returns
  */
-function vaultDirectoryExists(vault: string): boolean {
-    return vaultMap.has(vault);
+function vaultDirectoryExists(vault: string | VaultPath): boolean {
+    return vaultMap.has(vault as string);
 }
 
 
@@ -91,8 +92,8 @@ function vaultDirectoryExists(vault: string): boolean {
  * @param filePath 
  * @returns 
  */
-function getVaultFromPath(filePath: ValidatedPath): string {
-    return filePath.split("/")[0];
+function getVaultFromPath(filePath: ValidatedPath): VaultPath {
+    return filePath.split("/")[0] as unknown as VaultPath;
 }
 
 /**

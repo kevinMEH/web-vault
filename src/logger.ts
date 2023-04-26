@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { VaultPath } from "./controller.js";
 
 const baseLoggingDirectory = process.env.LOGGING_DIRECTORY || path.join(process.cwd(), "logs");
 
@@ -20,8 +21,8 @@ async function metaLog(name: "database" | "authentication" | "admin" | "vfs", ty
  * @param type 
  * @param message 
  */
-async function vaultLog(vaultName: string, type: "ERROR" | "WARNING" | "INFO", message: string) {
-    const filePath = path.join(baseLoggingDirectory, "vaults", vaultName, logFileNameFromDate());
+async function vaultLog(vaultName: VaultPath, type: "ERROR" | "WARNING" | "INFO", message: string) {
+    const filePath = path.join(baseLoggingDirectory, "vaults", vaultName as unknown as string, logFileNameFromDate());
     // TODO: Switch to file descriptors and have array of file
     // descriptors to read and write to. (Performance reasons)
     message = (new Date()).toUTCString() + "\n" + type + ": " + message + "\n\n";
