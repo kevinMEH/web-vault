@@ -171,7 +171,7 @@ function getVaultVFS(vault: string): Directory | null {
 function getDirectoryAt(path: ValidatedPath | null): Directory | null {
     if(path === null) return null;
     const directories = path.split("/");
-    let last: Directory | null | undefined = getVaultVFS(getVaultFromPath(directories[0] as ValidatedPath));
+    let last: Directory | null | undefined = getVaultVFS(directories[0]);
     for(let i = 1; i < directories.length; i++) {
         last = last?.getDirectory(directories[i]);
     }
@@ -182,7 +182,7 @@ function getDirectoryAt(path: ValidatedPath | null): Directory | null {
 function getFileAt(path: ValidatedPath | null): File | null {
     if(path === null) return null;
     const directories = path.split("/");
-    let last: Directory | null | undefined = getVaultVFS(getVaultFromPath(directories[0] as ValidatedPath));
+    let last: Directory | null | undefined = getVaultVFS(directories[0]);
     for(let i = 1; i < directories.length - 1; i++) {
         last = last?.getDirectory(directories[i]);
     }
