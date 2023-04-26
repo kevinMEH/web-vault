@@ -158,15 +158,17 @@ function getVaultVFS(vault: string): Directory | null {
     else return null;
 }
 
-// function getContentsAt(path: ValidatedPath): (File | Directory)[] | null {
-//     const directories = path.split("/");
-//     let last: Directory | null | undefined = getVaultVFS(getVaultFromPath(directories[0] as ValidatedPath));
-//     for(let i = 1; i < directories.length; i++) {
-//         last = last?.getDirectory(directories[i]);
-//     }
-//     if(last === null || last === undefined) return null;
-//     return last.contents;
-// }
+function getAt(path: ValidatedPath | null): File | Directory | null {
+    if(path === null) return null;
+    const directories = path.split("/");
+    let last: Directory | null | undefined = getVaultVFS(directories[0]);
+    for(let i = 1; i < directories.length - 1; i++) {
+        last = last?.getDirectory(directories[i]);
+    }
+    const item: File | Directory | null | undefined = last?.getAny(directories[directories.length - 1]);
+    if(item === null || item === undefined) return null;
+    return item;
+}
 
 function getDirectoryAt(path: ValidatedPath | null): Directory | null {
     if(path === null) return null;
@@ -191,4 +193,4 @@ function getFileAt(path: ValidatedPath | null): File | null {
     return file;
 }
 
-export { validNameRegex, validPathRegex, newVaultVFS, deleteVaultVFS, vaultDirectoryExists, getVaultFromPath, getParentPath, splitParentChild, validate, getDirectoryAt, getFileAt };
+export { validNameRegex, validPathRegex, newVaultVFS, deleteVaultVFS, vaultDirectoryExists, getVaultFromPath, getParentPath, splitParentChild, validate, getAt, getDirectoryAt, getFileAt };
