@@ -232,11 +232,13 @@ class Directory {
      * 
      * This flat object can then be sent to the client.
      * 
+     * Pass in a super large number, or just -1 to copy the entire tree.
+     * 
      * @param depth
      * @returns 
      */
     flat(depth: number): FlatDirectory {
-        if(depth <= 0) {
+        if(depth == 0) {
             return {
                 name: this.name,
                 lastModified: this.lastModified.toJSON(),
