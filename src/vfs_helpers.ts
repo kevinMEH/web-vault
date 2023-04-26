@@ -5,6 +5,8 @@ import fs from "fs/promises";
  * Passed in directory must exist. Recursively generates a virtual
  * file system representation from the specified directory.
  * 
+ * If the directory does not exist, an error will be thrown.
+ * 
  * Directory should not end in a slash "/".
  * 
  * @param directory - File path of the directory

@@ -466,7 +466,20 @@ describe("Tests Virtual File System helpers", () => {
         assert(projectRoot.getDirectory("src"));
         assert(projectRoot.getDirectory("vaults"));
         assert(projectRoot.getDirectory("logs"));
-        assert(projectRoot.getDirectory("logs")?.contents.length === 4);
+        const logStats = await fs.readdir("./logs");
+        assert(projectRoot.getDirectory("logs")?.contents.length === logStats.length);
+    });
+    
+    it("Generation of nonexistant directory throws ENOENT", async () => {
+        try {
+            const _nonexistant = await generateVFS("./nonexistant");
+            assert(false, "Generating VFS of nonexistant directory did not return error.");
+        } catch(error) {
+            if((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                assert(false, `Generating VFS of nonexistant directory returned unexpected error ${(error as Error).message}.`);
+            }
+        }
+        assert(true);
     });
 });
 
