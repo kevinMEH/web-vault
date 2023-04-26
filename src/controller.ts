@@ -96,6 +96,37 @@ function getVaultFromPath(filePath: ValidatedPath): string {
 }
 
 /**
+ * Gets the parent directory path of the file path. If the path is just a
+ * vault directory, returns null.
+ * 
+ * vault/folder/file -> vault/folder
+ * vault/folder -> vault
+ * vault -> null
+ * 
+ * @param filePath 
+ * @returns 
+ */
+function getParentPath(filePath: ValidatedPath): ValidatedPath | null {
+    const lastSlash = filePath.lastIndexOf("/");
+    if(lastSlash === -1) return null;
+    return filePath.substring(0, lastSlash) as ValidatedPath;
+}
+
+/**
+ * Takes a ValidatedPath, returns the parent directory as a ValidatedPath and
+ * the child item as a string. Returns null if the path is just the vault
+ * directory.
+ * 
+ * @param filePath 
+ * @returns 
+ */
+function splitParentChild(filePath: ValidatedPath): [ValidatedPath, string] | [ null, null ] {
+    const lastSlash = filePath.lastIndexOf("/");
+    if(lastSlash === -1) return [ null, null ];
+    return [ filePath.substring(0, lastSlash) as ValidatedPath, filePath.substring(lastSlash + 1)]
+}
+
+/**
  * The file path should be of this form:
  * vault/folder/folder/file
  * 
@@ -160,4 +191,4 @@ function getFileAt(path: ValidatedPath | null): File | null {
     return file;
 }
 
-export { validNameRegex, validPathRegex, newVaultVFS, deleteVaultVFS, vaultDirectoryExists, validate, getDirectoryAt, getFileAt };
+export { validNameRegex, validPathRegex, newVaultVFS, deleteVaultVFS, vaultDirectoryExists, getVaultFromPath, getParentPath, splitParentChild, validate, getDirectoryAt, getFileAt };

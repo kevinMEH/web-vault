@@ -483,9 +483,9 @@ describe("Tests Virtual File System helpers", () => {
     });
 });
 
-import { validNameRegex, validPathRegex } from "../src/controller.js";
+import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath } from "../src/controller.js";
 
-describe("Valid name and path regex tests", () => {
+describe("Controller function tests", () => {
     it("Tests valid name regex", () => {
         assert(validNameRegex.test("a"));
         assert(validNameRegex.test("hello"));
@@ -610,6 +610,49 @@ describe("Valid name and path regex tests", () => {
         assert(false === validPathRegex.test("asdf/--rf"));
         assert(false === validPathRegex.test("--rf/asdf"));
     });
+    
+    it("Tests getParentDirectory function", () => {
+        assert(getParentPath("vault/hello/some folder/file.txt/what") === "vault/hello/some folder/file.txt");
+        assert(getParentPath("vault/hello/some folder/file.txt") === "vault/hello/some folder");
+        assert(getParentPath("vault/hello/some folder") === "vault/hello");
+        assert(getParentPath("vault/hello") === "vault");
+        assert(getParentPath("vault") === null);
+    });
+    
+    it("Tests splitParentChild function", () => {
+        let path: ValidatedPath;
+        let split: [ValidatedPath, string] | [null, null];
+
+        path = "vault/hello/some folder/file.txt/what";
+        split = splitParentChild(path);
+        assert(split.length === 2);
+        assert(split[0] === "vault/hello/some folder/file.txt");
+        assert(split[1] === "what");
+
+        path = "vault/hello/some folder/file.txt";
+        split = splitParentChild(path);
+        assert(split.length === 2);
+        assert(split[0] === "vault/hello/some folder");
+        assert(split[1] === "file.txt");
+
+        path = "vault/hello/some folder";
+        split = splitParentChild(path);
+        assert(split.length === 2);
+        assert(split[0] === "vault/hello");
+        assert(split[1] === "some folder");
+
+        path = "vault/hello";
+        split = splitParentChild(path);
+        assert(split.length === 2);
+        assert(split[0] === "vault");
+        assert(split[1] === "hello");
+
+        path = "vault";
+        split = splitParentChild(path);
+        assert(split.length === 2);
+        assert(split[0] === null);
+        assert(split[1] === null);
+    })
 });
 
 while(status !== 2) {
