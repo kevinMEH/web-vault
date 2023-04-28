@@ -53,7 +53,7 @@ import { vaultLog, logFileNameFromDate } from "../src/logger.js";
 test("Logging to a file", async () => {
     const logFileName = logFileNameFromDate();
     const message = "This is a test message.";
-    await vaultLog(".", "INFO", "This is a test message.");
+    await vaultLog("." as unknown as VaultPath, "INFO", "This is a test message.");
     const logFilePath = path.join("./logs/vaults", logFileName);
     const contents: string = await fs.readFile(logFilePath, { encoding: "utf8" } );
     fs.rm(logFilePath);
@@ -483,7 +483,7 @@ describe("Tests Virtual File System helpers", () => {
     });
 });
 
-import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath } from "../src/controller.js";
+import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath } from "../src/controller.js";
 
 describe("Controller function tests", () => {
     it("Tests valid name regex", () => {
