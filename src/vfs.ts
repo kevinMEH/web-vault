@@ -64,6 +64,10 @@ class File {
         };
     }
     
+    clone(): File {
+        return new File(this.name, this.byteSize, this.lastModified.toJSON());
+    }
+    
     update(flatFile: FlatFile): void {
         this.byteSize = flatFile.byteSize;
         this.lastModified = new Date(flatFile.lastModified);
@@ -258,6 +262,14 @@ class Directory {
                 contents: flatContents
             };
         }
+    }
+    
+    clone(): Directory {
+        const clonedContents: (File | Directory)[] = [];
+        for(const item of this.contents) {
+            clonedContents.push(item.clone());
+        }
+        return new Directory(this.name, clonedContents, this.lastModified.toJSON());
     }
     
     /**

@@ -446,6 +446,107 @@ describe("Tests virtual file system", () => {
         assert(newRoot.getDirectory("other_parent"));
         assert(newRoot.getDirectory("other_parent")?.contents.length === 1);
     });
+    
+    it("Tests VFS cloning functions", () => {
+        const file1 = new File("hello.txt", 40);
+        const file2 = new File("world.png", 8044);
+        const directory = new Directory("project", [file1, file2]);
+        
+        const other1 = new File("other", 8);
+        const other2 = new File("another", 3);
+        const otherDirectory = new Directory("other_stuff", [other1, other2]);
+        const otherParent = new Directory("other_parent", [otherDirectory]);
+        
+        const root = new Directory("root", [directory, otherParent]);
+        
+        const rootClone = root.clone();
+        
+        assert(root !== rootClone);
+        
+        assert(rootClone.lastModified.toJSON() === root.lastModified.toJSON());
+        assert(rootClone.name === root.name);
+        assert(rootClone.isDirectory === root.isDirectory);
+        assert(rootClone.contents.length === root.contents.length);
+        
+        assert(rootClone.getDirectory("project") !== null);
+        assert(rootClone.getDirectory("project")?.name === root.getDirectory("project")?.name);
+        assert(rootClone.getDirectory("project")?.lastModified.toJSON() === root.getDirectory("project")?.lastModified.toJSON());
+        assert(rootClone.getDirectory("project")?.contents.length === root.getDirectory("project")?.contents.length);
+
+        assert(rootClone.getDirectory("project")?.getFile("hello.txt")
+        !== null);
+        assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.name
+        === root.getDirectory("project")?.getFile("hello.txt")?.name);
+        assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.lastModified.toJSON()
+        === root.getDirectory("project")?.getFile("hello.txt")?.lastModified.toJSON());
+        assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.byteSize
+        === root.getDirectory("project")?.getFile("hello.txt")?.byteSize);
+        assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.getByteSize()
+        === root.getDirectory("project")?.getFile("hello.txt")?.getByteSize());
+        assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.byteSize
+        === 40);
+        assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.getByteSize()
+        === 40);
+
+        assert(rootClone.getDirectory("project")?.getFile("world.png")
+        !== null);
+        assert(rootClone.getDirectory("project")?.getFile("world.png")?.name
+        === root.getDirectory("project")?.getFile("world.png")?.name);
+        assert(rootClone.getDirectory("project")?.getFile("world.png")?.lastModified.toJSON()
+        === root.getDirectory("project")?.getFile("world.png")?.lastModified.toJSON());
+        assert(rootClone.getDirectory("project")?.getFile("world.png")?.byteSize
+        === root.getDirectory("project")?.getFile("world.png")?.byteSize);
+        assert(rootClone.getDirectory("project")?.getFile("world.png")?.getByteSize()
+        === root.getDirectory("project")?.getFile("world.png")?.getByteSize());
+        assert(rootClone.getDirectory("project")?.getFile("world.png")?.byteSize
+        === 8044);
+        assert(rootClone.getDirectory("project")?.getFile("world.png")?.getByteSize()
+        === 8044);
+
+        assert(rootClone.getDirectory("other_parent") !== null);
+        assert(rootClone.getDirectory("other_parent")?.name === root.getDirectory("other_parent")?.name);
+        assert(rootClone.getDirectory("other_parent")?.lastModified.toJSON() === root.getDirectory("other_parent")?.lastModified.toJSON());
+        assert(rootClone.getDirectory("other_parent")?.contents.length === root.getDirectory("other_parent")?.contents.length);
+
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")
+        !== null);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.name
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.name);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.lastModified.toJSON()
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.lastModified.toJSON());
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.contents.length
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.contents.length);
+
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")
+        !== null);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.name
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.name);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.lastModified.toJSON()
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.lastModified.toJSON());
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.byteSize
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.byteSize);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.getByteSize()
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.getByteSize());
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.byteSize
+        === 8);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.getByteSize()
+        === 8);
+
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")
+        !== null);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.name
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.name);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.lastModified.toJSON()
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.lastModified.toJSON());
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.getByteSize()
+        === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.getByteSize());
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize
+        === 3);
+        assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.getByteSize()
+        === 3);
+    })
 });
 
 import { generateVFS } from "../src/vfs_helpers.js";
