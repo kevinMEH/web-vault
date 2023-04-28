@@ -713,42 +713,42 @@ describe("Controller function tests", () => {
     });
     
     it("Tests getParentDirectory function", () => {
-        assert(getParentPath("vault/hello/some folder/file.txt/what") === "vault/hello/some folder/file.txt");
-        assert(getParentPath("vault/hello/some folder/file.txt") === "vault/hello/some folder");
-        assert(getParentPath("vault/hello/some folder") === "vault/hello");
-        assert(getParentPath("vault/hello") === "vault");
-        assert(getParentPath("vault") === null);
+        assert(getParentPath("vault/hello/some folder/file.txt/what" as any) === "vault/hello/some folder/file.txt");
+        assert(getParentPath("vault/hello/some folder/file.txt" as any) === "vault/hello/some folder");
+        assert(getParentPath("vault/hello/some folder" as any) === "vault/hello");
+        assert(getParentPath("vault/hello" as any) === "vault");
+        assert(getParentPath("vault" as any) === null);
     });
     
     it("Tests splitParentChild function", () => {
         let path: ValidatedPath;
         let split: [ValidatedPath, string] | [null, null];
 
-        path = "vault/hello/some folder/file.txt/what";
+        path = "vault/hello/some folder/file.txt/what" as any;
         split = splitParentChild(path);
         assert(split.length === 2);
         assert(split[0] === "vault/hello/some folder/file.txt");
         assert(split[1] === "what");
 
-        path = "vault/hello/some folder/file.txt";
+        path = "vault/hello/some folder/file.txt" as any;
         split = splitParentChild(path);
         assert(split.length === 2);
         assert(split[0] === "vault/hello/some folder");
         assert(split[1] === "file.txt");
 
-        path = "vault/hello/some folder";
+        path = "vault/hello/some folder" as any;
         split = splitParentChild(path);
         assert(split.length === 2);
         assert(split[0] === "vault/hello");
         assert(split[1] === "some folder");
 
-        path = "vault/hello";
+        path = "vault/hello" as any;
         split = splitParentChild(path);
         assert(split.length === 2);
         assert(split[0] === "vault");
         assert(split[1] === "hello");
 
-        path = "vault";
+        path = "vault" as any;
         split = splitParentChild(path);
         assert(split.length === 2);
         assert(split[0] === null);

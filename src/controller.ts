@@ -9,7 +9,7 @@ import { File, Directory } from "./vfs.js";
 import { generateVFS } from "./vfs_helpers.js";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
-export type VaultPath = ValidatedPath & { __type: "VaultPath" };
+export type VaultPath = ValidatedPath & { __type2: "VaultPath" };
 
 /**
  * Allowed characters: Alpha numerical, "_", "-", ".", " "
@@ -93,7 +93,7 @@ function vaultDirectoryExists(vault: string | VaultPath): boolean {
  * @returns 
  */
 function getVaultFromPath(filePath: ValidatedPath): VaultPath {
-    return filePath.split("/")[0] as unknown as VaultPath;
+    return filePath.split("/")[0] as VaultPath;
 }
 
 /**
