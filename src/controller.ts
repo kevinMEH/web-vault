@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs/promises";
 import { File, Directory } from "./vfs.js";
 import { generateVFS } from "./vfs_helpers.js";
+import { metaLog, vaultLog } from "./logger.js";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
 export type VaultPath = ValidatedPath & { __type2: "VaultPath" };
@@ -48,6 +49,54 @@ async function initializeVaults(): Promise<void> {
         const vaultVFS = await generateVFS(path.join(baseVaultDirectory, vault));
         vaultMap.set(vault, vaultVFS);
     }
+}
+
+/**
+ * Resynchronizes by replacing the Directory at the specified path with a new
+ * Directory generated based on the file system.
+ * 
+ * @param toResync 
+ * @returns 
+ */
+async function resynchronize(toResync: ValidatedPath): Promise<boolean> {
+    const vaultName = getVaultFromPath(toResync);
+    vaultLog(vaultName, "INFO", `Resyncing "${toResync}"...`);
+
+    const realPath = path.join(baseVaultDirectory, toResync);
+    let directory: Directory;
+    try {
+        directory = await generateVFS(realPath);
+    } catch(error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
+            vaultLog(vaultName, "VFS ERROR", `Trying to resync directory "${toResync}" but it no longer exists at "${realPath}". Aborting...`);
+        } else if(code === "ENOTDIR") {
+            vaultLog(vaultName, "VFS ERROR", `Trying to resync directory "${toResync}" at "${realPath}", but somewhere, a file was encountered. Aborting...`);
+        } else {
+            vaultLog(vaultName, "VFS ERROR", `Trying to resync directory "${toResync}" at "${realPath}", but encountered unknown error ${(error as Error).message} instead. Aborting...`);
+        }
+        return false;
+    }
+
+    const [ parentDirectoryPath, directoryName ] = splitParentChild(toResync);
+    const parentDirectory = getDirectoryAt(parentDirectoryPath);
+    if(parentDirectory === null || directoryName === null) {
+        // Resyncing entire vault directory
+        const maybeVault = getVaultVFS(toResync as VaultPath);
+        if(maybeVault !== null) {
+            maybeVault.contents = directory.contents;
+        } else {
+            metaLog("vfs", "ERROR", `Resyncing vault "${toResync}", but the vault or the VFS does not exist.`);
+            return false;
+        }
+    } else {
+        if(parentDirectory.removeEntry(directoryName, false) === false) {
+            vaultLog(vaultName, "VFS ERROR", `Trying to resync directory "${toResync}" at "${realPath}", but it somehow does not exist in its parent directory "${parentDirectoryPath}". Continuing anyways...`);
+        }
+        parentDirectory.addEntry(directory, false);
+    }
+    vaultLog(vaultName, "INFO", `Finished resyncing "${toResync}".`);
+    return true;
 }
 
 async function newVaultVFS(vault: string): Promise<void> {
@@ -194,4 +243,4 @@ function getFileAt(path: ValidatedPath | null): File | null {
     return file;
 }
 
-export { validNameRegex, validPathRegex, newVaultVFS, deleteVaultVFS, vaultDirectoryExists, getVaultFromPath, getParentPath, splitParentChild, validate, getAt, getDirectoryAt, getFileAt };
+export { validNameRegex, validPathRegex, resynchronize, newVaultVFS, deleteVaultVFS, vaultDirectoryExists, getVaultFromPath, getParentPath, splitParentChild, validate, getAt, getDirectoryAt, getFileAt };

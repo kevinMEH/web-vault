@@ -5,6 +5,7 @@ import path from "path";
 
 import { close } from "../src/authentication/redis.js";
 
+import { Directory } from "../src/vfs.js"; // Class
 import { ValidatedPath } from "../src/controller.js"; // Type
 import { Stats } from "fs"; // Type
 
@@ -36,6 +37,7 @@ else console.log("Using in memory database");
             tsconfig.json
     */
     await fs.mkdir(path.join(vaultDirectory, "vault"));
+    await fs.mkdir(path.join(process.cwd(), "logs", "vaults", "vault"), { recursive: true });
     await fs.cp(
         path.join(process.cwd(), ".gitignore"),
         path.join(vaultDirectory, "vault", ".gitignore")
@@ -64,6 +66,7 @@ else console.log("Using in memory database");
                     package-lock.json
     */
     await fs.mkdir(path.join(vaultDirectory, "anothervault"));
+    await fs.mkdir(path.join(process.cwd(), "logs", "vaults", "anothervault"), { recursive: true });
     await fs.mkdir(path.join(vaultDirectory, "anothervault", "folder"));
     await fs.mkdir(path.join(vaultDirectory, "anothervault", "folder", "another folder"));
     await fs.mkdir(path.join(vaultDirectory, "anothervault", "folder", "another folder", "yet another folder"));
@@ -77,7 +80,7 @@ else console.log("Using in memory database");
 // ------------------
 // ------------------
 
-const { vaultDirectoryExists, validate, getDirectoryAt, getFileAt } = await import("../src/controller.js");
+const { vaultDirectoryExists, validate, getDirectoryAt, getFileAt, resynchronize } = await import("../src/controller.js");
 const { createNewVault, deleteVault } = await import("../src/vault.js");
 
 describe("VFS controller tests", () => {
@@ -264,6 +267,102 @@ describe("VFS controller tests", () => {
         
         await deleteVault("somevault");
         assert(vaultDirectoryExists("somevault") === false);
+    });
+    
+    it("Tests resynchronization", async () => {
+        // Full resync
+        const vault = getDirectoryAt("vault" as any);
+        const vaultCopy = new Directory("copy", vault?.contents as any);
+        (vault as Directory).contents = [];
+        
+        assert(vault?.contents.length === 0);
+        
+        await resynchronize("vault" as any);
+
+        assert(vault.getFile(".gitignore"));
+        assert(vault.getFile(".gitignore")?.name
+        === vaultCopy.getFile(".gitignore")?.name);
+        assert(vault.getFile(".gitignore")?.lastModified.toJSON()
+        === vaultCopy.getFile(".gitignore")?.lastModified.toJSON());
+        assert(vault.getFile(".gitignore")?.getByteSize()
+        === vaultCopy.getFile(".gitignore")?.getByteSize());
+        
+        assert(vault.getDirectory("folder1"));
+        assert(vault.getDirectory("folder1")?.name
+        === vaultCopy.getDirectory("folder1")?.name);
+        assert(vault.getDirectory("folder1")?.lastModified.toJSON()
+        === vaultCopy.getDirectory("folder1")?.lastModified.toJSON());
+        assert(vault.getDirectory("folder1")?.getByteSize()
+        === vaultCopy.getDirectory("folder1")?.getByteSize());
+
+        assert(vault.getDirectory("folder1")?.getFile("package.json"));
+        assert(vault.getDirectory("folder1")?.getFile("package.json")?.name
+        === vaultCopy.getDirectory("folder1")?.getFile("package.json")?.name);
+        assert(vault.getDirectory("folder1")?.getFile("package.json")?.lastModified.toJSON()
+        === vaultCopy.getDirectory("folder1")?.getFile("package.json")?.lastModified.toJSON());
+        assert(vault.getDirectory("folder1")?.getFile("package.json")?.getByteSize()
+        === vaultCopy.getDirectory("folder1")?.getFile("package.json")?.getByteSize());
+
+        assert(vault.getDirectory("folder1")?.getDirectory("folder2"));
+        assert(vault.getDirectory("folder1")?.getDirectory("folder2")?.name
+        === vaultCopy.getDirectory("folder1")?.getDirectory("folder2")?.name);
+        assert(vault.getDirectory("folder1")?.getDirectory("folder2")?.lastModified.toJSON()
+        === vaultCopy.getDirectory("folder1")?.getDirectory("folder2")?.lastModified.toJSON());
+        assert(vault.getDirectory("folder1")?.getDirectory("folder2")?.getByteSize()
+        === vaultCopy.getDirectory("folder1")?.getDirectory("folder2")?.getByteSize());
+
+        assert(vault.getDirectory("folder1")?.getDirectory("folder2")?.getFile("LICENSE"));
+        assert(vault.getDirectory("folder1")?.getDirectory("folder2")?.getFile("LICENSE")?.name
+        === vaultCopy.getDirectory("folder1")?.getDirectory("folder2")?.getFile("LICENSE")?.name);
+        assert(vault.getDirectory("folder1")?.getDirectory("folder2")?.getFile("LICENSE")?.lastModified.toJSON()
+        === vaultCopy.getDirectory("folder1")?.getDirectory("folder2")?.getFile("LICENSE")?.lastModified.toJSON());
+        assert(vault.getDirectory("folder1")?.getDirectory("folder2")?.getFile("LICENSE")?.getByteSize()
+        === vaultCopy.getDirectory("folder1")?.getDirectory("folder2")?.getFile("LICENSE")?.getByteSize());
+        
+        assert(vault.getDirectory("folder1.1"));
+        assert(vault.getDirectory("folder1.1")?.name
+        === vaultCopy.getDirectory("folder1.1")?.name);
+        assert(vault.getDirectory("folder1.1")?.lastModified.toJSON()
+        === vaultCopy.getDirectory("folder1.1")?.lastModified.toJSON());
+        assert(vault.getDirectory("folder1.1")?.getByteSize()
+        === vaultCopy.getDirectory("folder1.1")?.getByteSize());
+
+        assert(vault.getDirectory("folder1.1")?.getFile("tsconfig.json"));
+        assert(vault.getDirectory("folder1.1")?.getFile("tsconfig.json")?.name
+        === vaultCopy.getDirectory("folder1.1")?.getFile("tsconfig.json")?.name);
+        assert(vault.getDirectory("folder1.1")?.getFile("tsconfig.json")?.lastModified.toJSON()
+        === vaultCopy.getDirectory("folder1.1")?.getFile("tsconfig.json")?.lastModified.toJSON());
+        assert(vault.getDirectory("folder1.1")?.getFile("tsconfig.json")?.getByteSize()
+        === vaultCopy.getDirectory("folder1.1")?.getFile("tsconfig.json")?.getByteSize());
+        
+        // Partial resync
+        const anotherVault = getDirectoryAt("anothervault" as any);
+        
+        const anotherFolder = anotherVault?.getDirectory("folder")?.getDirectory("another folder");
+        assert(anotherFolder !== null && anotherFolder !== undefined);
+        const anotherFolderCopy = new Directory(anotherFolder.name, anotherFolder.contents, anotherFolder.lastModified.toJSON());
+        anotherFolder.contents = [];
+        
+        assert(anotherVault?.getDirectory("folder")?.getDirectory("another folder")?.contents.length === 0);
+        await resynchronize("anothervault/folder/another folder" as any);
+        assert(anotherVault?.getDirectory("folder")?.getDirectory("another folder")?.contents.length === 1);
+        assert(anotherVault?.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder"));
+
+        assert(anotherVault.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder"));
+        assert(anotherVault.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder")?.name
+        === anotherFolderCopy.getDirectory("yet another folder")?.name);
+        assert(anotherVault.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder")?.lastModified.toJSON()
+        === anotherFolderCopy.getDirectory("yet another folder")?.lastModified.toJSON());
+        assert(anotherVault.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder")?.getByteSize()
+        === anotherFolderCopy.getDirectory("yet another folder")?.getByteSize());
+
+        assert(anotherVault.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder")?.getFile("package-lock.json"));
+        assert(anotherVault.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder")?.getFile("package-lock.json")?.name
+        === anotherFolderCopy.getDirectory("yet another folder")?.getFile("package-lock.json")?.name);
+        assert(anotherVault.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder")?.getFile("package-lock.json")?.lastModified.toJSON()
+        === anotherFolderCopy.getDirectory("yet another folder")?.getFile("package-lock.json")?.lastModified.toJSON());
+        assert(anotherVault.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder")?.getFile("package-lock.json")?.getByteSize()
+        === anotherFolderCopy.getDirectory("yet another folder")?.getFile("package-lock.json")?.getByteSize());
     });
     
     after(async () => {
