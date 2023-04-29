@@ -21,7 +21,7 @@ async function metaLog(name: "database" | "authentication" | "admin" | "vfs", ty
  * @param type 
  * @param message 
  */
-async function vaultLog(vaultName: VaultPath, type: "ERROR" | "WARNING" | "INFO", message: string) {
+async function vaultLog(vaultName: VaultPath, type: "ERROR" | "NON URGENT" | "WARNING" | "INFO" | "VFS ERROR", message: string) {
     const filePath = path.join(baseLoggingDirectory, "vaults", vaultName as unknown as string, logFileNameFromDate());
     // TODO: Switch to file descriptors and have array of file
     // descriptors to read and write to. (Performance reasons)
