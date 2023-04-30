@@ -584,7 +584,7 @@ describe("Tests Virtual File System helpers", () => {
     });
 });
 
-import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath } from "../src/controller.js";
+import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller.js";
 
 describe("Controller function tests", () => {
     it("Tests valid name regex", () => {
@@ -748,6 +748,25 @@ describe("Controller function tests", () => {
         assert(false === validPathRegex.test("- -rf/asdf"));
         assert(false === validPathRegex.test("asdf/--rf"));
         assert(false === validPathRegex.test("--rf/asdf"));
+    });
+    
+    it("Tests getVaultFromPath function", () => {
+        assert(getVaultFromPath("asdf" as any) === "asdf");
+        assert(getVaultFromPath("hello world" as any) === "hello world");
+        assert(getVaultFromPath("Hello_-wor.dll" as any) === "Hello_-wor.dll");
+        assert(getVaultFromPath("19298aubu asdf823n" as any) === "19298aubu asdf823n");
+
+        assert(getVaultFromPath("asdf/asdfasdfa" as any) === "asdf");
+        assert(getVaultFromPath("asdf/asdfas. asdf_-as-d-_- 29192" as any) === "asdf");
+        assert(getVaultFromPath("hello world/a s d a hello world" as any) === "hello world");
+        assert(getVaultFromPath("Hello_-wor.dll/Hello-world.exe" as any) === "Hello_-wor.dll");
+        assert(getVaultFromPath("19298aubu asdf823n/8382nb" as any) === "19298aubu asdf823n");
+
+        assert(getVaultFromPath("asdf/asdfasdfa/asdfasdf" as any) === "asdf");
+        assert(getVaultFromPath("asdf/asdfas. asdf_-as-d-_- 29192/hello world" as any) === "asdf");
+        assert(getVaultFromPath("hello world/a s d a hello world/aaaa" as any) === "hello world");
+        assert(getVaultFromPath("Hello_-wor.dll/Hello-world.exe/19391 19" as any) === "Hello_-wor.dll");
+        assert(getVaultFromPath("19298aubu asdf823n/8382nb/. . . ." as any) === "19298aubu asdf823n");
     });
     
     it("Tests getParentDirectory function", () => {

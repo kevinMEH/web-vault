@@ -142,7 +142,7 @@ function vaultDirectoryExists(vault: string | VaultPath): boolean {
  * @returns 
  */
 function getVaultFromPath(filePath: ValidatedPath | VaultPath): VaultPath {
-    return filePath.split("/")[0] as VaultPath;
+    return (filePath.substring(0, filePath.indexOf("/")) || filePath) as VaultPath;
 }
 
 /**
