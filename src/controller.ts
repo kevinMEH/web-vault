@@ -10,7 +10,7 @@ import { generateVFS } from "./vfs_helpers.js";
 import { metaLog, vaultLog } from "./logger.js";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
-export type VaultPath = ValidatedPath & { __type2: "VaultPath" };
+export type VaultPath = string & { __type: "VaultPath" };
 
 /**
  * Allowed characters: Alpha numerical, "_", "-", ".", " "
@@ -58,7 +58,7 @@ async function initializeVaults(): Promise<void> {
  * @param toResync 
  * @returns 
  */
-async function resynchronize(toResync: ValidatedPath): Promise<boolean> {
+async function resynchronize(toResync: ValidatedPath | VaultPath): Promise<boolean> {
     const vaultName = getVaultFromPath(toResync);
     vaultLog(vaultName, "INFO", `Resyncing "${toResync}"...`);
 
@@ -82,7 +82,7 @@ async function resynchronize(toResync: ValidatedPath): Promise<boolean> {
     const parentDirectory = getDirectoryAt(parentDirectoryPath);
     if(parentDirectory === null || directoryName === null) {
         // Resyncing entire vault directory
-        const maybeVault = getVaultVFS(toResync as VaultPath);
+        const maybeVault = getVaultVFS(toResync);
         if(maybeVault !== null) {
             maybeVault.contents = directory.contents;
         } else {
@@ -141,7 +141,7 @@ function vaultDirectoryExists(vault: string | VaultPath): boolean {
  * @param filePath 
  * @returns 
  */
-function getVaultFromPath(filePath: ValidatedPath): VaultPath {
+function getVaultFromPath(filePath: ValidatedPath | VaultPath): VaultPath {
     return filePath.split("/")[0] as VaultPath;
 }
 
@@ -170,7 +170,7 @@ function getParentPath(filePath: ValidatedPath): ValidatedPath | null {
  * @param filePath 
  * @returns 
  */
-function splitParentChild(filePath: ValidatedPath): [ValidatedPath, string] | [ null, null ] {
+function splitParentChild(filePath: ValidatedPath | VaultPath): [ValidatedPath, string] | [ null, null ] {
     const lastSlash = filePath.lastIndexOf("/");
     if(lastSlash === -1) return [ null, null ];
     return [ filePath.substring(0, lastSlash) as ValidatedPath, filePath.substring(lastSlash + 1)]
