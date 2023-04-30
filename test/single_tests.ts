@@ -629,17 +629,17 @@ describe("Controller function tests", () => {
     });
     
     it("Tests valid path regex", () => {
-        assert(validPathRegex.test("a"));
-        assert(validPathRegex.test("hello"));
-        assert(validPathRegex.test("hello.txt"));
-        assert(validPathRegex.test("hello world.txt"));
-        assert(validPathRegex.test("hello world.asdf.  ..txt"));
-        assert(validPathRegex.test("hello_world"));
-        assert(validPathRegex.test("hello-"));
-        assert(validPathRegex.test("_ - ."));
-        assert(validPathRegex.test(".hidden"));
-        assert(validPathRegex.test(".hidden."));
-        assert(validPathRegex.test(".hidden .local .env"));
+        assert(validPathRegex.test("a/a"));
+        assert(validPathRegex.test("hello/a"));
+        assert(validPathRegex.test("hello.txt/a"));
+        assert(validPathRegex.test("hello world.txt/a"));
+        assert(validPathRegex.test("hello world.asdf.  ..txt/a"));
+        assert(validPathRegex.test("hello_world/a"));
+        assert(validPathRegex.test("hello-/a"));
+        assert(validPathRegex.test("_ - ./a"));
+        assert(validPathRegex.test(".hidden/a"));
+        assert(validPathRegex.test(".hidden./a"));
+        assert(validPathRegex.test(".hidden .local .env/a"));
         
         assert(validPathRegex.test("a/asdf"));
         assert(validPathRegex.test("a/asdf/asdf"));
@@ -652,6 +652,18 @@ describe("Controller function tests", () => {
 
 
 
+        assert(false === validPathRegex.test("a"));
+        assert(false === validPathRegex.test("hello"));
+        assert(false === validPathRegex.test("hello.txt"));
+        assert(false === validPathRegex.test("hello world.txt"));
+        assert(false === validPathRegex.test("hello world.asdf.  ..txt"));
+        assert(false === validPathRegex.test("hello_world"));
+        assert(false === validPathRegex.test("hello-"));
+        assert(false === validPathRegex.test("_ - ."));
+        assert(false === validPathRegex.test(".hidden"));
+        assert(false === validPathRegex.test(".hidden."));
+        assert(false === validPathRegex.test(".hidden .local .env"));
+
         assert(false === validPathRegex.test("."));
         assert(false === validPathRegex.test(".."));
         assert(false === validPathRegex.test("......."));
@@ -659,6 +671,14 @@ describe("Controller function tests", () => {
         assert(false === validPathRegex.test(" ."));
         assert(false === validPathRegex.test(" . "));
         assert(false === validPathRegex.test("  ."));
+
+        assert(false === validPathRegex.test("./a"));
+        assert(false === validPathRegex.test("../a"));
+        assert(false === validPathRegex.test("......./a"));
+        assert(false === validPathRegex.test(". /a"));
+        assert(false === validPathRegex.test(" ./a"));
+        assert(false === validPathRegex.test(" . /a"));
+        assert(false === validPathRegex.test("  ./a"));
 
         assert(false === validPathRegex.test("./asdf"));
         assert(false === validPathRegex.test("asdf/./asdf"));
@@ -674,6 +694,14 @@ describe("Controller function tests", () => {
         assert(false === validPathRegex.test(" asdf "));
         assert(false === validPathRegex.test(". asdf. "));
         assert(false === validPathRegex.test(".asdf. "));
+
+        assert(false === validPathRegex.test("/a"));
+        assert(false === validPathRegex.test("   /a"));
+        assert(false === validPathRegex.test(" asdf/a"));
+        assert(false === validPathRegex.test("asdf /a"));
+        assert(false === validPathRegex.test(" asdf /a"));
+        assert(false === validPathRegex.test(". asdf. /a"));
+        assert(false === validPathRegex.test(".asdf. /a"));
         
         assert(false === validPathRegex.test(" /asdf"));
         assert(false === validPathRegex.test("asdf/ asdf"));
@@ -684,6 +712,10 @@ describe("Controller function tests", () => {
 
         assert(false === validPathRegex.test("\tasdf"));
         assert(false === validPathRegex.test("asdf\n"));
+        assert(false === validPathRegex.test("\tasdf/a"));
+        assert(false === validPathRegex.test("asdf\n/a"));
+        assert(false === validPathRegex.test("a/\tasdf"));
+        assert(false === validPathRegex.test("a/asdf\n"));
 
         assert(false === validPathRegex.test("asdf/\tasdf"));
         assert(false === validPathRegex.test("asdf\n/asdf"));
@@ -703,6 +735,12 @@ describe("Controller function tests", () => {
         assert(false === validPathRegex.test("-rf"));
         assert(false === validPathRegex.test("- -rf"));
         assert(false === validPathRegex.test("--rf"));
+        assert(false === validPathRegex.test("a/-rf"));
+        assert(false === validPathRegex.test("a/- -rf"));
+        assert(false === validPathRegex.test("a/--rf"));
+        assert(false === validPathRegex.test("-rf/a"));
+        assert(false === validPathRegex.test("- -rf/a"));
+        assert(false === validPathRegex.test("--rf/a"));
 
         assert(false === validPathRegex.test("asdf/-rf"));
         assert(false === validPathRegex.test("-rf/asdf"));

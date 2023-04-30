@@ -21,7 +21,7 @@ const validNameRegex = /(?!^(\.)+$)^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )$/
  * Allowed characters: Alpha numerical, "_", "-", ".", " "
  * Names consisting only of dots and spaces not allowed.
  */
-const validPathRegex = /(?!^(\.)+($|\/))^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )(\/(?!(\.)+($|\/))(?! |-)[a-zA-Z0-9_\-. )]+(?<! ))*$/;
+const validPathRegex = /(?!^(\.)+($|\/))^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )(\/(?!(\.)+($|\/))(?! |-)[a-zA-Z0-9_\-. )]+(?<! ))+$/;
 const baseVaultDirectory = process.env.VAULT_DIRECTORY || path.join(process.cwd(), "vaults");
 
 

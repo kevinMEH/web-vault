@@ -85,8 +85,6 @@ const { createNewVault, deleteVault } = await import("../src/vault.js");
 
 describe("VFS controller tests", () => {
     it("Tests the validate function", () => {
-        assert(validate("vault") !== null);
-        assert(validate("anothervault") !== null);
         assert(validate("vault/.gitignore") !== null);
         assert(validate("vault/folder1") !== null);
         assert(validate("anothervault/folder/another folder/yet another folder/package-lock.json") !== null);
@@ -157,10 +155,10 @@ describe("VFS controller tests", () => {
 
         let vPath: ValidatedPath | null;
 
-        vPath = validate("vault");
+        vPath = "vault" as ValidatedPath;
         assert(getDirectoryAt(vPath) !== null)
 
-        vPath = validate("anothervault");
+        vPath = "anothervault" as ValidatedPath;
         assert(getDirectoryAt(vPath) !== null)
     });
     
@@ -168,7 +166,7 @@ describe("VFS controller tests", () => {
         let vPath: ValidatedPath | null;
         let stat: Stats;
 
-        vPath = validate("vault");
+        vPath = "vault" as ValidatedPath;
         assert(getDirectoryAt(vPath)?.contents.length === 3);
         assert(getDirectoryAt(vPath)?.getFile(".gitignore"));
 
@@ -227,7 +225,7 @@ describe("VFS controller tests", () => {
         
         
 
-        vPath = validate("anothervault");
+        vPath = "anothervault" as ValidatedPath;
         assert(getDirectoryAt(vPath)?.contents.length === 1);
         assert(getDirectoryAt(vPath)?.getDirectory("folder"));
         assert(getDirectoryAt(vPath)?.getDirectory("nonexistant") === null);
@@ -250,7 +248,7 @@ describe("VFS controller tests", () => {
         
 
         
-        vPath = validate("nonexistant");
+        vPath = "nonexistant" as ValidatedPath;
         assert(getDirectoryAt(vPath) === null);
         assert(getFileAt(vPath) === null);
         
@@ -263,7 +261,7 @@ describe("VFS controller tests", () => {
         assert(await createNewVault("somevault", "secure_password123") === null);
         assert(vaultDirectoryExists("somevault"));
         assert(vaultDirectoryExists("sooommmeevault") === false);
-        assert(getDirectoryAt(validate("somevault")));
+        assert(getDirectoryAt("somevault" as ValidatedPath));
         
         await deleteVault("somevault");
         assert(vaultDirectoryExists("somevault") === false);
@@ -369,6 +367,7 @@ describe("VFS controller tests", () => {
         // Cleanup
         await fs.rm(path.join(vaultDirectory, "vault"), { recursive: true, force: true });
         await fs.rm(path.join(vaultDirectory, "anothervault"), { recursive: true, force: true });
+        await fs.rm(path.join(vaultDirectory, "somevault"), { recursive: true, force: true });
         
         await shutdown();
     });
