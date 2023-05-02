@@ -136,15 +136,17 @@ const passwordSalt = (() => {
 const iterationCount = parseInt(process.env.ITERATION_COUNT as string) || 123456;
 
 
+// TODO: Error handling on hashPassword
 async function setVaultPassword(vault: string, password: string) {
-    const hashedPassword = hashPassword(password, passwordSalt, iterationCount);
+    const hashedPassword = await hashPassword(password, passwordSalt, iterationCount);
     await setVaultPasswordFunction(vault, hashedPassword);
     metaLog("authentication", "INFO",
     `Changed vault ${vault} password. (Hash: ${hashedPassword})`);
 }
 
-function verifyVaultPassword(vault: string, password: string) {
-    const hashedPassword = hashPassword(password, passwordSalt, iterationCount);
+// TODO: Error handling on hashPassword
+async function verifyVaultPassword(vault: string, password: string) {
+    const hashedPassword = await hashPassword(password, passwordSalt, iterationCount);
     return verifyVaultPasswordFunction(vault, hashedPassword);
 }
 
