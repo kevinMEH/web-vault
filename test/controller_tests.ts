@@ -6,7 +6,7 @@ import path from "path";
 import { close } from "../src/authentication/redis.js";
 
 import { Directory } from "../src/vfs.js"; // Class
-import { ValidatedPath } from "../src/controller.js"; // Type
+import { ValidatedPath, VaultPath } from "../src/controller.js"; // Type
 import { Stats } from "fs"; // Type
 
 async function shutdown() {
@@ -163,10 +163,10 @@ describe("VFS controller tests", () => {
     });
     
     it("Tests if VFS is correct", async () => {
-        let vPath: ValidatedPath | null;
+        let vPath: ValidatedPath | VaultPath | null;
         let stat: Stats;
 
-        vPath = "vault" as ValidatedPath;
+        vPath = "vault" as VaultPath;
         assert(getDirectoryAt(vPath)?.contents.length === 3);
         assert(getDirectoryAt(vPath)?.getFile(".gitignore"));
 
@@ -225,7 +225,7 @@ describe("VFS controller tests", () => {
         
         
 
-        vPath = "anothervault" as ValidatedPath;
+        vPath = "anothervault" as VaultPath;
         assert(getDirectoryAt(vPath)?.contents.length === 1);
         assert(getDirectoryAt(vPath)?.getDirectory("folder"));
         assert(getDirectoryAt(vPath)?.getDirectory("nonexistant") === null);
@@ -248,7 +248,7 @@ describe("VFS controller tests", () => {
         
 
         
-        vPath = "nonexistant" as ValidatedPath;
+        vPath = "nonexistant" as VaultPath;
         assert(getDirectoryAt(vPath) === null);
         assert(getFileAt(vPath) === null);
         
@@ -261,7 +261,7 @@ describe("VFS controller tests", () => {
         assert(await createNewVault("somevault", "secure_password123") === null);
         assert(vaultDirectoryExists("somevault"));
         assert(vaultDirectoryExists("sooommmeevault") === false);
-        assert(getDirectoryAt("somevault" as ValidatedPath));
+        assert(getDirectoryAt("somevault" as VaultPath));
         
         await deleteVault("somevault");
         assert(vaultDirectoryExists("somevault") === false);
@@ -269,13 +269,13 @@ describe("VFS controller tests", () => {
     
     it("Tests resynchronization", async () => {
         // Full resync
-        const vault = getDirectoryAt("vault" as any);
+        const vault = getDirectoryAt("vault" as VaultPath);
         const vaultCopy = new Directory("copy", vault?.contents as any);
         (vault as Directory).contents = [];
         
         assert(vault?.contents.length === 0);
         
-        await resynchronize("vault" as any);
+        await resynchronize("vault" as VaultPath);
 
         assert(vault.getFile(".gitignore"));
         assert(vault.getFile(".gitignore")?.name
@@ -334,7 +334,7 @@ describe("VFS controller tests", () => {
         === vaultCopy.getDirectory("folder1.1")?.getFile("tsconfig.json")?.getByteSize());
         
         // Partial resync
-        const anotherVault = getDirectoryAt("anothervault" as any);
+        const anotherVault = getDirectoryAt("anothervault" as VaultPath);
         
         const anotherFolder = anotherVault?.getDirectory("folder")?.getDirectory("another folder");
         assert(anotherFolder !== null && anotherFolder !== undefined);
@@ -342,7 +342,7 @@ describe("VFS controller tests", () => {
         anotherFolder.contents = [];
         
         assert(anotherVault?.getDirectory("folder")?.getDirectory("another folder")?.contents.length === 0);
-        await resynchronize("anothervault/folder/another folder" as any);
+        await resynchronize("anothervault/folder/another folder" as ValidatedPath);
         assert(anotherVault?.getDirectory("folder")?.getDirectory("another folder")?.contents.length === 1);
         assert(anotherVault?.getDirectory("folder")?.getDirectory("another folder")?.getDirectory("yet another folder"));
 

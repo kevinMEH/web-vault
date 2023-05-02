@@ -170,7 +170,7 @@ function getParentPath(filePath: ValidatedPath): ValidatedPath | null {
  * @param filePath 
  * @returns 
  */
-function splitParentChild(filePath: ValidatedPath | VaultPath): [ValidatedPath, string] | [ null, null ] {
+function splitParentChild(filePath: ValidatedPath | VaultPath): [ValidatedPath | VaultPath, string] | [ null, null ] {
     const lastSlash = filePath.lastIndexOf("/");
     if(lastSlash === -1) return [ null, null ];
     return [ filePath.substring(0, lastSlash) as ValidatedPath, filePath.substring(lastSlash + 1)]
@@ -208,7 +208,7 @@ function getVaultVFS(vault: string): Directory | null {
     else return null;
 }
 
-function getAt(path: ValidatedPath | null): File | Directory | null {
+function getAt(path: ValidatedPath | VaultPath | null): File | Directory | null {
     if(path === null) return null;
     const directories = path.split("/");
     let last: Directory | null | undefined = getVaultVFS(directories[0]);
@@ -220,7 +220,7 @@ function getAt(path: ValidatedPath | null): File | Directory | null {
     return item;
 }
 
-function getDirectoryAt(path: ValidatedPath | null): Directory | null {
+function getDirectoryAt(path: ValidatedPath | VaultPath | null): Directory | null {
     if(path === null) return null;
     const directories = path.split("/");
     let last: Directory | null | undefined = getVaultVFS(directories[0]);
@@ -231,7 +231,7 @@ function getDirectoryAt(path: ValidatedPath | null): Directory | null {
     return last;
 }
 
-function getFileAt(path: ValidatedPath | null): File | null {
+function getFileAt(path: ValidatedPath | VaultPath | null): File | null {
     if(path === null) return null;
     const directories = path.split("/");
     let last: Directory | null | undefined = getVaultVFS(directories[0]);
