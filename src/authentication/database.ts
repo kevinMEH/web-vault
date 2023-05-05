@@ -29,15 +29,6 @@ class LinkedList {
     add(value: TokenPair) {
         this.tail = this.tail.add(value);
     }
-    
-    // Atomic function for setting busy to true. Returns false if busy.
-    setBusy() {
-        if(this.busy) {
-            return false;
-        } else {
-            return this.busy = true;
-        }
-    }
 }
 
 class Node {
@@ -293,11 +284,7 @@ function localIsOutdatedToken(token: string) {
     return tokenSet.has(token);
 }
 
-async function purgeAllOutdated() {
-    while(!tokenList.setBusy()) { // Try for a lock
-        await new Promise(resolve => setTimeout(resolve, 250)); // Busy, wait 250 ms
-    }
-
+function purgeAllOutdated() {
     const time = unixTime() - 5;
     let lastValid: Node = tokenList.head;
     let current: Node | null = tokenList.head;
