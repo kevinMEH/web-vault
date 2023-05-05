@@ -2,31 +2,56 @@ export type FlatFile = {
     name: string;
     byteSize: number;
     lastModified: string;
+    realFile: string;
     isDirectory: boolean;
-}
+} & { __type: "FlatFile" };
 
 export type FlatDirectory = {
     name: string;
     lastModified: string;
     isDirectory: boolean;
     contents: (FlatFile | FlatDirectory)[];
-}
+} & { __type: "FlatDirectory" };
 
 export type FlatDirectoryString = string & { __type: "FlatDirectoryString" };
 
-// Virtual representation of file system to use at runtime
-// instead of repeatedly making system calls to stat or readdir
+// Simplified FlatFile with an empty string for sending to the client
+export type SimpleFlatFile = {
+    name: string;
+    byteSize: number;
+    lastModified: string;
+    realFile: "";
+    isDirectory: boolean;
+} & { __type: "SimpleFlatFile" };
+
+// FlatDirectory containing simplified FlatFiles for sending to the client
+export type SimpleFlatDirectory = {
+    name: string;
+    lastModified: string;
+    isDirectory: boolean;
+    contents: (SimpleFlatFile | SimpleFlatDirectory)[];
+} & { __type: "SimpleFlatDirectory" };
+
+export type FlatSimpleDirectoryString = string & { __type: "FlatSimpleDirectoryString" };
+
+// Files will be laid out in a flat structure in the root vault directory
+// The VFS will represent the actual directory subdirectory structure.
+// This enables efficient modification of the structure of the VFS and prevents
+// possible inconsistencies between the file system and the VFS, as the VFS is
+// now solely responsible for the structuring of the files.
 
 class File {
     name: string;
     byteSize: number;
     lastModified: Date;
+    readonly realFile: string;
 
     isDirectory = false;
     
-    constructor(name: string, byteSize: number, lastModified?: string | Date) {
+    constructor(name: string, byteSize: number, realFile: string, lastModified?: string | Date) {
         this.name = name;
         this.byteSize = byteSize;
+        this.realFile = realFile;
         
         if(lastModified !== undefined) {
             if(typeof lastModified === "string") {
@@ -40,7 +65,7 @@ class File {
     }
     
     duplicate(newName: string = this.name): File {
-        return new File(newName, this.byteSize);
+        return new File(newName, this.byteSize, this.realFile);
     }
 
     modifiedNow(): void {
@@ -50,18 +75,36 @@ class File {
     getByteSize(): number {
         return this.byteSize;
     }
-    
+
     /**
      * Returns an object representation of this File for stringifying.
-     * @returns object representation of this File
+     * Set includeRealFile to true if you want to include the realFile name.
+     * Set it to false if you do not want to include it, such as for sending to
+     * the client.
+     * 
+     * @param includeRealFile 
+     * @returns Object representation of this File
      */
-    flat(): FlatFile {
-        return {
-            name: this.name,
-            byteSize: this.byteSize,
-            lastModified: this.lastModified.toJSON(),
-            isDirectory: false
-        };
+    flat(includeRealFile: true): FlatFile;
+    flat(includeRealFile: false): SimpleFlatFile;
+    flat(includeRealFile: true | false): FlatFile | SimpleFlatFile {
+        if(includeRealFile) {
+            return {
+                name: this.name,
+                byteSize: this.byteSize,
+                lastModified: this.lastModified.toJSON(),
+                realFile: this.realFile,
+                isDirectory: false
+            } as FlatFile;
+        } else {
+            return {
+                name: this.name,
+                byteSize: this.byteSize,
+                lastModified: this.lastModified.toJSON(),
+                realFile: "",
+                isDirectory: false
+            } as SimpleFlatFile;
+        }
     }
     
     clone(): File {
@@ -241,26 +284,28 @@ class Directory {
      * @param depth
      * @returns 
      */
-    flat(depth: number): FlatDirectory {
+    flat(includeRealFile: true, depth: number): FlatDirectory;
+    flat(includeRealFile: false, depth: number): SimpleFlatDirectory;
+    flat(includeRealFile: true | false, depth: number): FlatDirectory | SimpleFlatDirectory {
         if(depth == 0) {
             return {
                 name: this.name,
                 lastModified: this.lastModified.toJSON(),
                 isDirectory: true,
                 contents: []
-            };
+            } as unknown as FlatDirectory | SimpleFlatDirectory;
         } else {
             depth--;
             const flatContents = [];
             for(const item of this.contents) {
-                flatContents.push(item.flat(depth));
+                flatContents.push(item.flat(includeRealFile as any, depth));
             }
             return {
                 name: this.name,
                 lastModified: this.lastModified.toJSON(),
                 isDirectory: true,
                 contents: flatContents
-            };
+            } as FlatDirectory | SimpleFlatDirectory;
         }
     }
     
@@ -279,8 +324,10 @@ class Directory {
      * @param depth 
      * @returns 
      */
-    stringify(depth: number): FlatDirectoryString {
-        return JSON.stringify(this.flat(depth)) as FlatDirectoryString;
+    stringify(includeRealFile: true, depth: number): FlatDirectoryString;
+    stringify(includeRealFile: false, depth: number): FlatSimpleDirectoryString;
+    stringify(includeRealFile: true | false, depth: number): FlatDirectoryString | FlatSimpleDirectoryString {
+        return JSON.stringify(this.flat(includeRealFile as any, depth)) as FlatDirectoryString | FlatSimpleDirectoryString;
     }
 
     /**
