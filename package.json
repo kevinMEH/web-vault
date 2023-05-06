@@ -9,7 +9,7 @@
     "start": "NEXT_MANUAL_SIG_HANDLE=true next start",
     "lint": "next lint",
 
-    "single_tests": "ts-node-esm test/single_tests.ts",
+    "single_tests": "REDIS=true ts-node-esm test/single_tests.ts",
 
     "auth_tests_local": "ts-node-esm test/auth_tests.ts",
     "auth_tests_redis": "REDIS=true ts-node-esm test/auth_tests.ts",
