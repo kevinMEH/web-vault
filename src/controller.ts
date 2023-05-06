@@ -5,9 +5,11 @@
 
 import path from "path";
 import fs from "fs/promises";
-import { File, Directory } from "./vfs.js";
-import { generateVFS } from "./vfs_helpers.js";
-import { metaLog, vaultLog } from "./logger.js";
+import { File, Directory, FlatDirectory } from "./vfs.js";
+import { metaLog } from "./logger.js";
+import CustomError from "./custom_error.js";
+
+import { VFS_STORE_DIRECTORY, VFS_BACKUP_INTERVAL, PRODUCTION } from "./env.js";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
 export type VaultPath = string & { __type: "VaultPath" };
@@ -22,90 +24,103 @@ const validNameRegex = /(?!^(\.)+$)^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )$/
  * Names consisting only of dots and spaces not allowed.
  */
 const validPathRegex = /(?!^(\.)+($|\/))^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )(\/(?!(\.)+($|\/))(?! |-)[a-zA-Z0-9_\-. )]+(?<! ))+$/;
-const baseVaultDirectory = process.env.VAULT_DIRECTORY || path.join(process.cwd(), "vaults");
 
+const vfsStoreLocation = path.join(VFS_STORE_DIRECTORY, "vfs.json");
+const vfsTempLocation = path.join(VFS_STORE_DIRECTORY, "vfs.temp.json");
+const vfsOldLocation = path.join(VFS_STORE_DIRECTORY, "vfs.old.json");
 
 
 
 const vaultMap: Map<string, Directory> = new Map();
-await initializeVaults();
 
-
-
-
-// -------------------
-// -------------------
-// -------------------
-
-
-
-
-/**
- * Initializes vaults based on the folders in the Base Vault Directory
- */
-async function initializeVaults(): Promise<void> {
-    const vaults = await fs.readdir(baseVaultDirectory);
-    for(const vault of vaults) {
-        const vaultVFS = await generateVFS(path.join(baseVaultDirectory, vault));
-        vaultMap.set(vault, vaultVFS);
+if(PRODUCTION) {
+    const loadVFSResult = await loadVFS();
+    if(loadVFSResult !== null && loadVFSResult.code === "ENOENT") {
+        console.log("No VFS store found. No VFS were loaded. (Normal if this is the first time running.)");
     }
+    setInterval(() => {
+        storeVFS();
+    }, VFS_BACKUP_INTERVAL * 1000);
 }
 
-/**
- * Resynchronizes by replacing the Directory at the specified path with a new
- * Directory generated based on the file system.
- * 
- * @param toResync 
- * @returns 
- */
-async function resynchronize(toResync: ValidatedPath | VaultPath): Promise<boolean> {
-    const vaultName = getVaultFromPath(toResync);
-    vaultLog(vaultName, "INFO", `Resyncing "${toResync}"...`);
 
-    const realPath = path.join(baseVaultDirectory, toResync);
-    let directory: Directory;
+
+// -------------------
+// -------------------
+// -------------------
+
+
+
+async function loadVFS(): Promise<CustomError | null> {
+    let storeObject: Record<string, FlatDirectory>;
     try {
-        directory = await generateVFS(realPath);
+        const fileString = (await fs.readFile(vfsStoreLocation)).toString();
+        storeObject = Object.assign(Object.create(null), JSON.parse(fileString));
     } catch(error) {
         const code = (error as NodeJS.ErrnoException).code;
-        if(code === "ENOENT") {
-            vaultLog(vaultName, "VFS ERROR", `Trying to resync directory "${toResync}" but it no longer exists at "${realPath}". Aborting...`);
-        } else if(code === "ENOTDIR") {
-            vaultLog(vaultName, "VFS ERROR", `Trying to resync directory "${toResync}" at "${realPath}", but somewhere, a file was encountered. Aborting...`);
-        } else {
-            vaultLog(vaultName, "VFS ERROR", `Trying to resync directory "${toResync}" at "${realPath}", but encountered unknown error ${(error as Error).message} instead. Aborting...`);
+        const message = (error as Error).message;
+        if(code !== "ENOENT") {
+            metaLog("vfs", "ERROR", `Trying to extract object from VFS store at "${vfsStoreLocation}", but encountered unrecognized error ${message}.`);
         }
-        return false;
+        return new CustomError(message, code === "ENOENT" ? "WARNING" : "ERROR", code);
     }
-
-    const [ parentDirectoryPath, directoryName ] = splitParentChild(toResync);
-    const parentDirectory = getDirectoryAt(parentDirectoryPath);
-    if(parentDirectory === null || directoryName === null) {
-        // Resyncing entire vault directory
-        const maybeVault = getVaultVFS(toResync);
-        if(maybeVault !== null) {
-            maybeVault.contents = directory.contents;
-        } else {
-            metaLog("vfs", "ERROR", `Resyncing vault "${toResync}", but the vault or the VFS does not exist.`);
-            return false;
-        }
-    } else {
-        if(parentDirectory.removeEntry(directoryName, false) === false) {
-            vaultLog(vaultName, "VFS ERROR", `Trying to resync directory "${toResync}" at "${realPath}", but it somehow does not exist in its parent directory "${parentDirectoryPath}". Continuing anyways...`);
-        }
-        parentDirectory.addEntry(directory, false);
+    for(const vaultName in storeObject) {
+        const flatDirectory = storeObject[vaultName];
+        const vaultDirectory = new Directory(flatDirectory.name, [], flatDirectory.lastModified);
+        vaultDirectory.update(flatDirectory);
+        vaultMap.set(vaultName, vaultDirectory);
     }
-    vaultLog(vaultName, "INFO", `Finished resyncing "${toResync}".`);
-    return true;
+    return null;
 }
 
-async function newVaultVFS(vault: string): Promise<void> {
-    const vaultVFS = await generateVFS(path.join(baseVaultDirectory, vault));
+async function storeVFS(): Promise<CustomError[]> {
+    let tempFile: fs.FileHandle;
+    try {
+        tempFile = await fs.open(vfsTempLocation, "w");
+    } catch(error) {
+        const message = (error as Error).message;
+        const code = (error as NodeJS.ErrnoException).code;
+        const reason = `Trying to store VFS into file "${vfsTempLocation}", but encountered unrecognized error ${message}.`;
+        metaLog("vfs", "ERROR", reason);
+        return [ new CustomError(reason, "ERROR", code) ];
+    }
+    
+    const errors: CustomError[] = [];
+    
+    const storeObject = Object.create(null);
+    for(const [vaultName, vaultDirectory] of vaultMap.entries()) {
+        storeObject[vaultName] = vaultDirectory.flat(true, -1);
+    }
+    await tempFile.writeFile(JSON.stringify(storeObject));
+    
+    await fs.rename(vfsStoreLocation, vfsOldLocation).catch(error => {
+        const code = (error as NodeJS.ErrnoException).code;
+        const message = (error as Error).message;
+        const reason = `Trying to rename "${vfsStoreLocation}" into "${vfsOldLocation}", but encountered unrecognized error ${message}.`;
+        if(code !== "ENOENT") {
+            metaLog("vfs", "ERROR", reason);
+        }
+        errors.push(new CustomError(reason, code === "ENOENT" ? "WARNING" : "ERROR", code));
+    });
+    await fs.rename(vfsTempLocation, vfsStoreLocation).catch(error => {
+        const code = (error as NodeJS.ErrnoException).code;
+        const message = (error as Error).message;
+        const reason = `Trying to rename "${vfsTempLocation}" into "${vfsStoreLocation}", but encountered unrecognized error ${message}.`;
+        metaLog("vfs", "ERROR", reason);
+        errors.push(new CustomError(reason, "ERROR", code));
+    });
+    await fs.unlink(vfsOldLocation);
+    return errors;
+}
+
+function newVaultVFS(vault: string) {
+    const vaultVFS = new Directory(vault, []);
     vaultMap.set(vault, vaultVFS);
 }
 
 /**
- * Returns true if the vault exists and has been deleted, false if the vault does not exist.
+ * Returns true if the vault exists and has been deleted, false if the vault
+ * does not exist.
  * 
  * @param vault 
  * @returns 
@@ -115,9 +130,8 @@ function deleteVaultVFS(vault: string): boolean {
 }
 
 /**
- * Another test for a vault's existance, but this time depending on if the
- * vault directory exists (based on the initializeVaults function) rather
- * than if there is a database entry.
+ * Another test for a vault's existance, but this time depending on if the vault
+ * directory exists in the VFS.
  * 
  * @param vault - Vault name string
  * @returns
@@ -146,8 +160,8 @@ function getVaultFromPath(filePath: ValidatedPath | VaultPath): VaultPath {
 }
 
 /**
- * Gets the parent directory path of the file path. If the path is just a
- * vault directory, returns null.
+ * Gets the parent directory path of the file path. If the path is just a vault
+ * directory, returns null.
  * 
  * vault/folder/file -> vault/folder
  * vault/folder -> vault
@@ -243,4 +257,18 @@ function getFileAt(path: ValidatedPath | VaultPath | null): File | null {
     return file;
 }
 
-export { validNameRegex, validPathRegex, resynchronize, newVaultVFS, deleteVaultVFS, vaultDirectoryExists, getVaultFromPath, getParentPath, splitParentChild, validate, getAt, getDirectoryAt, getFileAt };
+export {
+    validNameRegex,
+    validPathRegex,
+    storeVFS,
+    newVaultVFS,
+    deleteVaultVFS,
+    vaultDirectoryExists,
+    getVaultFromPath,
+    getParentPath,
+    splitParentChild,
+    validate,
+    getAt,
+    getDirectoryAt,
+    getFileAt
+};
