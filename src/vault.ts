@@ -14,8 +14,9 @@ import { deleteVaultVFS, newVaultVFS } from "./controller.js";
 
 import CustomError from "./custom_error.js";
 
-const baseVaultDirectory = process.env.VAULT_DIRECTORY || path.join(process.cwd(), "vaults");
-const baseVaultLoggingDirectory = process.env.LOGGING_DIRECTORY || path.join(process.cwd(), "logs", "vaults");
+import { BASE_VAULT_DIRECTORY, BASE_LOGGING_DIRECTORY } from "./env.js";
+
+const baseVaultLoggingDirectory = path.join(BASE_LOGGING_DIRECTORY, "vaults");
 // Must create corresponding log folder with creation of vault.
 // (The vaultLog function expects the folder to be present or error)
 
@@ -54,13 +55,13 @@ async function createNewVault(vaultName: string, password: string): Promise<Cust
     }
 
     try {
-        await fs.mkdir(path.join(baseVaultDirectory, vaultName));
+        await fs.mkdir(path.join(BASE_VAULT_DIRECTORY, vaultName));
     } catch(error) {
         const message = (error as Error).message;
         const code = (error as NodeJS.ErrnoException).code;
         if(code === "EEXIST") {
             metaLog("admin", "ERROR",
-            `Tried to create new vault directory ${vaultName} inside ${baseVaultDirectory}, but directory already exists. Aborting...`);
+            `Tried to create new vault directory ${vaultName} inside ${BASE_VAULT_DIRECTORY}, but directory already exists. Aborting...`);
             return new CustomError(
                 message,
                 "ERROR",
@@ -68,7 +69,7 @@ async function createNewVault(vaultName: string, password: string): Promise<Cust
             );
         } else {
             metaLog("admin", "ERROR",
-            `Tried to create new vault directory ${vaultName} inside ${baseVaultDirectory}, but encountered unrecognized error "${message}" instead. Aborting...`);
+            `Tried to create new vault directory ${vaultName} inside ${BASE_VAULT_DIRECTORY}, but encountered unrecognized error "${message}" instead. Aborting...`);
             return new CustomError(
                 message,
                 "ERROR",
@@ -98,10 +99,10 @@ async function createNewVault(vaultName: string, password: string): Promise<Cust
 
     if(returnValue == null) {
         metaLog("admin", "INFO",
-        `Created new vault ${vaultName} in ${baseVaultDirectory} and logging directory in ${baseVaultLoggingDirectory}.`);
+        `Created new vault ${vaultName} in ${BASE_VAULT_DIRECTORY} and logging directory in ${baseVaultLoggingDirectory}.`);
     } else {
         metaLog("admin", "INFO",
-        `Created new vault ${vaultName} in ${baseVaultDirectory} and logging directory in ${baseVaultLoggingDirectory} with warnings / errors.`);
+        `Created new vault ${vaultName} in ${BASE_VAULT_DIRECTORY} and logging directory in ${baseVaultLoggingDirectory} with warnings / errors.`);
     }
     return returnValue;
 }
@@ -158,27 +159,27 @@ async function deleteVault(vaultName: string): Promise<Array<CustomError>> {
     }
 
     try {
-        await fs.rm(path.join(baseVaultDirectory, vaultName), { recursive: true });
+        await fs.rm(path.join(BASE_VAULT_DIRECTORY, vaultName), { recursive: true });
     } catch(error) {
         const message = (error as Error).message;
         const code = (error as NodeJS.ErrnoException).code;
         if(code === "ENOENT") {
             metaLog("admin", "WARNING",
-            `Trying to delete ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} but the vault does not exist.`);
-            returnValue.push(new CustomError(`${vaultName} does not have a corresponding directory in ${baseVaultDirectory}`, "ERROR", "VAULT_DIRECTORY_NONEXISTANT"));
+            `Trying to delete ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} but the vault does not exist.`);
+            returnValue.push(new CustomError(`${vaultName} does not have a corresponding directory in ${BASE_VAULT_DIRECTORY}`, "ERROR", "VAULT_DIRECTORY_NONEXISTANT"));
         } else {
             metaLog("admin", "ERROR",
-            `Trying to delete ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} but encountered unrecognized error "${message}".`);
+            `Trying to delete ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} but encountered unrecognized error "${message}".`);
             returnValue.push(new CustomError(message, "ERROR", code));
         }
     }
     
     if(returnValue == null) {
         metaLog("admin", "INFO",
-        `Successfully deleted vault ${vaultName} at ${path.join(baseVaultDirectory, vaultName)}.`);
+        `Successfully deleted vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)}.`);
     } else {
         metaLog("admin", "INFO",
-        `Deleted vault ${vaultName} at ${path.join(baseVaultDirectory, vaultName)} with warnings / errors.`);
+        `Deleted vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} with warnings / errors.`);
     }
     return returnValue;
 }

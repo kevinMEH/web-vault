@@ -18,23 +18,18 @@ import {
 import { metaLog } from "./logger.js";
 import { unixTime } from "./helper.js";
 
-const tokenExpirationTime = parseInt(process.env.JWT_EXPIRATION as string) || 7 * 24 * 60 * 60; // Default is 1 week
-const issuer = process.env.DOMAIN !== undefined ? process.env.DOMAIN
-    : (() => { throw new Error(`The DOMAIN environment variable must be specified. (It is used as the "issuer" field in the JSON Web Token.)`); })();
-const secret = process.env.JWT_SECRET !== undefined ? process.env.JWT_SECRET
-    : (() => { throw new Error("The JWT_SECRET environment variable must be specified."); })();
-if(!(/^[a-fA-F0-9]+$/.test(secret))) throw new Error("Secret must be a hex string. (No 0x)");
+import { JWT_EXPIRATION, DOMAIN, JWT_SECRET, USING_REDIS, PASSWORD_SALT, ITERATION_COUNT } from "./env.js";
 
-const addOutdatedTokenFunction = process.env.REDIS ? redisAddOutdatedToken : (token: string, expireAt: number) => Promise.resolve(localAddOutdatedToken(token, expireAt));
-const isOutdatedTokenFunction = process.env.REDIS ? redisIsOutdatedToken : (token: string) => Promise.resolve(localIsOutdatedToken(token));
-const setVaultPasswordFunction = process.env.REDIS ? redisSetVaultPassword : localSetVaultPassword;
-const verifyVaultPasswordFunction = process.env.REDIS ? redisVerifyVaultPassword : (vault: string, password: string) => Promise.resolve(localVerifyVaultPassword(vault, password));
-const vaultExistsFunction = process.env.REDIS ? redisVaultExists : (vault: string) => Promise.resolve(localVaultExists(vault));
-const deleteVaultPasswordFunction = process.env.REDIS ? redisDeleteVaultPassword : localDeleteVaultPassword;
+const addOutdatedTokenFunction = USING_REDIS ? redisAddOutdatedToken : (token: string, expireAt: number) => Promise.resolve(localAddOutdatedToken(token, expireAt));
+const isOutdatedTokenFunction = USING_REDIS ? redisIsOutdatedToken : (token: string) => Promise.resolve(localIsOutdatedToken(token));
+const setVaultPasswordFunction = USING_REDIS ? redisSetVaultPassword : localSetVaultPassword;
+const verifyVaultPasswordFunction = USING_REDIS ? redisVerifyVaultPassword : (vault: string, password: string) => Promise.resolve(localVerifyVaultPassword(vault, password));
+const vaultExistsFunction = USING_REDIS ? redisVaultExists : (vault: string) => Promise.resolve(localVaultExists(vault));
+const deleteVaultPasswordFunction = USING_REDIS ? redisDeleteVaultPassword : localDeleteVaultPassword;
 
 async function getUnwrappedToken(token: string): Promise<UnwrappedToken | null> {
     if(await isOutdatedTokenFunction(token)) return null;
-    const unwrapped = JWT.unwrap(token, secret);
+    const unwrapped = JWT.unwrap(token, JWT_SECRET);
     if(unwrapped == null) return null;
     const [header, payload] = unwrapped;
     if(payload.exp < unixTime()) return null;
@@ -49,12 +44,12 @@ function outdateToken(token: string, expireAt: number) {
 
 function createToken(vaults: string[]) {
     const current = unixTime();
-    const jwt = new JWT(issuer, current + tokenExpirationTime, current);
+    const jwt = new JWT(DOMAIN, current + JWT_EXPIRATION, current);
     jwt.addClaim("vaults", vaults);
     jwt.addClaim("nonce", Math.floor(Math.random() * 4294967295));
-    const token = jwt.getToken(secret);
+    const token = jwt.getToken(JWT_SECRET);
     metaLog("authentication", "INFO",
-    `Created new token ${token}. (Vaults: ${vaults}, Expiration: ${current + tokenExpirationTime})`);
+    `Created new token ${token}. (Vaults: ${vaults}, Expiration: ${current + JWT_EXPIRATION})`);
     return token;
 }
 
@@ -123,22 +118,11 @@ function refreshTokenExpiration(unwrappedToken: UnwrappedToken): string {
 
 
 import { hashPassword } from "./authentication/password.js";
-const passwordSalt = (() => {
-    if(process.env.PASSWORD_SALT === undefined) {
-        throw new Error("The PASSWORD_SALT environment variable must be specified.");
-    }
-    if(!(/^[a-fA-F0-9]+$/.test(process.env.PASSWORD_SALT))) {
-        throw new Error("Password must be a hex string. (No 0x)");
-    }
-    return Buffer.from(process.env.PASSWORD_SALT, "hex");
-})();
-
-const iterationCount = parseInt(process.env.ITERATION_COUNT as string) || 123456;
 
 
 // TODO: Error handling on hashPassword
 async function setVaultPassword(vault: string, password: string) {
-    const hashedPassword = await hashPassword(password, passwordSalt, iterationCount);
+    const hashedPassword = await hashPassword(password, PASSWORD_SALT, ITERATION_COUNT);
     await setVaultPasswordFunction(vault, hashedPassword);
     metaLog("authentication", "INFO",
     `Changed vault ${vault} password. (Hash: ${hashedPassword})`);
@@ -146,7 +130,7 @@ async function setVaultPassword(vault: string, password: string) {
 
 // TODO: Error handling on hashPassword
 async function verifyVaultPassword(vault: string, password: string) {
-    const hashedPassword = await hashPassword(password, passwordSalt, iterationCount);
+    const hashedPassword = await hashPassword(password, PASSWORD_SALT, ITERATION_COUNT);
     return verifyVaultPasswordFunction(vault, hashedPassword);
 }
 

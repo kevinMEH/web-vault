@@ -1,13 +1,14 @@
 import Redis from "ioredis";
+import { USING_REDIS } from "../env.js";
 
 const throwRedisError = () => { throw new Error("Attempting to use Redis with the REDIS environment variable turned off."); }
 
-const redis = process.env.REDIS || process.env.PRODUCTION == undefined
+const redis = USING_REDIS
     ? new Redis()
     : {
     get: throwRedisError,
     set: throwRedisError,
-    quit: throwRedisError,
+    quit: () => { console.log("Not using Redis."); },
     del: throwRedisError
 };
 

@@ -6,9 +6,7 @@ import { unixTime } from "../helper.js"
 import { metaLog } from "../logger.js";
 import CustomError from "../custom_error.js";
 
-const purgeInterval = parseInt(process.env.PURGE_INTERVAL as string) || 60 * 60 * 24; // Default is every day
-
-const databaseSaveInterval = parseInt(process.env.DATABASE_SAVE_INTERVAL as string) || 60 * 60; // Default is once per hour
+import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL } from "../env.js";
 
 type TokenPair = {
     token: string,
@@ -75,7 +73,7 @@ const vaultPasswordMap: Map<string, string> = new Map();
 const outdatedTokensFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
 const vaultPasswordFile = path.join(process.cwd(), "database", "vaultPasswords.csv");
 
-if(process.env.PRODUCTION && process.env.REDIS == undefined) {
+if(PRODUCTION && !USING_REDIS) {
     try {
         await fs.access(outdatedTokensFile);
         await loadOutdatedTokensFromFile();
@@ -107,22 +105,11 @@ if(process.env.PRODUCTION && process.env.REDIS == undefined) {
     // Interval for saving database to file. Default is once per hour.
     setInterval(() => {
         saveOutdatedTokensToFile();
-    }, databaseSaveInterval);
+    }, DATABASE_SAVE_INTERVAL * 1000);
 
-    // Interval for purging. Default is once per day.
-    // If an offset is specified, the initial interval function will be delayed
-    // by the amount of offset.
-    if(process.env.FIRST_PURGE_OFFSET) {
-        setTimeout(() => {
-            setInterval(() => {
-                purgeAllOutdated();
-            }, purgeInterval * 1000);
-        }, parseInt(process.env.FIRST_PURGE_OFFSET) * 1000)
-    } else {
-        setInterval(() => {
-            purgeAllOutdated();
-        }, purgeInterval * 1000);
-    }
+    setInterval(() => {
+        purgeAllOutdated();
+    }, PURGE_INTERVAL * 1000);
 }
 
 // --------------------

@@ -1,23 +1,18 @@
 import { after, describe, it } from "node:test";
 import assert from "assert";
 
-import { close } from "../src/authentication/redis.js";
-
-async function shutdown() {
-    console.log("Closing Redis connection...");
-    await close();
-    console.log("Closed.");
-    
-    console.log("Done.");
-}
 
 process.env.JWT_SECRET = "4B6576696E20697320636F6F6C";
 process.env.DOMAIN = "Kevin";
 process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
+
+
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
+const { shutdown } = await import("../src/cleanup.js");
 
-import JWT, { Header, Payload, UnwrappedToken } from "../src/authentication/jwt.js";
+const { default: JWT } = await import("../src/authentication/jwt.js");
+import { Header, Payload, UnwrappedToken } from "../src/authentication/jwt.js"; // Type
 const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration, setVaultPassword, verifyVaultPassword, vaultExistsDatabase, deleteVaultPassword } = await import("../src/authentication.js");
 
 describe("Authentication tests", () => {
