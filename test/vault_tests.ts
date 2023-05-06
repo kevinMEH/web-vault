@@ -3,21 +3,15 @@ import assert from "assert";
 import fs from "fs/promises";
 import path from "path";
 
-import { close } from "../src/authentication/redis.js";
-
-async function shutdown() {
-    console.log("Closing Redis connection...");
-    await close();
-    console.log("Closed.");
-    
-    console.log("Done.");
-}
 
 process.env.JWT_SECRET = "4B6576696E20697320636F6F6C";
 process.env.DOMAIN = "Kevin";
 process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
+
+
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
+const { shutdown } = await import("../src/cleanup.js");
 
 const { verifyVaultPassword } = await import("../src/authentication.js");
 const { changeVaultPassword, createNewVault, deleteVault } = await import("../src/vault.js");
@@ -39,7 +33,7 @@ describe("Vault tests", () => {
         await fs.access(path.join(process.cwd(), "vaults", "test-vault"));
         await fs.access(path.join(process.cwd(), "logs", "vaults", "test-vault"));
         
-        assert((await deleteVault("test-vault")).length === 0);
+        assert((await deleteVault("test-vault")) === null);
 
         try {
             await fs.access(path.join(process.cwd(), "vaults", "test-vault"));
@@ -68,17 +62,9 @@ describe("Vault tests", () => {
         result = await createNewVault("asdf/hello", "password");
         assert(result !== null);
         assert(result.code === "INVALID_NAME");
-        
-        const results = await deleteVault("bad\\name");
-        assert(results.some(error => error.code === "INVALID_NAME"));
-    });
-    
-    it("Unsuccessfully delete nonexistant vault", async () => {
-        const results = await deleteVault("nonexistant-vault");
-        assert(results.some(error => error.code === "VAULT_NONEXISTANT"));
     });
     
     after(async () => {
         await shutdown();
-    })
+    });
 });
