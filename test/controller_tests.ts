@@ -18,7 +18,7 @@ else console.log("Using in memory database");
 const { cleanup } = await import("../src/cleanup.js");
 
 const { File, Directory } = await import("../src/vfs.js");
-const { newVaultVFS, vaultDirectoryExists, validate, getDirectoryAt, getFileAt } = await import("../src/controller.js");
+const { newVaultVFS, vaultVFSExists, validate, getDirectoryAt, getFileAt } = await import("../src/controller.js");
 const { createNewVault, deleteVault } = await import("../src/vault.js");
 
 describe("VFS controller tests", () => {
@@ -118,8 +118,8 @@ describe("VFS controller tests", () => {
     });
 
     it("Tests if VFS successfully initialized for test vaults", () => {
-        assert(vaultDirectoryExists("vault"));
-        assert(vaultDirectoryExists("anothervault"));
+        assert(vaultVFSExists("vault"));
+        assert(vaultVFSExists("anothervault"));
 
         let vPath: ValidatedPath | null;
 
@@ -209,12 +209,12 @@ describe("VFS controller tests", () => {
     
     it("Creating vault creates VFS", async () => {
         assert(await createNewVault("somevault", "secure_password123") === null);
-        assert(vaultDirectoryExists("somevault"));
-        assert(vaultDirectoryExists("sooommmeevault") === false);
+        assert(vaultVFSExists("somevault"));
+        assert(vaultVFSExists("sooommmeevault") === false);
         assert(getDirectoryAt("somevault" as VaultPath));
         
         await deleteVault("somevault");
-        assert(vaultDirectoryExists("somevault") === false);
+        assert(vaultVFSExists("somevault") === false);
     });
     
     after(async () => {

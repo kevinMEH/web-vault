@@ -136,7 +136,7 @@ function deleteVaultVFS(vault: string): boolean {
  * @param vault - Vault name string
  * @returns
  */
-function vaultDirectoryExists(vault: string | VaultPath): boolean {
+function vaultVFSExists(vault: string | VaultPath): boolean {
     return vaultMap.has(vault as string);
 }
 
@@ -210,7 +210,7 @@ function validate(filePath: string): ValidatedPath | null {
         return null;
     }
     const vault = getVaultFromPath(filePath as ValidatedPath);
-    if(!vaultDirectoryExists(vault)) {
+    if(!vaultVFSExists(vault)) {
         return null;
     }
     return filePath as ValidatedPath;
@@ -263,7 +263,7 @@ export {
     storeVFS,
     newVaultVFS,
     deleteVaultVFS,
-    vaultDirectoryExists,
+    vaultVFSExists,
     getVaultFromPath,
     getParentPath,
     splitParentChild,
