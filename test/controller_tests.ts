@@ -15,7 +15,7 @@ import { Stats } from "fs"; // Type
 
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
-const { shutdown } = await import("../src/cleanup.js");
+const { cleanup } = await import("../src/cleanup.js");
 
 const { File, Directory } = await import("../src/vfs.js");
 const { newVaultVFS, vaultDirectoryExists, validate, getDirectoryAt, getFileAt } = await import("../src/controller.js");
@@ -223,6 +223,6 @@ describe("VFS controller tests", () => {
         await fs.rm(path.join(vaultDirectory, "anothervault"), { recursive: true, force: true });
         await fs.rm(path.join(vaultDirectory, "somevault"), { recursive: true, force: true });
         
-        await shutdown();
+        await cleanup();
     });
 });

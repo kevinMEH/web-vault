@@ -8,15 +8,6 @@ import fs from "fs/promises";
 
 import { unixTime } from "../src/helper.js";
 
-// Gracefully shutdown function
-async function shutdown() {
-    console.log("Closing Redis connection...");
-    await close();
-    console.log("Closed.");
-
-    console.log("Done.");
-}
-
 import { expectError, asyncExpectError } from "./expect_error.js";
 import { vaultLog, logFileNameFromDate } from "../src/logger.js";
 import JWT, { Header, Payload } from "../src/authentication/jwt.js";
@@ -28,6 +19,8 @@ import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedT
 import { hashPassword } from "../src/authentication/password.js";
 import { File, Directory } from "../src/vfs.js";
 import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller.js";
+
+import { cleanup } from "../src/cleanup.js";
 
 describe("Single Tests", () => {
     it("Verifying expectError works when no error (using expectError).", expectError(() => {
@@ -742,6 +735,6 @@ describe("Single Tests", () => {
     });
     
     after(async () => {
-        await shutdown();
+        await cleanup();
     });
 });

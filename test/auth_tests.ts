@@ -9,7 +9,7 @@ process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
 
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
-const { shutdown } = await import("../src/cleanup.js");
+const { cleanup } = await import("../src/cleanup.js");
 
 const { default: JWT } = await import("../src/authentication/jwt.js");
 import { Header, Payload, UnwrappedToken } from "../src/authentication/jwt.js"; // Type
@@ -80,10 +80,6 @@ describe("Authentication tests", () => {
         });
     });
 
-    // ------------------
-    // ------------------
-    // ------------------
-
     describe("Testing vault authentication functions", () => {
         it("Sets the password for a vault and checks if successful", async () => {
             await setVaultPassword("testing", "password123");
@@ -103,11 +99,7 @@ describe("Authentication tests", () => {
         });
     });
 
-    // ------------------
-    // ------------------
-    // ------------------
-
     after(async () => {
-        await shutdown();
+        await cleanup();
     });
 });
