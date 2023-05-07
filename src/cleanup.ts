@@ -1,13 +1,14 @@
 import { close } from "../src/authentication/redis.js";
 
-const intervals: number[] = [];
+const intervals: Array<[Function, number]> = [];
 
-function addInterval(interval: number) {
-    intervals.push(interval);
+function addInterval(intervalFunction: Function, interval: number) {
+    intervals.push([intervalFunction, interval]);
 }
 
-function clearIntervals() {
-    for(const interval of intervals) {
+async function runClearIntervals() {
+    for(const [intervalFunction, interval] of intervals) {
+        await intervalFunction();
         clearInterval(interval);
     }
 }
@@ -17,7 +18,7 @@ async function cleanup() {
     await close();
     console.log("Closed.");
     console.log("Clearing intervals...");
-    clearIntervals();
+    runClearIntervals();
     console.log("Intervals cleared.");
     
     console.log("Done.");
@@ -25,6 +26,7 @@ async function cleanup() {
 
 async function shutdown() {
     await cleanup();
+    process.exit();
 }
 
 export { addInterval, cleanup, shutdown };
