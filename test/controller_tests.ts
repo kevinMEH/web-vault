@@ -11,14 +11,13 @@ process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
 
 
 import { ValidatedPath, VaultPath } from "../src/controller.js"; // Type
-import { Stats } from "fs"; // Type
 
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
 const { cleanup } = await import("../src/cleanup.js");
 
 const { File, Directory } = await import("../src/vfs.js");
-const { newVaultVFS, vaultVFSExists, validate, getDirectoryAt, getFileAt } = await import("../src/controller.js");
+const { newVaultVFS, vaultVFSExists, validate, getAt, getDirectoryAt, getFileAt } = await import("../src/controller.js");
 const { createNewVault, deleteVault } = await import("../src/vault.js");
 
 describe("VFS controller tests", () => {
@@ -136,6 +135,7 @@ describe("VFS controller tests", () => {
         vPath = "vault" as VaultPath;
         assert(getDirectoryAt(vPath)?.contents.length === 3);
         assert(getDirectoryAt(vPath)?.getFile(".gitignore"));
+        assert(getAt(vPath) !== null);
 
         vPath = validate("vault/.gitignore");
         assert(getFileAt(vPath));
@@ -177,8 +177,9 @@ describe("VFS controller tests", () => {
 
         vPath = "anothervault" as VaultPath;
         assert(getDirectoryAt(vPath)?.contents.length === 1);
-        assert(getDirectoryAt(vPath)?.getDirectory("folder"));
-        assert(getDirectoryAt(vPath)?.getDirectory("nonexistant") === null);
+        assert(getDirectoryAt(vPath)?.getAny("folder"));
+        assert(getDirectoryAt(vPath)?.getAny("nonexistant") === null);
+        assert(getAt(vPath) !== null);
         
         vPath = validate("anothervault/folder");
         assert(getDirectoryAt(vPath));
@@ -199,8 +200,8 @@ describe("VFS controller tests", () => {
 
         
         vPath = "nonexistant" as VaultPath;
+        assert(getAt(vPath) === null);
         assert(getDirectoryAt(vPath) === null);
-        assert(getFileAt(vPath) === null);
         
         vPath = validate("nonexistant/folder1");
         assert(getDirectoryAt(vPath) === null);

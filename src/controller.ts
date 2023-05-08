@@ -226,6 +226,9 @@ function getAt(path: ValidatedPath | VaultPath | null): File | Directory | null 
     if(path === null) return null;
     const directories = path.split("/");
     let last: Directory | null | undefined = getVaultVFS(directories[0]);
+    if(directories.length === 1) {
+        return last;
+    }
     for(let i = 1; i < directories.length - 1; i++) {
         last = last?.getDirectory(directories[i]);
     }
@@ -245,7 +248,7 @@ function getDirectoryAt(path: ValidatedPath | VaultPath | null): Directory | nul
     return last;
 }
 
-function getFileAt(path: ValidatedPath | VaultPath | null): File | null {
+function getFileAt(path: ValidatedPath | null): File | null {
     if(path === null) return null;
     const directories = path.split("/");
     let last: Directory | null | undefined = getVaultVFS(directories[0]);
