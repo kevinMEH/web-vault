@@ -213,7 +213,7 @@ describe("VFS controller tests", () => {
         assert(vaultVFSExists("sooommmeevault") === false);
         assert(getDirectoryAt("somevault" as VaultPath));
         
-        await deleteVault("somevault");
+        await deleteVault("somevault", true);
         assert(vaultVFSExists("somevault") === false);
     });
     

@@ -16,6 +16,7 @@ import CustomError from "./custom_error.js";
 
 import { BASE_VAULT_DIRECTORY, BASE_LOGGING_DIRECTORY } from "./env.js";
 
+const deletionTimeout = 15 * 1000;
 const baseVaultLoggingDirectory = path.join(BASE_LOGGING_DIRECTORY, "vaults");
 // Must create corresponding log folder with creation of vault.
 // (The vaultLog function expects the folder to be present or error)
@@ -123,49 +124,63 @@ async function changeVaultPassword(vaultName: string, password: string): Promise
 
 
 /**
- * Deletes a vault. Vault does not have to exist, although errors will be logged
- * and returned.
+ * Deletes a vault. Vault does not have to exist, although errors will be
+ * logged.
+ * 
+ * Unless deleteImmediately is set to true, there will be a timeout before the
+ * deletion of the vault directory so that other possible operations on the
+ * files inside may finish.
+ * 
+ * The async function will wait for vault deletion if deleteImmediately is set
+ * to true.
  * 
  * @param vaultName 
- * @returns Promise<CustomError | null>
+ * @param deleteImmediately
+ * @returns
  */
-async function deleteVault(vaultName: string): Promise<CustomError | null> {
-    if(!await vaultExistsDatabase(vaultName)) {
-        metaLog("admin", "ERROR", `${vaultName} does not exist in the database. Deletion still proceeding.`);
-    } else {
-        await deleteVaultPassword(vaultName);
-    }
+async function deleteVault(vaultName: string, deleteImmediately: boolean) {
+    vaultExistsDatabase(vaultName).then(exists => {
+        if(!exists) {
+            metaLog("admin", "ERROR", `${vaultName} does not exist in the database. Deletion still proceeding.`);
+        }
+        deleteVaultPassword(vaultName);
+    })
     
     if(!deleteVaultVFS(vaultName)) {
         metaLog("admin", "ERROR", `${vaultName} VFS somehow does not exist. Deletion still proceeding.`);
     }
     
-    let returnValue = null;
-
-    try {
-        await fs.rm(path.join(BASE_VAULT_DIRECTORY, vaultName), { recursive: true });
-    } catch(error) {
-        const message = (error as Error).message;
-        const code = (error as NodeJS.ErrnoException).code;
-        if(code === "ENOENT") {
-            metaLog("admin", "WARNING",
-            `Trying to delete ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} but the vault does not exist.`);
-            returnValue = (new CustomError(`${vaultName} does not have a corresponding directory in ${BASE_VAULT_DIRECTORY}`, "ERROR", "VAULT_DIRECTORY_NONEXISTANT"));
-        } else {
-            metaLog("admin", "ERROR",
-            `Trying to delete ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} but encountered unrecognized error "${message}".`);
-            returnValue = (new CustomError(message, "ERROR", code));
-        }
-    }
-    
-    if(returnValue == null) {
-        metaLog("admin", "INFO",
-        `Successfully deleted vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)}.`);
+    if(deleteImmediately) {
+        await fs.rm(path.join(BASE_VAULT_DIRECTORY, vaultName), { recursive: true }).then(() => {
+            metaLog("admin", "INFO", `Successfully deleted vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)}.`);
+        }).catch(error => {
+            const message = (error as Error).message;
+            const code = (error as NodeJS.ErrnoException).code;
+            if(code === "ENOENT") {
+                metaLog("admin", "WARNING",
+                `Deleting vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} but the vault does not exist.`);
+            } else {
+                metaLog("admin", "ERROR",
+                `Deleting vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} but encountered unrecognized error "${message}".`);
+            }
+        });
     } else {
-        metaLog("admin", "INFO",
-        `Deleted vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} with warnings / errors.`);
+        setTimeout(() => {
+            fs.rm(path.join(BASE_VAULT_DIRECTORY, vaultName), { recursive: true }).then(() => {
+                metaLog("admin", "INFO", `Successfully deleted vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)}.`);
+            }).catch(error => {
+                const message = (error as Error).message;
+                const code = (error as NodeJS.ErrnoException).code;
+                if(code === "ENOENT") {
+                    metaLog("admin", "WARNING",
+                    `Deleting vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} but the vault does not exist.`);
+                } else {
+                    metaLog("admin", "ERROR",
+                    `Deleting vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)} but encountered unrecognized error "${message}".`);
+                }
+            });
+        }, deletionTimeout);
     }
-    return returnValue;
 }
 
 export { createNewVault, changeVaultPassword, deleteVault };

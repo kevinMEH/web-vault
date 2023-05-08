@@ -18,7 +18,7 @@ const { changeVaultPassword, createNewVault, deleteVault } = await import("../sr
 
 describe("Vault tests", () => {
     it("Tests the creation, changing password, and deletion of a vault", async () => {
-        await deleteVault("test-vault");
+        await deleteVault("test-vault", true);
 
         assert(await createNewVault("test-vault", "Password123") === null);
         assert(await verifyVaultPassword("test-vault", "Password123"));
@@ -33,14 +33,14 @@ describe("Vault tests", () => {
         await fs.access(path.join(process.cwd(), "vaults", "test-vault"));
         await fs.access(path.join(process.cwd(), "logs", "vaults", "test-vault"));
         
-        assert((await deleteVault("test-vault")) === null);
+        await deleteVault("test-vault", true);
 
         try {
             await fs.access(path.join(process.cwd(), "vaults", "test-vault"));
             assert(false); // The vault somehow still exists after deletion.
         } catch(error) {
-            const message = (error as Error).message;
-            assert(message.includes("no such file"));
+            const code = (error as NodeJS.ErrnoException).code;
+            assert(code === "ENOENT");
         }
         
         assert(await changeVaultPassword("test-vault", "NonexistantVault123") === false);
