@@ -63,7 +63,7 @@ class File {
             this.lastModified = new Date();
         }
     }
-    
+
     modifiedNow(): void {
         this.lastModified = new Date();
     }
@@ -159,38 +159,16 @@ class Directory {
         return null;
     }
     
-    /**
-     * Renames an entry.
-     * 
-     * Returns true if the entry exists and is renamed. False if it does not exist.
-     * 
-     * @param currentName 
-     * @param newName 
-     * @returns 
-     */
-    renameEntry(currentName: string, newName: string): boolean {
-        const maybeCurrent = this.getAny(currentName);
-        if(maybeCurrent === null) return false;
-        maybeCurrent.name = newName;
-        return true;
-    }
-    
-    /**
-     * Changes the byteSize of a File.
-     * 
-     * Returns true on success, returns false, if the file does not exist or is a directory
-     * 
-     * @param name 
-     * @param newByteSize 
-     * @param realChange 
-     * @returns 
-     */
-    changeByteSize(name: string, newByteSize: number, realChange: boolean): boolean {
-        const maybeCurrent = this.getFile(name);
-        if(maybeCurrent === null) return false;
-        (maybeCurrent as File).byteSize = newByteSize;
-        if(realChange) maybeCurrent.modifiedNow();
-        return true;
+    getAllSubfiles(): File[] {
+        const realFiles = [];
+        for(const item of this.contents) {
+            if(item.isDirectory) {
+                realFiles.push(...(item as Directory).getAllSubfiles());
+            } else {
+                realFiles.push(item as File);
+            }
+        }
+        return realFiles;
     }
     
     /**
@@ -241,12 +219,12 @@ class Directory {
             return false;
         } else {
             const index = this.contents.indexOf(entry);
-        if(index === -1) return false;
-        
-        this.contents.splice(index, 1);
-            if(realChange) this.modifiedNow();
-        return true;
-    }
+            if(index === -1) return false;
+            
+            this.contents.splice(index, 1);
+                if(realChange) this.modifiedNow();
+            return true;
+        }
     }
     
     modifiedNow(): void {
