@@ -44,7 +44,7 @@ class File {
     name: string;
     byteSize: number;
     lastModified: Date;
-    readonly realFile: string;
+    realFile: string;
 
     isDirectory = false;
     
@@ -64,10 +64,6 @@ class File {
         }
     }
     
-    duplicate(newName: string = this.name): File {
-        return new File(newName, this.byteSize, this.realFile);
-    }
-
     modifiedNow(): void {
         this.lastModified = new Date();
     }
@@ -108,7 +104,7 @@ class File {
     }
     
     clone(): File {
-        return new File(this.name, this.byteSize, this.lastModified.toJSON());
+        return new File(this.name, this.byteSize, this.realFile, this.lastModified.toJSON());
     }
     
     update(flatFile: FlatFile): void {
@@ -253,14 +249,6 @@ class Directory {
     }
     }
     
-    duplicate(newName: string = this.name): Directory {
-        const duplicatedContents = [];
-        for(const item of this.contents) {
-            duplicatedContents.push(item.duplicate());
-        }
-        return new Directory(newName, duplicatedContents, this.lastModified);
-    }
-    
     modifiedNow(): void {
         this.lastModified = new Date();
     }
@@ -349,7 +337,7 @@ class Directory {
             this.addEntry(newDirectory, false);
         } else {
             // Create new file from flatFile
-            const newFile = new File(flatItem.name, (flatItem as FlatFile).byteSize, flatItem.lastModified);
+            const newFile = new File(flatItem.name, (flatItem as FlatFile).byteSize, (flatItem as FlatFile).realFile, flatItem.lastModified);
             this.addEntry(newFile, false);
         }
     }

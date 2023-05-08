@@ -11,7 +11,7 @@ import { unixTime } from "../src/helper.js";
 import { expectError, asyncExpectError } from "./expect_error.js";
 import { vaultLog, logFileNameFromDate } from "../src/logger.js";
 import JWT, { Header, Payload } from "../src/authentication/jwt.js";
-import { redisIsOutdatedToken, redisAddOutdatedToken, close } from "../src/authentication/redis.js";
+import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/redis.js";
 import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken,
     localIsOutdatedToken, purgeAllOutdated, localSetVaultPassword, localVaultExists,
     loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet,
@@ -242,24 +242,6 @@ describe("Single Tests", () => {
             assert(directory.getAny("hello.txt") === null);
         });
         
-        await context.test("Tests duplication", () => {
-            const file = new File("hello.txt", 40, "");
-            const file2 = new File("world.png", 8044, "");
-            const directory = new Directory("project", [file, file2]);
-            
-            const dupedFile = file.duplicate();
-            assert(dupedFile !== file);
-            assert(dupedFile.name === file.name);
-            assert(dupedFile.byteSize === file.byteSize);
-            
-            const dupedDirectory = directory.duplicate();
-            assert(directory !== dupedDirectory);
-            assert(directory.getFile("hello.txt"));
-            assert(dupedDirectory.getFile("hello.txt"));
-            assert(dupedDirectory.getFile("hello.txt") !== directory.getFile("hello.txt"));
-            assert(dupedDirectory.getFile("hello.txt")?.byteSize === directory.getFile("hello.txt")?.byteSize);
-        });
-        
         await context.test("Tests flattening and reattaching", () => {
             const file1 = new File("hello.txt", 40, "");
             const file2 = new File("world.png", 8044, "");
@@ -294,12 +276,12 @@ describe("Single Tests", () => {
         });
         
         await context.test("Testing stringifying, parsing, and reattaching", () => {
-            const file1 = new File("hello.txt", 40, "");
-            const file2 = new File("world.png", 8044, "");
+            const file1 = new File("hello.txt", 40, "hello");
+            const file2 = new File("world.png", 8044, "world");
             const directory = new Directory("project", [file1, file2]);
             
-            const other1 = new File("other", 8, "");
-            const other2 = new File("another", 3, "");
+            const other1 = new File("other", 8, "other");
+            const other2 = new File("another", 3, "another");
             const otherDirectory = new Directory("other_stuff", [other1, other2]);
             const otherParent = new Directory("other_parent", [otherDirectory]);
             
@@ -319,13 +301,42 @@ describe("Single Tests", () => {
             assert(root2.getDirectory("project")?.getFile("world.png"));
             assert(root2.getDirectory("project")?.getFile("hello.txt")?.byteSize === 40);
             assert(root2.getDirectory("project")?.getFile("world.png")?.byteSize === 8044);
+            assert(root2.getDirectory("project")?.getFile("hello.txt")?.realFile === "hello");
+            assert(root2.getDirectory("project")?.getFile("world.png")?.realFile === "world");
             
             assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff"));
             assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other"));
             assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another"));
             assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.byteSize === 8);
             assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize === 3);
+            assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.realFile === "other");
+            assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.realFile === "another");
         });
+        
+        await context.test("Stringifying without includeRealFile will not include realFile", () => {
+            const file1 = new File("hello.txt", 40, "hello");
+            const file2 = new File("world.png", 8044, "world");
+            const directory = new Directory("project", [file1, file2]);
+            
+            const other1 = new File("other", 8, "other");
+            const other2 = new File("another", 3, "another");
+            const otherDirectory = new Directory("other_stuff", [other1, other2]);
+            const otherParent = new Directory("other_parent", [otherDirectory]);
+            
+            const root = new Directory("root", [directory, otherParent]);
+            
+            const stringifiedRoot = root.stringify(false, 10);
+            const parsedRoot = JSON.parse(stringifiedRoot);
+            
+            const root2 = new Directory("root", []);
+            root2.update(parsedRoot);
+    
+            assert(root2.getDirectory("project")?.getFile("hello.txt")?.realFile === "");
+            assert(root2.getDirectory("project")?.getFile("world.png")?.realFile === "");
+            
+            assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.realFile === "");
+            assert(root2.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.realFile === "");
+        })
         
         await context.test("Tests partially flattened root", () => {
             const file1 = new File("hello.txt", 40, "");
@@ -363,6 +374,7 @@ describe("Single Tests", () => {
             rootDepthAll.update(root.flat(true, 99));
             assert(rootDepthAll.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another"));
             assert(rootDepthAll.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize === other2.byteSize);
+            assert(rootDepthAll.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.realFile === other2.realFile);
         })
         
         await context.test("Tests root self-updating multiple times", () => {
@@ -384,6 +396,8 @@ describe("Single Tests", () => {
             assert(newRoot.getDirectory("project"));
             assert(newRoot.getDirectory("project")?.contents.length === 2);
             assert(newRoot.getDirectory("project")?.getFile("hello.txt"));
+            assert(newRoot.getDirectory("project")?.getFile("hello.txt")?.realFile
+            === root.getDirectory("project")?.getFile("hello.txt")?.realFile);
             
             const rootDepth0 = root.flat(true, 0);
             newRoot.update(rootDepth0);
@@ -435,6 +449,8 @@ describe("Single Tests", () => {
             !== null);
             assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.name
             === root.getDirectory("project")?.getFile("hello.txt")?.name);
+            assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.realFile
+            === root.getDirectory("project")?.getFile("hello.txt")?.realFile);
             assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.lastModified.toJSON()
             === root.getDirectory("project")?.getFile("hello.txt")?.lastModified.toJSON());
             assert(rootClone.getDirectory("project")?.getFile("hello.txt")?.byteSize
@@ -450,6 +466,8 @@ describe("Single Tests", () => {
             !== null);
             assert(rootClone.getDirectory("project")?.getFile("world.png")?.name
             === root.getDirectory("project")?.getFile("world.png")?.name);
+            assert(rootClone.getDirectory("project")?.getFile("world.png")?.realFile
+            === root.getDirectory("project")?.getFile("world.png")?.realFile);
             assert(rootClone.getDirectory("project")?.getFile("world.png")?.lastModified.toJSON()
             === root.getDirectory("project")?.getFile("world.png")?.lastModified.toJSON());
             assert(rootClone.getDirectory("project")?.getFile("world.png")?.byteSize
@@ -479,6 +497,8 @@ describe("Single Tests", () => {
             !== null);
             assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.name
             === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.name);
+            assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.realFile
+            === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.realFile);
             assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.lastModified.toJSON()
             === root.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.lastModified.toJSON());
             assert(rootClone.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("other")?.byteSize
