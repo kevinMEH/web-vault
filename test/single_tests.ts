@@ -415,7 +415,7 @@ describe("Single Tests", () => {
             
             const root = new Directory("root", [directory, otherParent]);
             
-            const rootClone = root.clone();
+            const rootClone = root.clone(false);
             
             assert(root !== rootClone);
             

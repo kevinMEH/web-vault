@@ -103,8 +103,8 @@ class File {
         }
     }
     
-    clone(): File {
-        return new File(this.name, this.byteSize, this.realFile, this.lastModified.toJSON());
+    clone(modified: boolean): File {
+        return new File(this.name, this.byteSize, this.realFile, modified ? undefined : this.lastModified.toJSON());
     }
     
     update(flatFile: FlatFile): void {
@@ -275,12 +275,12 @@ class Directory {
         }
     }
     
-    clone(): Directory {
+    clone(modified: boolean): Directory {
         const clonedContents: (File | Directory)[] = [];
         for(const item of this.contents) {
-            clonedContents.push(item.clone());
+            clonedContents.push(item.clone(modified));
         }
-        return new Directory(this.name, clonedContents, this.lastModified.toJSON());
+        return new Directory(this.name, clonedContents, modified ? undefined : this.lastModified.toJSON());
     }
     
     /**
