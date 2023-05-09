@@ -39,4 +39,7 @@ vaults/*
 !vaults/temp
 database/*
 logs/vaults/*
+!logs/vaults/temp
 **.log
+
+!**/.trackme
