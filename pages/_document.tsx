@@ -1,24 +1,14 @@
 import { Html, Head, Main, NextScript } from 'next/document'
-import { close } from "../src/redis.js";
+import { shutdown } from "../src/cleanup.js";
 
 if(process.env.NEXT_MANUAL_SIG_HANDLE) {
     process.on("SIGINT", async () => {
-        if(process.env.REDIS?.includes("rue")) {
-            console.log("Closing Redis connection...");
-            await close();
-            console.log("Closed.");
-        }
-        console.log("Done.");
+        await shutdown();
     });
     
     process.on("SIGTERM", async () => {
-        if(process.env.REDIS?.includes("rue")) {
-            console.log("Closing Redis connection...");
-            await close();
-            console.log("Closed.");
-        }
-        console.log("Done.");
-    })
+        await shutdown();
+    });
 }
 
 export default function Document() {

@@ -271,6 +271,7 @@ export {
     getParentPath,
     splitParentChild,
     validate,
+    getVaultVFS,
     getAt,
     getDirectoryAt,
     getFileAt

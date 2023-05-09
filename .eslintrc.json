@@ -24,7 +24,12 @@
         ],
         "@typescript-eslint/no-explicit-any": 0,
         "@typescript-eslint/await-thenable": 1,
-        "no-return-await": "warn"
+        "no-return-await": "warn",
+        "no-constant-condition": [
+            "error", {
+                "checkLoops": false
+            }
+        ]
     },
     "parserOptions": {
         "project": ["./tsconfig.json"] // Specify it only for TypeScript files
