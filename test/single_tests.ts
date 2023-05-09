@@ -8,7 +8,6 @@ import fs from "fs/promises";
 
 import { unixTime } from "../src/helper.js";
 
-import { expectError, asyncExpectError } from "./expect_error.js";
 import { vaultLog, logFileNameFromDate } from "../src/logger.js";
 import JWT, { Header, Payload } from "../src/authentication/jwt.js";
 import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/redis.js";
@@ -23,26 +22,6 @@ import { validNameRegex, validPathRegex, getParentPath, splitParentChild, Valida
 import { cleanup } from "../src/cleanup.js";
 
 describe("Single Tests", () => {
-    it("Verifying expectError works when no error (using expectError).", expectError(() => {
-        const errorFunction = expectError(() => {
-            const _ = "Everything is ok.";
-            const _2 = "No errors here.";
-        }, "");
-        errorFunction();
-    }, "Expected error \"\" but found success instead."));
-    
-    it("Verifying expectError works on error.", expectError(() => {
-        throw new Error("This is a random error.");
-    }, "random error"));
-    
-    it("Verifying expectError works with async functions.", asyncExpectError(async () => {
-        await new Promise((_, reject) => setTimeout(() => reject(new Error("Some random error")), 1000));
-    }, "random error"));
-    
-    // ------------------
-    // ------------------
-    // ------------------
-    
     it("Logging to a file", async () => {
         const logFileName = logFileNameFromDate();
         const message = "This is a test message.";
@@ -98,9 +77,14 @@ describe("Single Tests", () => {
             assert(JWT.unwrap("bad.token", "4B6576696E20697320636F6F6C") === null);
         });
         
-        await context.test("Throws error on bad secret", expectError(() => {
-            JWT.unwrap("asdf.asdf.asdf", "Z");
-        }, "must be a hex string"));
+        await context.test("Throws error on bad secret", () => {
+            try {
+                JWT.unwrap("asdf.asdf.asdf", "Z");
+                assert(false, "The unwarp() call should've thrown an error.");
+            } catch(error) {
+                assert((error as Error).message.includes("must be a hex string"));
+            }
+        });
     });
     
     // ------------------
