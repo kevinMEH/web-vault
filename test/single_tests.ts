@@ -10,11 +10,11 @@ import { unixTime } from "../src/helper.js";
 
 import { vaultLog, logFileNameFromDate } from "../src/logger.js";
 import JWT, { Header, Payload } from "../src/authentication/jwt.js";
-import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/redis.js";
+import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/database/redis.js";
 import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken,
     localIsOutdatedToken, purgeAllOutdated, localSetVaultPassword, localVaultExists,
     loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet,
-    _vaultPasswordMap, NodeType as Node } from "../src/authentication/database.js";
+    _vaultPasswordMap, NodeType as Node } from "../src/authentication/database/local.js";
 import { hashPassword } from "../src/authentication/password.js";
 import { File, Directory } from "../src/vfs.js";
 import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller.js";

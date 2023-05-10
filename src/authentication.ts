@@ -6,7 +6,7 @@ import {
     localSetVaultPassword,
     localVaultExists,
     localVerifyVaultPassword,
-} from "./authentication/database.js";
+} from "./authentication/database/local.js";
 import {
     redisAddOutdatedToken,
     redisDeleteVaultPassword,
@@ -14,7 +14,7 @@ import {
     redisSetVaultPassword,
     redisVaultExists,
     redisVerifyVaultPassword,
-} from "./authentication/redis.js";
+} from "./authentication/database/redis.js";
 import { metaLog } from "./logger.js";
 import { unixTime } from "./helper.js";
 

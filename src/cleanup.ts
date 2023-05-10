@@ -1,4 +1,4 @@
-import { close } from "../src/authentication/redis.js";
+import { close } from "./authentication/database/redis.js";
 
 const intervals: Array<[Function, number]> = [];
 
