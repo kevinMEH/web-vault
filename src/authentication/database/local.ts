@@ -69,9 +69,11 @@ const tokenSet: Set<string> = new Set();
 const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
 
 const vaultPasswordMap: Map<string, string> = new Map();
+const vaultNonceMap: Map<string, number> = new Map();
 
 const outdatedTokensFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
 const vaultPasswordFile = path.join(process.cwd(), "database", "vaultPasswords.csv");
+const vaultNonceFile = path.join(process.cwd(), "database", "vaultNonces.csv");
 
 if(PRODUCTION && !USING_REDIS) {
     try {
@@ -90,7 +92,6 @@ if(PRODUCTION && !USING_REDIS) {
 
     try {
         await fs.access(vaultPasswordFile);
-        await loadVaultPasswordsFromFile();
     } catch(error) {
         const message = (error as Error).message;
         const code = (error as NodeJS.ErrnoException).code;
@@ -101,6 +102,25 @@ if(PRODUCTION && !USING_REDIS) {
             `Encountered unrecognized error "${message}" while checking if outdated tokens database file exists.`);
         }
     }
+    await loadVaultPasswordsFromFile();
+
+    try {
+        await fs.access(vaultNonceFile);
+    } catch(error) {
+        const message = (error as Error).message;
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
+            metaLog("database", "WARNING", "No vault passwords database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
+        } else {
+            metaLog("database", "ERROR",
+            `Encountered unrecognized error "${message}" while checking if outdated tokens database file exists.`);
+        }
+    }
+    await loadVaultNoncesFromFile();
+    
+    await saveVaultPasswordsToFile();
+    await saveVaultNoncesToFile();
+    firstVaultSave = false;
     
     // Interval for saving database to file. Default is once per hour.
     setInterval(() => {
@@ -177,7 +197,6 @@ async function saveOutdatedTokensToFile(): Promise<Array<CustomError>> {
             return [ new CustomError(reason, "ERROR", code) ];
         }
     }
-    
 
     // Writing to temp file
     try {
@@ -310,13 +329,13 @@ async function loadVaultPasswordsFromFile() {
     for await(const line of readlineInterface) {
         if(line === "") continue;
         const [vaultName, password] = line.split(",");
-        localSetVaultPassword(vaultName, password);
+        vaultPasswordMap.set(vaultName, password);
     }
     
     readlineInterface.close();
     stream.close();
     
-    metaLog("database", "INFO", "FInished loading vault passwords from file.");
+    metaLog("database", "INFO", "Finished loading vault passwords from file.");
 }
 
 /**
@@ -338,14 +357,13 @@ async function saveVaultPasswordsToFile(): Promise<Array<CustomError>> {
     
     let file: fs.FileHandle;
     try {
-        file = await fs.open(tempFilePath, "w")
+        file = await fs.open(tempFilePath, "w");
     } catch(error) {
         const message = (error as Error).message;
         const reason = `Trying to save vault passwords to temp file, but encountered unrecognized error "${message}" while opening temp file. Aborting...`;
         metaLog("database", "ERROR", reason);
         return [ new CustomError(reason, "ERROR", (error as NodeJS.ErrnoException).code) ];
     }
-
     
     // Writing to temp file
     try {
@@ -361,7 +379,6 @@ async function saveVaultPasswordsToFile(): Promise<Array<CustomError>> {
         await fs.unlink(tempFilePath);
         return [ new CustomError(message, "ERROR", (error as NodeJS.ErrnoException).code) ];
     }
-    
 
     const errors: CustomError[] = [];
 
@@ -405,10 +422,6 @@ async function saveVaultPasswordsToFile(): Promise<Array<CustomError>> {
         }
     });
         
-    if(firstVaultSave) {
-        firstVaultSave = false;
-    }
-    
     if(errors.length == 0) {
         metaLog("database", "INFO", "Successfully saved vault passwords from in-memory database to file.");
     } else {
@@ -420,6 +433,7 @@ async function saveVaultPasswordsToFile(): Promise<Array<CustomError>> {
 async function localSetVaultPassword(vault: string, password: string) {
     vaultPasswordMap.set(vault, password);
     await saveVaultPasswordsToFile();
+    await localSetVaultNonce(vault);
 }
 
 function localVerifyVaultPassword(vault: string, password: string) {
@@ -433,24 +447,161 @@ function localVaultExists(vault: string) {
 async function localDeleteVaultPassword(vault: string) {
     vaultPasswordMap.delete(vault);
     await saveVaultPasswordsToFile();
+    await localDeleteVaultNonce(vault);
+}
+
+async function loadVaultNoncesFromFile() {
+    metaLog("database", "INFO", `Loading vault nonces into memory from file... (${vaultNonceFile})`);
+    
+    const stream = createReadStream(vaultNonceFile);
+    const readlineInterface = readline.createInterface({
+        input: stream,
+        crlfDelay: Infinity
+    });
+    
+    for await(const line of readlineInterface) {
+        if(line === "") continue;
+        const [vaultName, nonce] = line.split(",");
+        vaultNonceMap.set(vaultName, parseInt(nonce));
+    }
+    
+    readlineInterface.close();
+    stream.close();
+    
+    metaLog("database", "INFO", "Finished loading vault nonces from file.");
+}
+
+/**
+ * Each vault as an associated nonce. The nonce changes when the vault password
+ * changes. This prevents JWTs from remaining valid across password changes, as
+ * each time it's verified, it's nonces will be compared to the current nonce.
+ * 
+ */
+async function saveVaultNoncesToFile(): Promise<Array<CustomError>> {
+    metaLog("database", "INFO", "Saving vault nonces to file...");
+    // Write to temp file, replace main with temp
+    const tempFilePath = path.join(process.cwd(), "database", "tempVaultNonces.csv");
+    
+    let file: fs.FileHandle;
+    try {
+        file = await fs.open(tempFilePath, "w");
+    } catch(error) {
+        const message = (error as Error).message;
+        const reason = `Trying to save vault nonces to file, but encountered unrecognized error "${message}" while opening temp file. Aborting...`;
+        metaLog("database", "ERROR", reason);
+        return [ new CustomError(reason, "ERROR", (error as NodeJS.ErrnoException).code) ];
+    }
+    
+    // Writing to temp file
+    try {
+        for(const [vault, nonce] of vaultNonceMap) {
+            await file.appendFile(`${vault},${nonce}\n`);
+        }
+        await file.close();
+    } catch(error) {
+        const message = (error as Error).message;
+        const reason = `Trying to write vault nonce pairs to temp file, but encountered error "${message}" while writing. Aborting...`;
+        metaLog("database", "ERROR", reason);
+        await file.close();
+        await fs.unlink(tempFilePath);
+        return [ new CustomError(message, "ERROR", (error as NodeJS.ErrnoException).code) ];
+    }
+    
+    const errors: CustomError[] = [];
+    
+    const realFilePath = vaultNonceFile;
+    const oldFilePath = path.join(process.cwd(), "database", "vaultNonces.csv.old");
+    await fs.rename(realFilePath, oldFilePath).catch(error => {
+        const message = (error as Error).message;
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
+            if(!firstVaultSave) {
+                const reason = `vaultNonces.csv is somehow nonexistant. Ignoring and continuing.`
+                metaLog("database", "WARNING", reason);
+                errors.push(new CustomError(reason, "WARNING", "VAULTNONCES_NONEXISTANT"));
+            }
+        } else {
+            const reason = `Encountered unrecognized error "${message}" while renaming vaultNonces.csv.`;
+            metaLog("database", "ERROR", reason);
+            errors.push(new CustomError(reason, "ERROR", code));
+        }
+    });
+    await fs.rename(tempFilePath, realFilePath).catch(error => {
+        const message = (error as Error).message;
+        const code = (error as NodeJS.ErrnoException).code;
+        const reason = `There was an error "${message}" renaming tempVaultNonces.csv to vaultNonces.csv.`;
+        metaLog("database", "ERROR", reason);
+        errors.push(new CustomError(reason, "ERROR", code));
+    });
+    await fs.unlink(oldFilePath).catch(error => {
+        const message = (error as Error).message;
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
+            if(!firstVaultSave) {
+                const reason = `There was an error unlinking vaultNonces.csv.old because it does not exist.`;
+                metaLog("database", "ERROR", reason);
+                errors.push(new CustomError(reason, "ERROR", "VAULTNONCES_OLD_NONEXISTANT"))
+            }
+        } else {
+            const reason = `Encountered unrecognized error "${message}" while unlinking vaultNonces.csv.old.`;
+            metaLog("database", "ERROR", reason);
+            errors.push(new CustomError(reason, "ERROR", code));
+        }
+    });
+
+    if(errors.length == 0) {
+        metaLog("database", "INFO", "Successfully saved vault passwords from in-memory database to file.");
+    } else {
+        metaLog("database", "INFO", "Saved vault passwords from in-memory database to file with warnings / errors.");
+    }
+    return errors;
+}
+
+function localVerifyVaultNonce(vault: string, nonce: number) {
+    return nonce === vaultNonceMap.get(vault);
+}
+
+function localGetVaultNonce(vault: string): number | undefined {
+    return vaultNonceMap.get(vault);
+}
+
+async function localSetVaultNonce(vault: string) {
+    let nonce = Math.floor(Math.random() * 4294967295);
+    while(localVerifyVaultNonce(vault, nonce)) {
+        nonce = Math.floor(Math.random() * 4294967295);
+    }
+    vaultNonceMap.set(vault, nonce);
+    await saveVaultNoncesToFile();
+}
+
+async function localDeleteVaultNonce(vault: string) {
+    vaultNonceMap.delete(vault);
+    await saveVaultNoncesToFile();
 }
 
 export type NodeType = InstanceType<typeof Node>;
 export {
-    loadOutdatedTokensFromFile,
-    saveOutdatedTokensToFile,
+    loadOutdatedTokensFromFile as _loadOutdatedTokensFromFile,
+    saveOutdatedTokensToFile as _saveOutdatedTokensToFile,
     localAddOutdatedToken,
     localIsOutdatedToken,
-    purgeAllOutdated,
+    purgeAllOutdated as _purgeAllOutdated,
 
-    loadVaultPasswordsFromFile,
-    saveVaultPasswordsToFile,
+    loadVaultPasswordsFromFile as _loadVaultPasswordsFromFile,
+    saveVaultPasswordsToFile as _saveVaultPasswordsToFile,
     localSetVaultPassword,
     localVerifyVaultPassword,
     localVaultExists,
     localDeleteVaultPassword,
 
+    loadVaultNoncesFromFile as _loadVaultNoncesFromFile,
+    saveVaultNoncesToFile as _saveVaultNoncesToFile,
+    localVerifyVaultNonce,
+    localGetVaultNonce,
+    localDeleteVaultNonce,
+
     tokenList as _tokenList,
     tokenSet as _tokenSet,
-    vaultPasswordMap as _vaultPasswordMap
+    vaultPasswordMap as _vaultPasswordMap,
+    vaultNonceMap as _vaultNonceMap,
 };

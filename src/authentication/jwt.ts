@@ -14,7 +14,7 @@ export type Payload = {
     [key: string]: any
 };
 
-export type UnwrappedToken = [Header, Payload, string];
+export type Token = string & { __type: "Token" };
 
 class JWT {
 
@@ -64,7 +64,7 @@ class JWT {
         return this;
     }
     
-    getToken(secret?: string): string {
+    getToken(secret?: string): Token {
         if(this.token === "") {
             if(secret === undefined) {
                 throw new Error("The JSON Web Token has not been finalized yet. (Provide a secret to automatically finalize.)");
@@ -72,7 +72,7 @@ class JWT {
                 this.finalize(secret);
             }
         }
-        return this.token;
+        return this.token as Token;
     }
     
     /**
@@ -89,7 +89,7 @@ class JWT {
      * @param secret The secret in the form of a compact hex string.
      * @returns 
      */
-    static #verify(token: string, secret: string): boolean {
+    static #verify(token: Token, secret: string): boolean {
         if(!(/^[a-fA-F0-9]+$/.test(secret))) {
             throw new CustomError("Secret must be a hex string. (No 0x)", "ERROR", "NOT_HEX_STRING");
         }
@@ -125,7 +125,7 @@ class JWT {
      * @param secret Must be hex string
      * @returns [Header, Payload] | null
      */
-    static unwrap(token: string, secret: string): [Header, Payload] | null {
+    static unwrap(token: Token, secret: string): [Header, Payload] | null {
         if(!JWT.#verify(token, secret)) {
             return null;
         }

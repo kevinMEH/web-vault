@@ -1,32 +1,88 @@
-import JWT, { UnwrappedToken } from "./authentication/jwt.js";
+import JWT, { Header, Token } from "./authentication/jwt.js";
 import { metaLog } from "./logger.js";
 import { unixTime } from "./helper.js";
-import { isOutdatedToken, addOutdatedToken } from "./authentication/database.js";
+import { isOutdatedToken, addOutdatedToken, getVaultNonce, verifyVaultNonce } from "./authentication/database.js";
 
 import { JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "./env.js";
 
-async function getUnwrappedToken(token: string): Promise<UnwrappedToken | null> {
-    if(await isOutdatedToken(token)) return null;
-    const unwrapped = JWT.unwrap(token, JWT_SECRET);
-    if(unwrapped == null) return null;
-    const [header, payload] = unwrapped;
-    if(payload.exp < unixTime()) return null;
-    return [header, payload, token];
+export type WebVaultPayload = {
+    iss: string,
+    exp: number,
+    iat: number,
+    vaults: string[],
+    nonces: number[]
 }
 
-function createToken(vaults: string[]) {
+/**
+ * Goes through all checks, and returns [Header, Payload, Token] if the token is
+ * valid. If the token is invalid, [null, null, null] is returned.
+ * 
+ * If any vaults have bad nonces, the vaults will be removed from the payload.
+ * The payload will still be returned.
+ * 
+ * Checks if outdated, body hash consistency, not malformed, nonces consistent.
+ * 
+ * @param token 
+ * @returns Promise<[Header, WebVaultPayload, Token] | [null, null, null]>
+ */
+async function getUnwrappedToken(token: Token): Promise<[Header, WebVaultPayload, Token] | [null, null, null]> {
+    if(await isOutdatedToken(token)) return [null, null, null];
+    const unwrapped = JWT.unwrap(token, JWT_SECRET);
+    // Malformed or inconsistent
+    if(unwrapped == null) {
+        return [null, null, null];
+    }
+    const [header, payload] = unwrapped as [Header, WebVaultPayload];
+    // If expired
+    if(payload.exp < unixTime()) {
+        return [null, null, null];
+    }
+    // Checks that nonces are consistent, if not remove vault from payload
+    for(let i = 0; i < payload.vaults.length; i++) {
+        const vault = payload.vaults[i];
+        const nonce = payload.nonces[i];
+        if(await verifyVaultNonce(vault, nonce) === false) {
+            payload.vaults.splice(i, 1);
+            payload.nonces.splice(i, 1);
+            i--;
+        }
+    }
+    return [header, payload as WebVaultPayload, token];
+}
+
+/**
+ * The vaults parameter may be modified by the function. It is strongly
+ * recommended to pass in a referenceless copy of vaults, or one which is going
+ * to be outdated.
+ * 
+ * @param vaults 
+ * @returns 
+ */
+async function createToken(vaults: string[]): Promise<Token> {
     const current = unixTime();
+    const nonces: number[] = [];
+    for(let i = 0; i < vaults.length; i++) {
+        const vaultNonce = await getVaultNonce(vaults[i]);
+        if(vaultNonce === undefined) {
+            // Nonce does not exist, so vault does not exist.
+            vaults.splice(i, 1);
+            i--;
+        } else {
+            nonces.push(vaultNonce);
+        }
+    }
     const jwt = new JWT(DOMAIN, current + JWT_EXPIRATION, current);
     jwt.addClaim("vaults", vaults);
-    jwt.addClaim("nonce", Math.floor(Math.random() * 4294967295));
+    jwt.addClaim("nonces", nonces);
     const token = jwt.getToken(JWT_SECRET);
-    metaLog("authentication", "INFO",
-    `Created new token ${token}. (Vaults: ${vaults}, Expiration: ${current + JWT_EXPIRATION})`);
+    metaLog("authentication", "INFO", `Created new token ${token}. (Vaults: ${vaults}, Expiration: ${current + JWT_EXPIRATION})`);
     return token;
 }
 
 /**
  * Returns a new token (with updated expirations) with the vault added.
+ * 
+ * INPUT TOKEN IS INVALIDATED.
  * 
  * MUST VERIFY TOKEN IS VALID BEFORE CALLING!!!
  * 
@@ -34,20 +90,23 @@ function createToken(vaults: string[]) {
  * @param vault 
  * @returns New token as a base64url string
  */
-function addNewVaultToToken(unwrappedToken: UnwrappedToken, vault: string): string {
+function addNewVaultToToken(unwrappedToken: [Header, WebVaultPayload, Token], vault: string): Promise<Token> {
     const [_header, payload, token] = unwrappedToken;
     metaLog("authentication", "INFO", `Adding new vault ${vault} to token ${token}`);
-    const currentVaults = payload.vaults;
-    if(!currentVaults.includes(vault))
-        currentVaults.push(vault);
+    if(!payload.vaults.includes(vault)) {
+        payload.vaults.push(vault);
+    }
     addOutdatedToken(token, payload.exp);
-    return createToken(currentVaults);
+    return createToken(payload.vaults);
 }
 
 /**
  * Returns a new token (with updated expirations) with the vault removed.
  * 
- * A token with an empty array as its "vaults" field is safe. An invalid vault is safe.
+ * INPUT TOKEN IS INVALIDATED.
+ * 
+ * A token with an empty array as its "vaults" field is safe. An invalid vault
+ * is safe.
  * 
  * MUST VERIFY TOKEN IS VALID BEFORE CALLING!!!
  * 
@@ -55,14 +114,15 @@ function addNewVaultToToken(unwrappedToken: UnwrappedToken, vault: string): stri
  * @param vault 
  * @returns 
  */
-function removeVaultFromToken(unwrappedToken: UnwrappedToken, vault: string) {
+function removeVaultFromToken(unwrappedToken: [Header, WebVaultPayload, Token], vault: string): Promise<Token> {
     const [_header, payload, token] = unwrappedToken;
     metaLog("authentication", "INFO", `Removing vault ${vault} from token ${token}`);
-    const currentVaults: string[] = payload.vaults;
-    const index = currentVaults.indexOf(vault);
-    if(index !== -1) currentVaults.splice(index, 1);
+    const index = payload.vaults.indexOf(vault);
+    if(index !== -1) {
+        payload.vaults.splice(index, 1);
+    }
     addOutdatedToken(token, payload.exp);
-    return createToken(currentVaults);
+    return createToken(payload.vaults);
 }
 
 /**
@@ -76,12 +136,11 @@ function removeVaultFromToken(unwrappedToken: UnwrappedToken, vault: string) {
  * @param unwrappedToken
  * @returns The updated token as a string
  */
-function refreshTokenExpiration(unwrappedToken: UnwrappedToken): string {
+function refreshTokenExpiration(unwrappedToken: [Header, WebVaultPayload, Token]): Promise<Token> {
     const [_header, payload, token] = unwrappedToken;
     metaLog("authentication", "INFO",`Refreshing token ${token}`);
-    const vaults = payload.vaults;
     addOutdatedToken(token, payload.exp);
-    return createToken(vaults);
+    return createToken(payload.vaults);
 }
 
 export {

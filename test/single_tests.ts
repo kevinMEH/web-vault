@@ -9,12 +9,12 @@ import fs from "fs/promises";
 import { unixTime } from "../src/helper.js";
 
 import { vaultLog, logFileNameFromDate } from "../src/logger.js";
-import JWT, { Header, Payload } from "../src/authentication/jwt.js";
+import JWT, { Header, Payload, Token } from "../src/authentication/jwt.js";
 import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/database/redis.js";
-import { saveOutdatedTokensToFile, loadOutdatedTokensFromFile, localAddOutdatedToken,
-    localIsOutdatedToken, purgeAllOutdated, localSetVaultPassword, localVaultExists,
-    loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet,
-    _vaultPasswordMap, NodeType as Node } from "../src/authentication/database/local.js";
+import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdatedToken,
+    localIsOutdatedToken, _purgeAllOutdated, localSetVaultPassword, localVaultExists,
+    _loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet,
+    _vaultPasswordMap, NodeType as Node, _vaultNonceMap, localGetVaultNonce, _loadVaultNoncesFromFile } from "../src/authentication/database/local.js";
 import { hashPassword } from "../src/authentication/password.js";
 import { File, Directory } from "../src/vfs.js";
 import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller.js";
@@ -49,7 +49,7 @@ describe("Single Tests", () => {
         });
         
         await context.test("Verifies and extracts header and payload from JWT", () => {
-            const [header, payload] = JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
+            const [header, payload] = JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ" as Token,
                 "4B6576696E20697320636F6F6C") as [Header, Payload];
             assert(header.alg === "HS256");
             assert(header.typ !== "asd")
@@ -59,27 +59,27 @@ describe("Single Tests", () => {
         })
     
         await context.test("Returns null on incorrect signature", () => {
-            assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJi",
+            assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJi" as Token,
                 "4B6576696E20697320636F6F6C") === null);
         });
     
         await context.test("Returns null on incorrect signature", () => {
-            assert(JWT.unwrap("bad.token.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
+            assert(JWT.unwrap("bad.token.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ" as Token,
                 "4B6576696E20697320636F6F6C") === null);
         });
     
         await context.test("Returns null on correct signature but incorrect secret", () => {
-            assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
+            assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ" as Token,
                 "4B6576696E20697320636F6F6D") === null);
         });
     
         await context.test("Returns null on bad token formatting", () => {
-            assert(JWT.unwrap("bad.token", "4B6576696E20697320636F6F6C") === null);
+            assert(JWT.unwrap("bad.token" as Token, "4B6576696E20697320636F6F6C") === null);
         });
         
         await context.test("Throws error on bad secret", () => {
             try {
-                JWT.unwrap("asdf.asdf.asdf", "Z");
+                JWT.unwrap("asdf.asdf.asdf" as Token, "Z");
                 assert(false, "The unwarp() call should've thrown an error.");
             } catch(error) {
                 assert((error as Error).message.includes("must be a hex string"));
@@ -128,7 +128,7 @@ describe("Single Tests", () => {
             assert(localIsOutdatedToken("test.token.nonexpired2"));
             assert(localIsOutdatedToken("test.token.expired3"));
     
-            purgeAllOutdated();
+            _purgeAllOutdated();
             
             // Check for nonexistance after purge for expired tokens
             assert(localIsOutdatedToken("test.token.nonexpired"));
@@ -160,7 +160,7 @@ describe("Single Tests", () => {
             assert(localIsOutdatedToken("save.me.tofile"));
             assert(localIsOutdatedToken("save.me.too"));
     
-            await saveOutdatedTokensToFile();
+            await _saveOutdatedTokensToFile();
             
             _tokenList.head.next = null;
             _tokenList.tail = _tokenList.head;
@@ -168,7 +168,7 @@ describe("Single Tests", () => {
             assert(!localIsOutdatedToken("save.me.tofile"));
             assert(!localIsOutdatedToken("save.me.too"));
             
-            await loadOutdatedTokensFromFile();
+            await _loadOutdatedTokensFromFile();
     
             assert(localIsOutdatedToken("save.me.tofile"));
             assert(localIsOutdatedToken("save.me.too"));
@@ -189,7 +189,7 @@ describe("Single Tests", () => {
             assert(!localVaultExists("testing2"));
             assert(!localVaultExists("helloworld"));
             
-            await loadVaultPasswordsFromFile();
+            await _loadVaultPasswordsFromFile();
             assert(localVaultExists("test-vault-test"));
             assert(localVaultExists("testing2"));
             assert(localVaultExists("helloworld"));
@@ -200,8 +200,58 @@ describe("Single Tests", () => {
             await localDeleteVaultPassword("testing2");
             await localDeleteVaultPassword("helloworld");
     
-            await loadVaultPasswordsFromFile();
+            await _loadVaultPasswordsFromFile();
             assert(_vaultPasswordMap.size === 0);
+        });
+        
+        await context.test("Setting password sets nonces", async () => {
+            // Setting passwords, which will also set the nonces
+            await localSetVaultPassword("some-test-vault", "password");
+            await localSetVaultPassword("another-test-vault", "password2");
+            
+            assert(localVaultExists("some-test-vault"));
+            assert(localVaultExists("another-test-vault"));
+
+            const previousNonceOne = localGetVaultNonce("some-test-vault");
+            assert(previousNonceOne !== undefined);
+            const previousNonceTwo = localGetVaultNonce("another-test-vault");
+            assert(previousNonceTwo !== undefined);
+
+            await localSetVaultPassword("some-test-vault", "password");
+            await localSetVaultPassword("another-test-vault", "password2");
+            
+            assert(localGetVaultNonce("some-test-vault") !== undefined);
+            assert(localGetVaultNonce("some-test-vault") !== previousNonceOne);
+            assert(localGetVaultNonce("another-test-vault") !== undefined);
+            assert(localGetVaultNonce("another-test-vault") !== previousNonceTwo);
+            
+            await localDeleteVaultPassword("some-test-vault");
+            await localDeleteVaultPassword("another-test-vault");
+        });
+        
+        await context.test("Saves the in memory vault nonces database to a file and loads from the file", async () => {
+            // Setting passwords, which will also set the nonces
+            // Setting passwords will set nonces, which automatically saves
+            await localSetVaultPassword("test-test", "password");
+            await localSetVaultPassword("test-test-test", "password2");
+            
+            assert(localVaultExists("test-test"));
+            assert(localVaultExists("test-test-test"));
+
+            _vaultNonceMap.clear();
+            
+            assert(localGetVaultNonce("test-test") === undefined);
+            assert(localGetVaultNonce("test-test-test") === undefined);
+            
+            await _loadVaultNoncesFromFile();
+            assert(localGetVaultNonce("test-test") !== undefined);
+            assert(localGetVaultNonce("test-test-test") !== undefined);
+            
+            await localDeleteVaultPassword("test-test");
+            await localDeleteVaultPassword("test-test-test");
+            
+            await _loadVaultNoncesFromFile();
+            assert(_vaultNonceMap.size === 0);
         });
     });
     
