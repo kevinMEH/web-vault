@@ -9,6 +9,8 @@ tests=(
     
     "controller_tests_local"
     "controller_tests_redis"
+
+    "file_tests"
 )
 
 for item in "${tests[@]}"; do
