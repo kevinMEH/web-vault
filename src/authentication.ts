@@ -1,45 +1,17 @@
 import JWT, { UnwrappedToken } from "./authentication/jwt.js";
-import {
-    localAddOutdatedToken,
-    localDeleteVaultPassword,
-    localIsOutdatedToken,
-    localSetVaultPassword,
-    localVaultExists,
-    localVerifyVaultPassword,
-} from "./authentication/database/local.js";
-import {
-    redisAddOutdatedToken,
-    redisDeleteVaultPassword,
-    redisIsOutdatedToken,
-    redisSetVaultPassword,
-    redisVaultExists,
-    redisVerifyVaultPassword,
-} from "./authentication/database/redis.js";
 import { metaLog } from "./logger.js";
 import { unixTime } from "./helper.js";
+import { isOutdatedToken, addOutdatedToken } from "./authentication/database.js";
 
-import { JWT_EXPIRATION, DOMAIN, JWT_SECRET, USING_REDIS, PASSWORD_SALT, ITERATION_COUNT } from "./env.js";
-
-const addOutdatedTokenFunction = USING_REDIS ? redisAddOutdatedToken : (token: string, expireAt: number) => Promise.resolve(localAddOutdatedToken(token, expireAt));
-const isOutdatedTokenFunction = USING_REDIS ? redisIsOutdatedToken : (token: string) => Promise.resolve(localIsOutdatedToken(token));
-const setVaultPasswordFunction = USING_REDIS ? redisSetVaultPassword : localSetVaultPassword;
-const verifyVaultPasswordFunction = USING_REDIS ? redisVerifyVaultPassword : (vault: string, password: string) => Promise.resolve(localVerifyVaultPassword(vault, password));
-const vaultExistsFunction = USING_REDIS ? redisVaultExists : (vault: string) => Promise.resolve(localVaultExists(vault));
-const deleteVaultPasswordFunction = USING_REDIS ? redisDeleteVaultPassword : localDeleteVaultPassword;
+import { JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "./env.js";
 
 async function getUnwrappedToken(token: string): Promise<UnwrappedToken | null> {
-    if(await isOutdatedTokenFunction(token)) return null;
+    if(await isOutdatedToken(token)) return null;
     const unwrapped = JWT.unwrap(token, JWT_SECRET);
     if(unwrapped == null) return null;
     const [header, payload] = unwrapped;
     if(payload.exp < unixTime()) return null;
     return [header, payload, token];
-}
-
-function outdateToken(token: string, expireAt: number) {
-    metaLog("authentication", "INFO",
-    `Outdating token ${token}, expiring at ${expireAt}`);
-    addOutdatedTokenFunction(token, expireAt);
 }
 
 function createToken(vaults: string[]) {
@@ -68,7 +40,7 @@ function addNewVaultToToken(unwrappedToken: UnwrappedToken, vault: string): stri
     const currentVaults = payload.vaults;
     if(!currentVaults.includes(vault))
         currentVaults.push(vault);
-    outdateToken(token, payload.exp);
+    addOutdatedToken(token, payload.exp);
     return createToken(currentVaults);
 }
 
@@ -85,12 +57,11 @@ function addNewVaultToToken(unwrappedToken: UnwrappedToken, vault: string): stri
  */
 function removeVaultFromToken(unwrappedToken: UnwrappedToken, vault: string) {
     const [_header, payload, token] = unwrappedToken;
-    metaLog("authentication", "INFO",
-    `Removing vault ${vault} from token ${token}`);
+    metaLog("authentication", "INFO", `Removing vault ${vault} from token ${token}`);
     const currentVaults: string[] = payload.vaults;
     const index = currentVaults.indexOf(vault);
     if(index !== -1) currentVaults.splice(index, 1);
-    outdateToken(token, payload.exp);
+    addOutdatedToken(token, payload.exp);
     return createToken(currentVaults);
 }
 
@@ -109,45 +80,8 @@ function refreshTokenExpiration(unwrappedToken: UnwrappedToken): string {
     const [_header, payload, token] = unwrappedToken;
     metaLog("authentication", "INFO",`Refreshing token ${token}`);
     const vaults = payload.vaults;
-    outdateToken(token, payload.exp);
+    addOutdatedToken(token, payload.exp);
     return createToken(vaults);
-}
-
-
-
-
-
-import { hashPassword } from "./authentication/password.js";
-
-
-// TODO: Error handling on hashPassword
-async function setVaultPassword(vault: string, password: string) {
-    const hashedPassword = await hashPassword(password, PASSWORD_SALT, ITERATION_COUNT);
-    await setVaultPasswordFunction(vault, hashedPassword);
-    metaLog("authentication", "INFO",
-    `Changed vault ${vault} password. (Hash: ${hashedPassword})`);
-}
-
-// TODO: Error handling on hashPassword
-async function verifyVaultPassword(vault: string, password: string) {
-    const hashedPassword = await hashPassword(password, PASSWORD_SALT, ITERATION_COUNT);
-    return verifyVaultPasswordFunction(vault, hashedPassword);
-}
-
-/**
- * Checks if vault exists in the database
- * 
- * @param vault 
- * @returns 
- */
-function vaultExistsDatabase(vault: string) {
-    return vaultExistsFunction(vault);
-}
-
-async function deleteVaultPassword(vault: string) {
-    await deleteVaultPasswordFunction(vault);
-    metaLog("authentication", "INFO",
-    `Deleted vault ${vault} password.`);
 }
 
 export {
@@ -155,10 +89,5 @@ export {
     createToken,
     addNewVaultToToken,
     removeVaultFromToken,
-    outdateToken,
-    refreshTokenExpiration,
-    setVaultPassword,
-    verifyVaultPassword,
-    vaultExistsDatabase,
-    deleteVaultPassword
+    refreshTokenExpiration
 };

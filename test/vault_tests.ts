@@ -13,7 +13,7 @@ if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
 const { cleanup } = await import("../src/cleanup.js");
 
-const { verifyVaultPassword } = await import("../src/authentication.js");
+const { verifyVaultPassword } = await import("../src/authentication/database.js");
 const { changeVaultPassword, createNewVault, deleteVault } = await import("../src/vault.js");
 
 describe("Vault tests", () => {

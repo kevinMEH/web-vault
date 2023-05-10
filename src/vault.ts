@@ -9,7 +9,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { metaLog } from "./logger.js";
-import { deleteVaultPassword, setVaultPassword, vaultExistsDatabase } from "./authentication.js";
+import { deleteVaultPassword, setVaultPassword, vaultExistsDatabase } from "./authentication/database.js";
 import { validNameRegex, deleteVaultVFS, newVaultVFS } from "./controller.js";
 
 import CustomError from "./custom_error.js";

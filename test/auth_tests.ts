@@ -13,7 +13,8 @@ const { cleanup } = await import("../src/cleanup.js");
 
 const { default: JWT } = await import("../src/authentication/jwt.js");
 import { Header, Payload, UnwrappedToken } from "../src/authentication/jwt.js"; // Type
-const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, outdateToken, refreshTokenExpiration, setVaultPassword, verifyVaultPassword, vaultExistsDatabase, deleteVaultPassword } = await import("../src/authentication.js");
+const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/authentication.js");
+const { addOutdatedToken, setVaultPassword, verifyVaultPassword, vaultExistsDatabase, deleteVaultPassword } = await import("../src/authentication/database.js");
 
 describe("Authentication tests", () => {
     describe("Testing token authentication module", () => {
@@ -42,7 +43,7 @@ describe("Authentication tests", () => {
         it("Outdates a token", async () => {
             const token = createToken(["log_me_out"]);
             const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string) as [Header, Payload];
-            outdateToken(token, payload.exp);
+            addOutdatedToken(token, payload.exp);
             assert(await getUnwrappedToken(token) === null);
         });
         
