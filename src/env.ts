@@ -3,12 +3,12 @@ import path from "path";
 const throwEnvError = (variableName: string, reason?: string) => { throw new Error(`The ${variableName} environmental variable must be specified.` + (reason ? ` ${reason}` : ``)); }
 
 
-export const PRODUCTION = process.env.PRODUCTION ? true : false;
+export const PRODUCTION = process.env.PRODUCTION === "true" ? true : false;
 export const DOMAIN = process.env.DOMAIN ? process.env.DOMAIN :
     PRODUCTION ? throwEnvError("DOMAIN", `It is used as the "issuer" field in the JWT.`) : "kevin";
 
 
-export const USING_REDIS = process.env.REDIS ? true : false;
+export const USING_REDIS = process.env.REDIS === "true" ? true : false;
 export const DATABASE_SAVE_INTERVAL = parseInt(process.env.DATABASE_SAVE_INTERVAL as string) || 24 * 60 * 60;
 export const PURGE_INTERVAL = parseInt(process.env.PURGE_INTERVAL as string) || 24 * 60 * 60;
 
