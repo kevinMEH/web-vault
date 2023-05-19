@@ -29,7 +29,8 @@
             "error", {
                 "checkLoops": false
             }
-        ]
+        ],
+        "prefer-const": "warn"
     },
     "parserOptions": {
         "project": ["./tsconfig.json"] // Specify it only for TypeScript files
