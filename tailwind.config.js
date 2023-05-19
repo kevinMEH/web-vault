@@ -1,0 +1,38 @@
+const defaultTheme = require("tailwindcss/defaultTheme");
+
+/** @type {import('tailwindcss').Config} */
+export default {
+    content: [
+        "./components/**/*.{jsx,tsx}",
+        "./frames/**/*.{jsx,tsx}",
+        "./pages/**/*.{jsx,tsx}",
+    ],
+    theme: {
+        colors: {
+            // Generic
+            "transparent": "transparent",
+            "current": "currentColor",
+            
+            "white": "#FFFFFF",
+
+            // Theme colors
+            "off-white-bg": "#FBFBFC",
+            "light-gray": "#F4F5F7",
+            "half-gray": "#EEF0F5",
+            "gray": "#C9C9D1",
+
+            "accent": "#1D75A6",
+            
+            // Text
+            "main-text": "#2A2D33",
+            "sub-text": "#4C4D59",
+            "quiet-text": "#707480"
+        },
+        fontFamily: {
+            "title": [ "var(--font-pathway-extreme)", "var(--font-inter)", ...defaultTheme.fontFamily.sans ],
+            "sans": [ "var(--font-inter)", ...defaultTheme.fontFamily.sans ],
+            "mono": [ "var(--font-fira-code)", ...defaultTheme.fontFamily.mono ],
+        }
+    },
+    plugins: [],
+};
