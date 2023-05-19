@@ -8,13 +8,13 @@
 
 import fs from "fs/promises";
 import path from "path";
-import { metaLog } from "./logger.js";
-import { deleteVaultPassword, setVaultPassword, vaultExistsDatabase } from "./authentication/database.js";
-import { validNameRegex, deleteVaultVFS, newVaultVFS } from "./controller.js";
+import { metaLog } from "./logger";
+import { deleteVaultPassword, setVaultPassword, vaultExistsDatabase } from "./authentication/database";
+import { validNameRegex, deleteVaultVFS, newVaultVFS } from "./controller";
 
-import CustomError from "./custom_error.js";
+import CustomError from "./custom_error";
 
-import { BASE_VAULT_DIRECTORY, BASE_LOGGING_DIRECTORY } from "./env.js";
+import { BASE_VAULT_DIRECTORY, BASE_LOGGING_DIRECTORY } from "./env";
 
 const deletionTimeout = 15 * 1000;
 const baseVaultLoggingDirectory = path.join(BASE_LOGGING_DIRECTORY, "vaults");

@@ -1,5 +1,5 @@
 import Redis from "ioredis";
-import { USING_REDIS } from "../../env.js";
+import { USING_REDIS } from "../../env";
 
 const throwRedisError = () => { throw new Error("Attempting to use Redis with the REDIS environment variable turned off."); }
 

@@ -10,15 +10,15 @@ process.env.DOMAIN = "Kevin";
 process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
 
 
-import { ValidatedPath, VaultPath } from "../src/controller.js"; // Type
+import { ValidatedPath, VaultPath } from "../src/controller"; // Type
 
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
-const { cleanup } = await import("../src/cleanup.js");
+const { cleanup } = await import("../src/cleanup");
 
-const { File, Directory } = await import("../src/vfs.js");
-const { newVaultVFS, vaultVFSExists, validate, getAt, getDirectoryAt, getFileAt } = await import("../src/controller.js");
-const { createNewVault, deleteVault } = await import("../src/vault.js");
+const { File, Directory } = await import("../src/vfs");
+const { newVaultVFS, vaultVFSExists, validate, getAt, getDirectoryAt, getFileAt } = await import("../src/controller");
+const { createNewVault, deleteVault } = await import("../src/vault");
 
 describe("VFS controller tests", () => {
     before(() => {

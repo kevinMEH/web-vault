@@ -7,7 +7,7 @@ import {
     localVerifyVaultPassword,
     localVerifyVaultNonce,
     localGetVaultNonce,
-} from "./database/local.js";
+} from "./database/local";
 import {
     redisAddOutdatedToken,
     redisDeleteVaultPassword,
@@ -17,12 +17,12 @@ import {
     redisVerifyVaultPassword,
     redisVerifyVaultNonce,
     redisGetVaultNonce,
-} from "./database/redis.js";
-import { hashPassword } from "./password.js";
+} from "./database/redis";
+import { hashPassword } from "./password";
 
-import { metaLog } from "../logger.js";
+import { metaLog } from "../logger";
 
-import { USING_REDIS, PASSWORD_SALT, ITERATION_COUNT } from "../env.js";
+import { USING_REDIS, PASSWORD_SALT, ITERATION_COUNT } from "../env";
 
 const isOutdatedToken = USING_REDIS ? redisIsOutdatedToken : (token: string) => Promise.resolve(localIsOutdatedToken(token));
 const addOutdatedTokenFunction = USING_REDIS ? redisAddOutdatedToken : (token: string, expireAt: number) => Promise.resolve(localAddOutdatedToken(token, expireAt));

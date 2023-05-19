@@ -11,10 +11,10 @@ process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
 
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
-const { cleanup } = await import("../src/cleanup.js");
+const { cleanup } = await import("../src/cleanup");
 
-const { verifyVaultPassword } = await import("../src/authentication/database.js");
-const { changeVaultPassword, createNewVault, deleteVault } = await import("../src/vault.js");
+const { verifyVaultPassword } = await import("../src/authentication/database");
+const { changeVaultPassword, createNewVault, deleteVault } = await import("../src/vault");
 
 describe("Vault tests", () => {
     it("Tests the creation, changing password, and deletion of a vault", async () => {

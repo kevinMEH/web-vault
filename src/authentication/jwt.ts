@@ -1,6 +1,6 @@
 import { createHmac } from "crypto";
-import CustomError from "../custom_error.js";
-import { unixTime } from "../helper.js";
+import CustomError from "../custom_error";
+import { unixTime } from "../helper";
 
 export type Header = {
     alg: string,

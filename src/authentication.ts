@@ -1,9 +1,9 @@
-import JWT, { Header, Token } from "./authentication/jwt.js";
-import { metaLog } from "./logger.js";
-import { unixTime } from "./helper.js";
-import { isOutdatedToken, addOutdatedToken, getVaultNonce, verifyVaultNonce } from "./authentication/database.js";
+import JWT, { Header, Token } from "./authentication/jwt";
+import { metaLog } from "./logger";
+import { unixTime } from "./helper";
+import { isOutdatedToken, addOutdatedToken, getVaultNonce, verifyVaultNonce } from "./authentication/database";
 
-import { JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "./env.js";
+import { JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "./env";
 
 export type WebVaultPayload = {
     iss: string,

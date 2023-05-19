@@ -1,12 +1,12 @@
 import fs from "fs/promises";
 import path from "path";
-import { metaLog, vaultLog } from "./logger.js";
-import { ValidatedPath, getVaultFromPath, getDirectoryAt, splitParentChild, getAt, VaultPath, getVaultVFS } from "./controller.js";
-import { File, Directory } from "./vfs.js";
+import { metaLog, vaultLog } from "./logger";
+import { ValidatedPath, getVaultFromPath, getDirectoryAt, splitParentChild, getAt, VaultPath, getVaultVFS } from "./controller";
+import { File, Directory } from "./vfs";
 
-import { BASE_VAULT_DIRECTORY } from "./env.js";
+import { BASE_VAULT_DIRECTORY } from "./env";
 
-import { shutdown } from "./cleanup.js";
+import { shutdown } from "./cleanup";
 
 const deletionTimeout = 15 * 1000;
 const tempFileDirectory = path.join(BASE_VAULT_DIRECTORY, "temp");

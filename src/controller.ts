@@ -5,11 +5,11 @@
 
 import path from "path";
 import fs from "fs/promises";
-import { File, Directory, FlatDirectory } from "./vfs.js";
-import { metaLog } from "./logger.js";
-import CustomError from "./custom_error.js";
+import { File, Directory, FlatDirectory } from "./vfs";
+import { metaLog } from "./logger";
+import CustomError from "./custom_error";
 
-import { VFS_STORE_DIRECTORY, VFS_BACKUP_INTERVAL, PRODUCTION } from "./env.js";
+import { VFS_STORE_DIRECTORY, VFS_BACKUP_INTERVAL, PRODUCTION } from "./env";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
 export type VaultPath = string & { __type: "VaultPath" };

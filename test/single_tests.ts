@@ -6,20 +6,20 @@ import assert from "assert";
 import path from "path";
 import fs from "fs/promises";
 
-import { unixTime } from "../src/helper.js";
+import { unixTime } from "../src/helper";
 
-import { vaultLog, logFileNameFromDate } from "../src/logger.js";
-import JWT, { Header, Payload, Token } from "../src/authentication/jwt.js";
-import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/database/redis.js";
+import { vaultLog, logFileNameFromDate } from "../src/logger";
+import JWT, { Header, Payload, Token } from "../src/authentication/jwt";
+import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/database/redis";
 import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdatedToken,
     localIsOutdatedToken, _purgeAllOutdated, localSetVaultPassword, localVaultExists,
     _loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet,
-    _vaultPasswordMap, NodeType as Node, _vaultNonceMap, localGetVaultNonce, _loadVaultNoncesFromFile } from "../src/authentication/database/local.js";
-import { hashPassword } from "../src/authentication/password.js";
-import { File, Directory } from "../src/vfs.js";
-import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller.js";
+    _vaultPasswordMap, NodeType as Node, _vaultNonceMap, localGetVaultNonce, _loadVaultNoncesFromFile } from "../src/authentication/database/local";
+import { hashPassword } from "../src/authentication/password";
+import { File, Directory } from "../src/vfs";
+import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
 
-import { cleanup } from "../src/cleanup.js";
+import { cleanup } from "../src/cleanup";
 
 describe("Single Tests", () => {
     it("Logging to a file", async () => {

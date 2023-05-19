@@ -2,11 +2,11 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import readline from "readline/promises";
 import path from "path";
-import { unixTime } from "../../helper.js"
-import { metaLog } from "../../logger.js";
-import CustomError from "../../custom_error.js";
+import { unixTime } from "../../helper"
+import { metaLog } from "../../logger";
+import CustomError from "../../custom_error";
 
-import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL } from "../../env.js";
+import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL } from "../../env";
 
 type TokenPair = {
     token: string,

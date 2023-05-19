@@ -8,20 +8,14 @@
     "build": "next build",
     "start": "NEXT_MANUAL_SIG_HANDLE=true next start",
     "lint": "next lint",
-
-    "single_tests": "REDIS=true ts-node-esm test/single_tests.ts",
-
-    "auth_tests_local": "ts-node-esm test/auth_tests.ts",
-    "auth_tests_redis": "REDIS=true ts-node-esm test/auth_tests.ts",
-
-    "vault_tests_local": "ts-node-esm test/vault_tests.ts",
-    "vault_tests_redis": "REDIS=true ts-node-esm test/vault_tests.ts",
-    
-    "controller_tests_local": "ts-node-esm test/controller_tests.ts",
-    "controller_tests_redis": "REDIS=true ts-node-esm test/controller_tests.ts",
-
-    "file_tests": "REDIS=true ts-node-esm test/file_tests.ts",
-
+    "single_tests": "REDIS=true ts-node-esm --experimentalSpecifierResolution node test/single_tests.ts",
+    "auth_tests_local": "ts-node-esm --experimentalSpecifierResolution node test/auth_tests.ts",
+    "auth_tests_redis": "REDIS=true ts-node-esm --experimentalSpecifierResolution node test/auth_tests.ts",
+    "vault_tests_local": "ts-node-esm --experimentalSpecifierResolution node test/vault_tests.ts",
+    "vault_tests_redis": "REDIS=true ts-node-esm --experimentalSpecifierResolution node test/vault_tests.ts",
+    "controller_tests_local": "ts-node-esm --experimentalSpecifierResolution node test/controller_tests.ts",
+    "controller_tests_redis": "REDIS=true ts-node-esm --experimentalSpecifierResolution node test/controller_tests.ts",
+    "file_tests": "REDIS=true ts-node-esm --experimentalSpecifierResolution node test/file_tests.ts",
     "test-all": "bash test/test_all.sh"
   },
   "dependencies": {

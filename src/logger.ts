@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
-import { VaultPath } from "./controller.js";
-import { BASE_LOGGING_DIRECTORY } from "./env.js";
+import { VaultPath } from "./controller";
+import { BASE_LOGGING_DIRECTORY } from "./env";
 
 async function metaLog(name: "database" | "authentication" | "admin" | "vfs" | "file system", type: "ERROR" | "WARNING" | "INFO", message: string) {
     const filePath = path.join(BASE_LOGGING_DIRECTORY, name, logFileNameFromDate());

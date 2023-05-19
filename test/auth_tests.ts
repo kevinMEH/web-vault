@@ -9,12 +9,12 @@ process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
 
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
-const { cleanup } = await import("../src/cleanup.js");
+const { cleanup } = await import("../src/cleanup");
 
-const { default: JWT } = await import("../src/authentication/jwt.js");
-import { Header, Payload, Token } from "../src/authentication/jwt.js"; // Type
-const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/authentication.js");
-const { addOutdatedToken, setVaultPassword, verifyVaultPassword, vaultExistsDatabase, deleteVaultPassword } = await import("../src/authentication/database.js");
+const { default: JWT } = await import("../src/authentication/jwt");
+import { Header, Payload, Token } from "../src/authentication/jwt"; // Type
+const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/authentication");
+const { addOutdatedToken, setVaultPassword, verifyVaultPassword, vaultExistsDatabase, deleteVaultPassword } = await import("../src/authentication/database");
 
 describe("Authentication tests", () => {
     describe("Testing token authentication module", () => {
