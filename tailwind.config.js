@@ -10,6 +10,7 @@ export default {
     theme: {
         colors: {
             // Generic
+            "inherit": "inherit",
             "transparent": "transparent",
             "current": "currentColor",
             
@@ -24,13 +25,13 @@ export default {
             "accent": "#1D75A6",
             
             // Text
-            "main-text": "#2A2D33",
-            "sub-text": "#4C4D59",
-            "quiet-text": "#707480"
+            "main": "#2A2D33",
+            "sub": "#4C4D59",
+            "quiet": "#707480"
         },
         fontFamily: {
             "title": [ "var(--font-pathway-extreme)", "var(--font-inter)", ...defaultTheme.fontFamily.sans ],
-            "sans": [ "var(--font-inter)", ...defaultTheme.fontFamily.sans ],
+            "inter": [ "var(--font-inter)", ...defaultTheme.fontFamily.sans ],
             "mono": [ "var(--font-fira-code)", ...defaultTheme.fontFamily.mono ],
         }
     },
