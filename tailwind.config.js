@@ -22,7 +22,15 @@ export default {
             "half-gray": "#EEF0F5",
             "gray": "#C9C9D1",
 
-            "accent": "#1D75A6",
+            "accent": {
+                "light": "#28A2E5",
+                "dark": "#1D75A6"
+            },
+            
+            "error": {
+                "light": "#E5286C",
+                "dark": "#A41046"
+            },
             
             // Text
             "main": "#2A2D33",
