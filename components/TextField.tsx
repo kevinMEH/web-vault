@@ -9,9 +9,8 @@ type TextFieldParameters = {
     setValue: Dispatch<SetStateAction<string>>;
     id: string;
 
-    error?: string;
+    error?: boolean | string;
 
-    inputMode?: "text" | "email";
     disabled?: boolean;
     required?: boolean;
     readOnly?: boolean;
@@ -19,12 +18,18 @@ type TextFieldParameters = {
     className?: string;
 }
 
+/**
+ * Error parameter: Accepts a boolean or a string.
+ * True: Error, but no text displayed
+ * Nonempty string: Error with text
+ * 
+ * @returns 
+ */
 const TextField = ({
-    name, labelText, placeholder, type, value, setValue, id, error = "",
-    inputMode = "text", disabled = false, required = false, readOnly = false,
-    className = ""
+    name, labelText, placeholder, type, value, setValue, id, error = false,
+    disabled = false, required = false, readOnly = false, className = ""
 }: TextFieldParameters) => {
-    const [lastError, setLastError] = useState("");
+    const [lastError, setLastError] = useState("" as boolean | string);
     const [newError, setNewError] = useState(true);
     if(error != lastError) {
         setLastError(error);
@@ -32,32 +37,34 @@ const TextField = ({
     }
 
     return(
-        <div className={"relative w-80 " + className}>
-            <input
-                name={name}
-                placeholder={placeholder}
-                type={type}
-                value={value}
-                onChange={event => {
-                    setNewError(false);
-                    setValue(event.target.value)
-                }}
-                id={id}
-    
-                inputMode={inputMode}
-                disabled={disabled}
-                required={required}
-                readOnly={readOnly}
-                
-                className={`px-5 py-3 w-full rounded-md text-sm peer
-                font-inter text-main ${error && newError ? "!text-error-light" : ""}
-                border border-gray ${error && newError ? "!border-error-light" : ""}
-                focus:border-accent-light`}
-            />
-            <label htmlFor={id} className={`absolute font-inter text-xs text-sub left-4 -top-2 bg-white
-            ${error && newError ? "!text-error-light" : ""} peer-focus:text-accent-light
-            border-x-4 border-white`}>{labelText}</label>
-            { error ? <p className="inline-block pt-1.5 text-sm text-error-light">{error}</p> : null }
+        <div className={className}>
+            <div className={"relative"}>
+                <input
+                    name={name}
+                    placeholder={placeholder}
+                    type={type}
+                    value={value}
+                    onChange={event => {
+                        setNewError(false);
+                        setValue(event.target.value)
+                    }}
+                    id={id}
+        
+                    inputMode={ type === "email" ? "email" : "text" }
+                    disabled={disabled}
+                    required={required}
+                    readOnly={readOnly}
+                    
+                    className={`px-5 py-3 w-full rounded-md text-sm peer
+                    font-inter text-main ${error && newError ? "!text-error-light" : ""}
+                    border border-gray ${error && newError ? "!border-error-light" : ""}
+                    focus:outline-accent-light`}
+                />
+                <label htmlFor={id} className={`absolute font-inter text-xs text-sub left-4 -top-2 bg-white
+                ${error && newError ? "!text-error-light" : ""} peer-focus:text-accent-light
+                border-x-4 border-white`}>{labelText}</label>
+                { error && error !== true && <p className="inline-block pt-1.5 text-sm text-error-light">{error}</p> }
+            </div>
         </div>
     )
 }
