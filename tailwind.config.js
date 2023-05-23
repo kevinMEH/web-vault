@@ -23,8 +23,9 @@ export default {
             "gray": "#C9C9D1",
 
             "accent": {
-                "light": "#28A2E5",
-                "dark": "#1D75A6"
+                "extra-light": "#a2eded",
+                "light": "#6bdadd",
+                "dark": "#3dbdc4"
             },
             
             "error": {
