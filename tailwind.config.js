@@ -8,6 +8,17 @@ export default {
         "./pages/**/*.{jsx,tsx}",
     ],
     theme: {
+        screens: {
+            'b2xl': {'max': '1535px'},
+      
+            'bxl': {'max': '1279px'},
+      
+            'blg': {'max': '1023px'},
+      
+            'bmd': {'max': '767px'},
+      
+            'bsm': {'max': '639px'},
+        },
         colors: {
             // Generic
             "inherit": "inherit",
