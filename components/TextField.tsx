@@ -55,13 +55,13 @@ const TextField = ({
                     required={required}
                     readOnly={readOnly}
                     
-                    className={`px-5 py-3 w-full rounded-md text-sm peer
-                    font-inter text-main ${error && newError ? "!text-error-light" : ""}
+                    className={`px-5 py-2.5 sm:py-3 w-full rounded-md text-sm peer
+                    font-inter ${error && newError ? "!text-error-light" : ""}
                     border border-gray ${error && newError ? "!border-error-light" : ""}
-                    focus:outline-accent-light disabled:bg-light-gray/50`}
+                    focus:outline-accent-dark disabled:bg-light-gray/50`}
                 />
                 <label htmlFor={id} className={`absolute font-inter text-xs text-sub left-4 -top-2 bg-white
-                ${error && newError ? "!text-error-light" : ""} peer-focus:text-accent-light
+                ${error && newError ? "!text-error-light" : ""} peer-focus:text-accent-dark
                 border-x-4 border-white`}>{labelText}</label>
                 { error && error !== true && <p className="inline-block pt-1.5 text-sm text-error-light">{error}</p> }
             </div>
