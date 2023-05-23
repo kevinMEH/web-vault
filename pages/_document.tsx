@@ -13,7 +13,7 @@ if(process.env.NEXT_MANUAL_SIG_HANDLE) {
 
 export default function Document() {
   return (
-    <Html lang="en">
+    <Html lang="en" className="text-main font-inter">
       <Head />
       <body>
         <Main />

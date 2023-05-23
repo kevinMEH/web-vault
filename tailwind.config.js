@@ -52,7 +52,6 @@ export default {
         fontFamily: {
             "title": [ "var(--font-pathway-extreme)", "var(--font-inter)", ...defaultTheme.fontFamily.sans ],
             "inter": [ "var(--font-inter)", ...defaultTheme.fontFamily.sans ],
-            "sans": [ "var(--font-inter)", ...defaultTheme.fontFamily.sans ],
             "mono": [ "var(--font-fira-code)", ...defaultTheme.fontFamily.mono ],
         }
     },
