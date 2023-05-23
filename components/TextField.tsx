@@ -58,7 +58,7 @@ const TextField = ({
                     className={`px-5 py-3 w-full rounded-md text-sm peer
                     font-inter text-main ${error && newError ? "!text-error-light" : ""}
                     border border-gray ${error && newError ? "!border-error-light" : ""}
-                    focus:outline-accent-light`}
+                    focus:outline-accent-light disabled:bg-light-gray/50`}
                 />
                 <label htmlFor={id} className={`absolute font-inter text-xs text-sub left-4 -top-2 bg-white
                 ${error && newError ? "!text-error-light" : ""} peer-focus:text-accent-light
