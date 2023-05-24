@@ -15,7 +15,7 @@ export default function Document() {
   return (
     <Html lang="en" className="text-main font-inter">
       <Head />
-      <body>
+      <body className="bg-light-gray">
         <Main />
         <NextScript />
       </body>
