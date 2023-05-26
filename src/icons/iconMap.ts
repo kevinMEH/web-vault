@@ -20,16 +20,13 @@ for(const file of fileIcons) {
     }
 }
 
-const closedFolderMap = new Map<string, string>();
-const openFolderMap = new Map<string, string>();
+const folderBaseMap = new Map<string, string>();
 
 for(const folder of folderIcons) {
-    const closedSvgName = folder.name + ".svg";
-    const openSvgName = folder.name + "-open.svg";
+    const openSvgName = folder.name;
     for(const folderName of folder.folderNames) {
-        closedFolderMap.set(folderName, closedSvgName);
-        openFolderMap.set(folderName, openSvgName);
+        folderBaseMap.set(folderName, openSvgName);
     }
 }
 
-export { fileExtensionMap, fileNameMap, closedFolderMap, openFolderMap };
+export { fileExtensionMap, fileNameMap, folderBaseMap };

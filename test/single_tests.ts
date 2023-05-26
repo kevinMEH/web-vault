@@ -18,7 +18,7 @@ import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdate
 import { hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
 import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
-import { fileNameMap, closedFolderMap, openFolderMap, fileExtensionMap } from "../src/icons/iconMap";
+import { fileNameMap, folderBaseMap, fileExtensionMap } from "../src/icons/iconMap";
 
 import { cleanup } from "../src/cleanup";
 
@@ -807,23 +807,14 @@ describe("Single Tests", () => {
         assert(fileNameMap.get("readme.md") === "readme.svg");
         assert(fileNameMap.get("hello") === undefined);
         
-        // Open folder icons
-        assert(openFolderMap.get("components") === "folder-components-open.svg");
-        assert(openFolderMap.get("public") === "folder-public-open.svg");
-        assert(openFolderMap.get("src") === "folder-src-open.svg");
-        assert(openFolderMap.get("tests") === "folder-test-open.svg");
-        assert(openFolderMap.get("build") === "folder-dist-open.svg");
-        assert(openFolderMap.get("bin") === "folder-dist-open.svg");
-        assert(openFolderMap.get("myfolder") === undefined);
-
-        // Closed folder icons
-        assert(closedFolderMap.get("components") === "folder-components.svg");
-        assert(closedFolderMap.get("public") === "folder-public.svg");
-        assert(closedFolderMap.get("src") === "folder-src.svg");
-        assert(closedFolderMap.get("tests") === "folder-test.svg");
-        assert(closedFolderMap.get("build") === "folder-dist.svg");
-        assert(closedFolderMap.get("bin") === "folder-dist.svg");
-        assert(closedFolderMap.get("myfolder") === undefined);
+        // Folder base icons
+        assert(folderBaseMap.get("components") === "folder-components");
+        assert(folderBaseMap.get("public") === "folder-public");
+        assert(folderBaseMap.get("src") === "folder-src");
+        assert(folderBaseMap.get("tests") === "folder-test");
+        assert(folderBaseMap.get("build") === "folder-dist");
+        assert(folderBaseMap.get("bin") === "folder-dist");
+        assert(folderBaseMap.get("myfolder") === undefined);
         
         // Tests all svgs actually exist
         for(const file of fileExtensionMap.values()) {
@@ -840,16 +831,14 @@ describe("Single Tests", () => {
                 assert(false, `Icon file ${file} does not exist.`)
             }
         }
-        for(const file of openFolderMap.values()) {
+        for(const file of folderBaseMap.values()) {
             try {
-                await fs.access(path.join(process.cwd(), "public/icons", file));
+                await fs.access(path.join(process.cwd(), "public/icons", file + ".svg"));
             } catch(error) {
                 assert(false, `Icon file ${file} does not exist.`)
             }
-        }
-        for(const file of closedFolderMap.values()) {
             try {
-                await fs.access(path.join(process.cwd(), "public/icons", file));
+                await fs.access(path.join(process.cwd(), "public/icons", file + "-open.svg"));
             } catch(error) {
                 assert(false, `Icon file ${file} does not exist.`)
             }
