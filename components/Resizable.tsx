@@ -46,7 +46,7 @@ const Resizable = ({ position, defaultWidth, minWidth, maxWidth, children }: Res
     }, [handleMouseMove, handleMouseUp]);
     
     return <div className={`relative flex`}>
-        <div className="bg-white font-inter" style={{ width: containerWidth.current }}>
+        <div className="bg-white font-inter overflow-clip" style={{ width: containerWidth.current }}>
             {children}
         </div>
         <div className={`w-[1px] h-full group bg-gray
