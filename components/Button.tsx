@@ -1,4 +1,4 @@
-type ButtonParameter = {
+type ButtonParameters = {
     children: React.ReactNode;
 
     href?: string;
@@ -11,7 +11,7 @@ type ButtonParameter = {
 
 const defaultClassNames = `justify-center inline-flex rounded-lg`;
 
-const Button = ({ children, href, onClick = undefined, disabled = false, wrapperClassName = "", className = "" }: ButtonParameter) => {
+const Button = ({ children, href, onClick = undefined, disabled = false, wrapperClassName = "", className = "" }: ButtonParameters) => {
     return <div className={wrapperClassName}>
         {href ? <a href={href} onClick={onClick as any} className={defaultClassNames + " " + className}>
             {children}
