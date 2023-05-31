@@ -18,7 +18,7 @@ const ItemIcon = memo(function ItemIcon({ name, isFolder, isOpen, width, height,
     if(isFolder) {
         svgName = folderBaseMap.get(name);
         if(svgName !== undefined) {
-            svgName += (isOpen ? + "-open.svg" : ".svg");
+            svgName += (isOpen ? "-open.svg" : ".svg");
         } else {
             svgName = isOpen ? "folder-open.svg" : "folder.svg";
         }
