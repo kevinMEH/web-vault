@@ -47,6 +47,7 @@ class File {
     realFile: string;
 
     isDirectory = false;
+    isOpen = false; // Typing purposes only, no use on file
     
     constructor(name: string, byteSize: number, realFile: string, lastModified?: string | Date) {
         this.name = name;
@@ -121,6 +122,7 @@ class Directory {
     contents: (File | Directory)[];
 
     isDirectory = true;
+    isOpen = false; // For displaying directory
     
     constructor(name: string, contents: (File | Directory)[], lastModified?: string | Date) {
         this.name = name;
