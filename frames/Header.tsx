@@ -13,7 +13,7 @@ const Header = ({ vaultName }: HeaderParameters) => {
     // TODO: getServerSideProps get vault image
     // TODO: Search bar implementation
     // TODO: Make search icon
-    return <header className="flex h-14 bg-white border-b border-gray justify-between">
+    return <header className="flex h-14 bg-white border-b border-gray justify-between flex-shrink-0">
         <div className="flex items-center justify-center w-[300px]">
             <Image src={Logo} alt="Logo with text" height={30} priority={true} />
         </div>
