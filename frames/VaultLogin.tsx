@@ -40,7 +40,7 @@ const VaultLogin = ({ title, description, image, imageAlt, className = "" }: Vau
             />
             <Button wrapperClassName="pt-2" onClick={onLogin} disabled={submitting}
             className="text-sm font-inter font-medium text-main w-full max-w-xs bsm:max-w-none py-3
-            bg-accent-light hover:bg-accent-dark disabled:bg-accent-extra-light disabled:text-main/50
+            bg-accent-light hover:bg-accent-medium disabled:bg-accent-extra-light disabled:text-main/50
             transition-colors"
             >Access Vault</Button>
         </div>

@@ -41,8 +41,6 @@ const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryCh
         }
     }, [handleNewActiveDirectory, item])
 
-    const icon = <ItemIcon name={item.name} isFolder={isFolder} isOpen={isOpen}
-        width={20} height={20} className="" />
 
     return <div className="block" ref={thisItem as any} onClick={event => {
         event.preventDefault();
@@ -62,8 +60,8 @@ const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryCh
                     )
                     : <div className="min-w-[4px] mx-2" />
                 }
-                {icon}
-                <span className="pl-3">{item.name}</span>
+                <ItemIcon name={item.name} isFolder={isFolder} isOpen={isOpen} width={20} height={20} className="" />
+                <p className="pl-3 whitespace-nowrap">{item.name}</p>
             </div>
             {isFolder && <div className={`relative h-5 w-5 mr-3 flex-shrink-0`}>
                 <RightArrowSVG name="Set active directory" className={`text-quiet opacity-0 group-hover:opacity-100 hover:text-accent-dark transition-all
