@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 
 type ResizableParameters = {
-    position: "left-0" | "right-0";
+    sashPosition: "left-0" | "right-0";
     defaultWidth: number;
     minWidth: number;
     maxWidth: number;
@@ -9,7 +9,7 @@ type ResizableParameters = {
     children: React.ReactNode;
 };
 
-const Resizable = ({ position, defaultWidth, minWidth, maxWidth, children }: ResizableParameters) => {
+const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children }: ResizableParameters) => {
     const sashElement = useRef(null as null | HTMLElement);
     const lastX = useRef(0);
     const containerWidth = useRef(defaultWidth);
@@ -19,14 +19,14 @@ const Resizable = ({ position, defaultWidth, minWidth, maxWidth, children }: Res
         event.preventDefault();
 
         let newWidth = containerWidth.current +
-        (position === "right-0" ? event.clientX - lastX.current : -event.clientX + lastX.current);
+        (sashPosition === "right-0" ? event.clientX - lastX.current : -event.clientX + lastX.current);
         if(newWidth > maxWidth) newWidth = maxWidth;
         if(newWidth < minWidth) newWidth = minWidth;
         containerWidth.current = newWidth;
         lastX.current = event.clientX;
 
         rerender(prev => prev + 1);
-    }, [position, maxWidth, minWidth]);
+    }, [sashPosition, maxWidth, minWidth]);
     
     const handleMouseUp = useCallback((event: MouseEvent) => {
         event.preventDefault();
@@ -50,7 +50,7 @@ const Resizable = ({ position, defaultWidth, minWidth, maxWidth, children }: Res
             {children}
         </div>
         <div className={`w-[1px] h-full group bg-gray
-        cursor-col-resize transition-all absolute ${position}
+        cursor-col-resize transition-all absolute ${sashPosition}
         before:absolute before:w-[3px] before:h-full before:right-[calc(50%-1.5px)] 
         before:bg-transparent before:hover:bg-accent-extra-light
         before:transition-colors before:duration-300`}
