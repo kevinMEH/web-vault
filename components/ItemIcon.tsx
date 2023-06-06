@@ -34,7 +34,7 @@ const ItemIcon = memo(function ItemIcon({ name, isFolder, isOpen, width, height,
             }
         }
     }
-    return <Image alt={name + " icon"} src={`/item-icons/${svgName}`} width={width} height={height} className={`inline-block ${className}`} />
+    return <Image alt={name + " icon"} src={`/item-icons/${svgName}`} priority={true} width={width} height={height} style={{ width: width, height: height }} className={`inline-block ${className}`} />
 });
 
 export default ItemIcon
