@@ -30,13 +30,14 @@ export default {
             // Theme colors
             "off-white-bg": "#FBFBFC",
             "light-gray": "#F4F5F7",
-            "half-gray": "#EEF0F5",
-            "gray": "#C9C9D1",
+            "half-gray": "#E4E7ED",
+            "gray": "#C9CCD1",
 
             "accent": {
                 "extra-light": "#ecd5ff",
                 "light": "#ddb4fe",
-                "dark": "#c884fc"
+                "medium": "#c884fc",
+                "dark": "#b355f7"
             },
             
             "error": {
