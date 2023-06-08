@@ -48,7 +48,8 @@ const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryCh
         item.isOpen = !item.isOpen;
         rerender(prev => prev + 1);
     }}>
-        <div className="flex items-center h-9 text-quiet hover:text-main text-sm font-mono font-[425] bg-white hover:bg-light-gray transition-colors cursor-pointer justify-between group"
+        <div className="flex items-center h-9 text-quiet hover:text-main text-sm font-mono font-[425]
+        bg-white hover:bg-light-gray transition-colors cursor-pointer justify-between group select-none"
         style={{ paddingLeft: 12 * depth + "px"}} >
             <div className="flex items-center">
                 {

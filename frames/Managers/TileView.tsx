@@ -35,7 +35,7 @@ const TileView = ({ activeDirectoryChain, setActiveDirectoryChain, setActiveItem
                 }}>{path}</div>
             </React.Fragment>})
         }</div>
-        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(225px,1fr))]">{
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">{
         activeDirectory.contents.map(item =>
             <Tile item={item} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} key={item.name}></Tile>
         )}</div>
