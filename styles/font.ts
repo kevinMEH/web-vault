@@ -1,4 +1,4 @@
-import { Inter, Pathway_Extreme, Fira_Code } from "next/font/google";
+import { Inter, Pathway_Extreme, Noto_Sans_Mono } from "next/font/google";
 
 export const inter = Inter({
     subsets: ["latin"],
@@ -10,7 +10,7 @@ export const pathway = Pathway_Extreme({
     variable: "--font-pathway-extreme"
 });
 
-export const fira = Fira_Code({
+export const noto_sans_mono = Noto_Sans_Mono({
     subsets: ["latin"],
-    variable: "--font-fira-code"
+    variable: "--font-noto-sans-mono"
 })
