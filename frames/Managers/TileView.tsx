@@ -2,6 +2,7 @@ import Tile from "./Tile";
 
 import { File, Directory } from "../../src/vfs";
 import React from "react";
+import { sortByName } from "../../src/helper";
 
 type TileViewParameters = {
     activeDirectoryChain: Directory[];
@@ -12,6 +13,8 @@ type TileViewParameters = {
 const TileView = ({ activeDirectoryChain, setActiveDirectoryChain, setActiveItem }: TileViewParameters) => {
     const paths = activeDirectoryChain.map(directory => directory.name);
     const activeDirectory = activeDirectoryChain[activeDirectoryChain.length - 1];
+    activeDirectory.contents.sort(sortByName);
+
     return <div className="bg-light-gray h-full w-full px-6" onDoubleClick={event => {
             setActiveItem(null)
             event.stopPropagation();
@@ -39,9 +42,13 @@ const TileView = ({ activeDirectoryChain, setActiveDirectoryChain, setActiveItem
                 }}>{path}</div>
             </React.Fragment>})
         }</div>
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] pb-4">{
+        activeDirectory.contents.map(item =>
+            item.isDirectory && <Tile item={item} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} key={item.name}></Tile>
+        )}</div>
         <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">{
         activeDirectory.contents.map(item =>
-            <Tile item={item} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} key={item.name}></Tile>
+            !item.isDirectory && <Tile item={item} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} key={item.name}></Tile>
         )}</div>
     </div>
 }

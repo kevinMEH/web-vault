@@ -5,6 +5,7 @@ import Triangle from "./Triangle";
 import RightArrowSVG from "./RightArrowSVG";
 
 import { File, Directory } from "../src/vfs";
+import { sortByName } from "../src/helper";
 
 type ExplorerItemParameters = {
     item: File | Directory;
@@ -88,13 +89,7 @@ const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryCh
                 }} />
             </div>}
         </div>
-        {isOpen && isFolder && (item as Directory).contents.sort((first, second) => {
-            if(first.isDirectory != second.isDirectory) {
-                return first.isDirectory ? -1 : 1;
-            } else {
-                return first.name.localeCompare(second.name);
-            }
-        }) && <div>
+        {isOpen && isFolder && (item as Directory).contents.sort(sortByName) && <div>
             {(item as Directory).contents.map(
                 item => <ExplorerItem item={item} depth={depth + 1} key={item.name} activeDirectoryChain={activeDirectoryChain} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} />
             )}
