@@ -15,8 +15,10 @@ const Tile = ({ item, setActiveDirectoryChain, setActiveItem }: TileParameters) 
             const newDirectoryChain = [...prev, item as Directory];
             return newDirectoryChain;
         });
-    }) : (() => {
+    }) : (event => {
         setActiveItem(item);
+        event.stopPropagation();
+        event.preventDefault();
     })}>
         <ItemIcon name={item.name} isFolder={item.isDirectory} isOpen={false} width={22} height={22} className="" />
         <div className="pl-3 font-mono text-sm text-sub font-[425] w-full whitespace-nowrap truncate">

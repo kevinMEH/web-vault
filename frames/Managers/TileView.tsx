@@ -6,13 +6,17 @@ import React from "react";
 type TileViewParameters = {
     activeDirectoryChain: Directory[];
     setActiveDirectoryChain: (setFunc: (prev: Directory[]) => Directory[]) => void;
-    setActiveItem: (item: File | Directory) => void;
+    setActiveItem: (item: File | Directory | null) => void;
 }
 
 const TileView = ({ activeDirectoryChain, setActiveDirectoryChain, setActiveItem }: TileViewParameters) => {
     const paths = activeDirectoryChain.map(directory => directory.name);
     const activeDirectory = activeDirectoryChain[activeDirectoryChain.length - 1];
-    return <div className="bg-light-gray h-full w-full px-6">
+    return <div className="bg-light-gray h-full w-full px-6" onDoubleClick={event => {
+            setActiveItem(null)
+            event.stopPropagation();
+            event.preventDefault();
+        }}>
         <div className="py-3.5 space-x-1 font-mono text-quiet text-sm font-medium">{
         paths.map((path, i) => {
             return i !== paths.length - 1

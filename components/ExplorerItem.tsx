@@ -11,9 +11,10 @@ type ExplorerItemParameters = {
     depth: number;
     activeDirectoryChain: Directory[];
     setActiveDirectoryChain: (setFunc: (prev: Directory[]) => Directory[]) => void;
+    setActiveItem: (item: File) => void;
 }
 
-const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryChain, setActiveDirectoryChain }: ExplorerItemParameters) {
+const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryChain, setActiveDirectoryChain, setActiveItem }: ExplorerItemParameters) {
     const [_nonce, rerender] = useState(0);
     const thisItem = useRef(null as null | HTMLElement)
 
@@ -42,11 +43,20 @@ const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryCh
     }, [handleNewActiveDirectory, item])
 
 
-    return <div className="block" ref={thisItem as any} onClick={event => {
+    return <div className="block" ref={thisItem as any}
+    onClick={event => {
         event.preventDefault();
         event.stopPropagation();
         item.isOpen = !item.isOpen;
         rerender(prev => prev + 1);
+    }}
+    onDoubleClick={!item.isDirectory ? event => {
+        setActiveItem(item as File);
+        event.stopPropagation();
+        event.preventDefault();
+    } : event => {
+        event.stopPropagation();
+        event.preventDefault();
     }}>
         <div className="flex items-center h-9 text-quiet hover:text-main text-sm font-mono font-[425]
         bg-white hover:bg-light-gray transition-colors cursor-pointer justify-between group select-none"
@@ -86,7 +96,7 @@ const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryCh
             }
         }) && <div>
             {(item as Directory).contents.map(
-                item => <ExplorerItem item={item} depth={depth + 1} key={item.name} activeDirectoryChain={activeDirectoryChain} setActiveDirectoryChain={setActiveDirectoryChain} />
+                item => <ExplorerItem item={item} depth={depth + 1} key={item.name} activeDirectoryChain={activeDirectoryChain} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} />
             )}
         </div>}
     </div>

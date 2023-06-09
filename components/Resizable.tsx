@@ -7,9 +7,12 @@ type ResizableParameters = {
     maxWidth: number;
 
     children: React.ReactNode;
+
+    onClick?: (event: MouseEvent) => any;
+    onDoubleClick?: (event: MouseEvent) => any;
 };
 
-const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children }: ResizableParameters) => {
+const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, onClick = undefined, onDoubleClick = undefined }: ResizableParameters) => {
     const sashElement = useRef(null as null | HTMLElement);
     const lastX = useRef(0);
     const containerWidth = useRef(defaultWidth);
@@ -45,8 +48,9 @@ const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children }:
         lastX.current = event.clientX;
     }, [handleMouseMove, handleMouseUp]);
     
-    return <div className={`relative flex`}>
-        <div className="bg-white font-inter overflow-clip" style={{ width: containerWidth.current }}>
+    return <div className={`relative flex flex-shrink-0`}>
+        <div className="bg-white font-inter overflow-clip" style={{ width: containerWidth.current }}
+        onClick={onClick as any} onDoubleClick={onDoubleClick as any}>
             {children}
         </div>
         <div className={`w-[1px] h-full group bg-gray
