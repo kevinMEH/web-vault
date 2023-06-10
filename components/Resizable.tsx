@@ -49,7 +49,7 @@ const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, o
     }, [handleMouseMove, handleMouseUp]);
     
     return <div className={`relative flex flex-shrink-0`}>
-        <div className="bg-white font-inter overflow-clip" style={{ width: containerWidth.current }}
+        <div className="bg-white font-inter overflow-x-clip overflow-y-scroll" style={{ width: containerWidth.current }}
         onClick={onClick as any} onDoubleClick={onDoubleClick as any}>
             {children}
         </div>
