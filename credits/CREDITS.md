@@ -8,4 +8,9 @@ icons.
 The Material Icons Theme is available under the
 [MIT License.](./Material-Icons-LICENSE.md).
 
-All icons over at public/icons is from that project.
+All icons over at `public/item-icons` is from that project.
+
+## Shiki
+Web Vault uses [Shiki](https://github.com/shikijs/shiki) for code rendering.
+
+Shiki is available under the [MIT License.](./Shiki-LICENSE.md)
