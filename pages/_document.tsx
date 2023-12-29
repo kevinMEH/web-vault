@@ -13,9 +13,9 @@ if(process.env.NEXT_MANUAL_SIG_HANDLE) {
 
 export default function Document() {
   return (
-    <Html lang="en" className="text-main font-inter">
+    <Html lang="en" className="text-main font-inter min-h-full overflow-x-clip hide-scrollbar">
       <Head />
-      <body className="bg-light-gray">
+      <body className="bg-light-gray h-screen">
         <Main />
         <NextScript />
       </body>
