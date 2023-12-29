@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "NEXT_MANUAL_SIG_HANDLE=true next dev",
+    "windev": "next dev",
     "build": "next build",
     "start": "NEXT_MANUAL_SIG_HANDLE=true next start",
     "lint": "next lint",
