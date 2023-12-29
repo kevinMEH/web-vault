@@ -10,11 +10,13 @@ type TileParameters = {
 
 const Tile = ({ item, setActiveDirectoryChain, setActiveItem }: TileParameters) => {
     return <div className="bg-white hover:bg-light-gray border border-gray rounded-lg px-5 py-3.5
-    flex items-center cursor-pointer select-none" onDoubleClick={item.isDirectory ? (() => {
+    flex items-center cursor-pointer select-none" onDoubleClick={item.isDirectory ? (event => {
         setActiveDirectoryChain(prev => {
             const newDirectoryChain = [...prev, item as Directory];
             return newDirectoryChain;
         });
+        event.stopPropagation();
+        event.preventDefault();
     }) : (event => {
         setActiveItem(item);
         event.stopPropagation();

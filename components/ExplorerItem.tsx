@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 import ItemIcon from "./ItemIcon";
 import Triangle from "./Triangle";
-import RightArrowSVG from "./RightArrowSVG";
+import RightArrowSVG from "./SVGS/RightArrowSVG";
 
 import { File, Directory } from "../src/vfs";
 import { sortByName } from "../src/helper";
