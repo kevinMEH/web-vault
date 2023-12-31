@@ -38,6 +38,7 @@ const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, o
         
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
+        realWidth.current = containerWidth.current;
     }, [handleMouseMove]);
     
     const handleMouseDown = useCallback((event: MouseEvent) => {
