@@ -11,9 +11,9 @@ const ActivitySVG = ({ name, className = "" }: ActivitySVG) => (
             points="30 14 24 14 20 26 12 2 8 14 2 14"
             fill="none"
             stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3"
         />
     </svg>
 );
