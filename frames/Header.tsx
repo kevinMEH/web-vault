@@ -13,8 +13,8 @@ const Header = ({ vaultName }: HeaderParameters) => {
     return <header className="flex h-14 px-8 py-2.5 bg-white border-b border-gray justify-between flex-shrink-0 flex-grow-0 items-center">
         <div className="flex items-center justify-center space-x-2 flex-shrink-0 select-none">
             <Image src={Logo} alt="Logo with text" height={28} priority={true} className="pointer-events-none" />
-            <div className="font-inter text-base italic font-semibold text-sub align-top px-3 py-1 select-none">/</div>
-            <div className="font-inter text-base font-semibold text-sub align-top hover:bg-light-gray px-3 py-1 rounded-md cursor-pointer">{vaultName}</div>
+            <div className="font-inter text-base italic font-semibold text-sub align-top pl-5 pr-3 py-1 select-none">/</div>
+            <div className="font-mono tracking-tight text-base font-semibold text-sub align-top hover:bg-light-gray px-3 py-1 rounded-md cursor-pointer">{vaultName}</div>
         </div>
         <div className="flex">
             <div className="w-full flex items-center justify-end border border-gray rounded-lg px-3 py-1 cursor-pointer select-none">

@@ -31,8 +31,9 @@ const TileView = ({ activeDirectoryChain, setActiveDirectoryChain, setActiveItem
                         return newDirectoryChain;
                     });
                 }}>{path}</div>
-                <div className="inline-block">/</div>
-                </React.Fragment> : <React.Fragment key={i}>
+                <div className="inline-block select-none">/</div>
+            </React.Fragment>
+            : <React.Fragment key={i}>
                 <div className="text-accent-dark inline-block cursor-pointer hover:bg-half-gray py-1 px-2.5 rounded-md" onClick={() => {
                     setActiveDirectoryChain(prev => {
                         const newDirectoryChain = [...prev];
