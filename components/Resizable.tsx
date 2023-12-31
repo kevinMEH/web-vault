@@ -16,16 +16,16 @@ const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, o
     const sashElement = useRef(null as null | HTMLElement);
     const lastX = useRef(0);
     const containerWidth = useRef(defaultWidth);
+    const realWidth = useRef(defaultWidth)
     const [_nonce, rerender] = useState(0);
 
     const handleMouseMove = useCallback((event: MouseEvent) => {
         event.preventDefault();
 
-        let newWidth = containerWidth.current +
+        let desiredWidth = realWidth.current +
         (sashPosition === "right-0" ? event.clientX - lastX.current : -event.clientX + lastX.current);
-        if(newWidth > maxWidth) newWidth = maxWidth;
-        if(newWidth < minWidth) newWidth = minWidth;
-        containerWidth.current = newWidth;
+        containerWidth.current = Math.max(Math.min(desiredWidth, maxWidth), minWidth);
+        realWidth.current = desiredWidth;
         lastX.current = event.clientX;
 
         rerender(prev => prev + 1);
@@ -34,6 +34,7 @@ const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, o
     const handleMouseUp = useCallback((event: MouseEvent) => {
         event.preventDefault();
         sashElement.current?.classList.remove("before:!bg-accent-extra-light");
+        document.body.classList.remove("cursor-ew-resize");
         
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
@@ -42,6 +43,7 @@ const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, o
     const handleMouseDown = useCallback((event: MouseEvent) => {
         event.preventDefault();
         sashElement.current?.classList.add("before:!bg-accent-extra-light");
+        document.body.classList.add("cursor-ew-resize");
 
         document.addEventListener("mousemove", handleMouseMove);
         document.addEventListener("mouseup", handleMouseUp);
@@ -57,7 +59,7 @@ const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, o
         cursor-col-resize transition-all absolute ${sashPosition}
         before:absolute before:w-[3px] before:h-full before:right-[calc(50%-1.5px)] 
         before:bg-transparent before:hover:bg-accent-extra-light
-        before:transition-colors before:duration-300`}
+        before:transition-colors before:duration-300 cursor-ew-resize`}
         onMouseDown={handleMouseDown as any} ref={sashElement as any} />
     </div>
 }
