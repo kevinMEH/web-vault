@@ -43,3 +43,5 @@ logs/vaults/*
 **.log
 
 !**/.trackme
+
+dump.rdb
