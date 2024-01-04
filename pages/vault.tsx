@@ -11,6 +11,7 @@ import ExplorerItem from "../components/ExplorerItem";
 import Header from "../frames/Header";
 import TileView from "../frames/Managers/TileView";
 import Details from "../frames/Details";
+import StandardHead from "../components/StandardHead";
 
 let testFolder: Directory;
 let testFolder2: Directory;
@@ -61,11 +62,7 @@ const Vault = () => {
     }, [])
 
     return <>
-        <Head>
-            <title>{vault.name}</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <link rel="icon" href="../logos/favicon-32.ico" />
-        </Head>
+        <StandardHead title={vault.name} noIndex={true} />
         <div className="flex flex-col h-full">
             <Header vaultName={vault.name} />
             <main className="flex flex-shrink flex-grow w-full h-full overflow-x-clip overflow-y-auto hide-scrollbar">
