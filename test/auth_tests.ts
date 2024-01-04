@@ -116,7 +116,7 @@ describe("Authentication tests", () => {
             assert(await verifyVaultPassword("testing", "password123"));
             assert(!await verifyVaultPassword("testing", "Password123"));
             assert(!await verifyVaultPassword("nonexistant", "password123"));
-            deleteVaultPassword("testing");
+            await deleteVaultPassword("testing");
             assert(!await vaultExistsDatabase("testing"));
         });
         
@@ -124,7 +124,7 @@ describe("Authentication tests", () => {
             await setVaultPassword("existing_peacefully", "password")
             assert(await vaultExistsDatabase("existing_peacefully"));
             assert(!await vaultExistsDatabase("nonexistant_vault"));
-            deleteVaultPassword("existing_peacefully");
+            await deleteVaultPassword("existing_peacefully");
             assert(!await vaultExistsDatabase("existing_peacefully"));
         });
     });

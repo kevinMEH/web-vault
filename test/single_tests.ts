@@ -819,26 +819,26 @@ describe("Single Tests", () => {
         // Tests all svgs actually exist
         for(const file of fileExtensionMap.values()) {
             try {
-                await fs.access(path.join(process.cwd(), "public/icons", file));
+                await fs.access(path.join(process.cwd(), "public/item-icons", file));
             } catch(error) {
                 assert(false, `Icon file ${file} does not exist.`)
             }
         }
         for(const file of fileNameMap.values()) {
             try {
-                await fs.access(path.join(process.cwd(), "public/icons", file));
+                await fs.access(path.join(process.cwd(), "public/item-icons", file));
             } catch(error) {
                 assert(false, `Icon file ${file} does not exist.`)
             }
         }
         for(const file of folderBaseMap.values()) {
             try {
-                await fs.access(path.join(process.cwd(), "public/icons", file + ".svg"));
+                await fs.access(path.join(process.cwd(), "public/item-icons", file + ".svg"));
             } catch(error) {
                 assert(false, `Icon file ${file} does not exist.`)
             }
             try {
-                await fs.access(path.join(process.cwd(), "public/icons", file + "-open.svg"));
+                await fs.access(path.join(process.cwd(), "public/item-icons", file + "-open.svg"));
             } catch(error) {
                 assert(false, `Icon file ${file} does not exist.`)
             }
