@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getHighlighter, setCDN } from "shiki";
-import { Highlighter, Lang } from "shiki"; // Type
+import type { Highlighter, Lang } from "shiki";
 
 setCDN("/shiki")
 

@@ -12,7 +12,7 @@ else console.log("Using in memory database");
 const { cleanup } = await import("../src/cleanup");
 
 const { default: JWT } = await import("../src/authentication/jwt");
-import { Header, Payload, Token } from "../src/authentication/jwt"; // Type
+import type { Header, Payload, Token } from "../src/authentication/jwt";
 const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/authentication");
 const { addOutdatedToken, setVaultPassword, verifyVaultPassword, vaultExistsDatabase, deleteVaultPassword } = await import("../src/authentication/database");
 

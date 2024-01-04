@@ -9,12 +9,12 @@ else console.log("Using in memory database");
 const { cleanup } = await import("../src/cleanup");
 
 
-import { VaultPath, ValidatedPath, getAt, getDirectoryAt } from "../src/controller"; // Type
-import { File, Directory } from "../src/vfs"; // Type
-import { Stats } from "fs"; // Type
+import type { VaultPath, ValidatedPath } from "../src/controller";
+import type { File, Directory } from "../src/vfs";
+import type { Stats } from "fs";
 
 const { createNewVault, deleteVault } = await import("../src/vault");
-const { validate } = await import("../src/controller");
+const { getAt, getDirectoryAt, validate } = await import("../src/controller");
 const { getTempFile, addFile, addFolder, copyItem, moveItem, deleteItem } = await import("../src/file");
 const { BASE_VAULT_DIRECTORY } = await import("../src/env");
 

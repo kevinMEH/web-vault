@@ -10,7 +10,7 @@ process.env.DOMAIN = "Kevin";
 process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
 
 
-import { ValidatedPath, VaultPath } from "../src/controller"; // Type
+import type { ValidatedPath, VaultPath } from "../src/controller";
 
 if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
