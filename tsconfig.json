@@ -16,5 +16,9 @@
     "incremental": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "tailwind.config.js"]
+  "exclude": ["node_modules", "tailwind.config.js"],
+  "ts-node": {
+    "experimentalSpecifierResolution": "node",
+    "transpileOnly": true,
+  }
 }
