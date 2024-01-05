@@ -12,9 +12,9 @@ import { vaultLog, logFileNameFromDate } from "../src/logger";
 import JWT, { Header, Payload, Token } from "../src/authentication/jwt";
 import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/database/redis";
 import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdatedToken,
-    localIsOutdatedToken, _purgeAllOutdated, localSetVaultPassword, localVaultExists,
-    _loadVaultPasswordsFromFile, localDeleteVaultPassword, _tokenList, _tokenSet,
-    _vaultPasswordMap, NodeType as Node, _vaultNonceMap, localGetVaultNonce, _loadVaultNoncesFromFile } from "../src/authentication/database/local";
+    localIsOutdatedToken, _purgeAllOutdated, _loadVaultCredentialsFromFile, localSetVaultPassword,
+    localVaultExists, localDeleteVault, localGetVaultNonce, _tokenList, _tokenSet,
+    _vaultCredentialsMap, NodeType as Node,  } from "../src/authentication/database/local";
 import { hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
 import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
@@ -184,25 +184,25 @@ describe("Single Tests", () => {
     
             assert(localVaultExists("test-vault-test"));
             assert(localVaultExists("helloworld"));
-    
-            _vaultPasswordMap.clear();
+            
+            _vaultCredentialsMap.clear();
     
             assert(!localVaultExists("testing2"));
             assert(!localVaultExists("helloworld"));
             
-            await _loadVaultPasswordsFromFile();
+            await _loadVaultCredentialsFromFile();
             assert(localVaultExists("test-vault-test"));
             assert(localVaultExists("testing2"));
             assert(localVaultExists("helloworld"));
             assert(!localVaultExists("nonexistant-vault"));
             
             // Deleting passwords automatically saves to file
-            await localDeleteVaultPassword("test-vault-test");
-            await localDeleteVaultPassword("testing2");
-            await localDeleteVaultPassword("helloworld");
+            await localDeleteVault("test-vault-test");
+            await localDeleteVault("testing2");
+            await localDeleteVault("helloworld");
     
-            await _loadVaultPasswordsFromFile();
-            assert(_vaultPasswordMap.size === 0);
+            await _loadVaultCredentialsFromFile();
+            assert(_vaultCredentialsMap.size === 0);
         });
         
         await context.test("Setting password sets nonces", async () => {
@@ -226,8 +226,8 @@ describe("Single Tests", () => {
             assert(localGetVaultNonce("another-test-vault") !== undefined);
             assert(localGetVaultNonce("another-test-vault") !== previousNonceTwo);
             
-            await localDeleteVaultPassword("some-test-vault");
-            await localDeleteVaultPassword("another-test-vault");
+            await localDeleteVault("some-test-vault");
+            await localDeleteVault("another-test-vault");
         });
         
         await context.test("Saves the in memory vault nonces database to a file and loads from the file", async () => {
@@ -239,20 +239,20 @@ describe("Single Tests", () => {
             assert(localVaultExists("test-test"));
             assert(localVaultExists("test-test-test"));
 
-            _vaultNonceMap.clear();
+            _vaultCredentialsMap.clear();
             
             assert(localGetVaultNonce("test-test") === undefined);
             assert(localGetVaultNonce("test-test-test") === undefined);
             
-            await _loadVaultNoncesFromFile();
+            await _loadVaultCredentialsFromFile();
             assert(localGetVaultNonce("test-test") !== undefined);
             assert(localGetVaultNonce("test-test-test") !== undefined);
             
-            await localDeleteVaultPassword("test-test");
-            await localDeleteVaultPassword("test-test-test");
+            await localDeleteVault("test-test");
+            await localDeleteVault("test-test-test");
             
-            await _loadVaultNoncesFromFile();
-            assert(_vaultNonceMap.size === 0);
+            await _loadVaultCredentialsFromFile();
+            assert(_vaultCredentialsMap.size === 0);
         });
     });
     

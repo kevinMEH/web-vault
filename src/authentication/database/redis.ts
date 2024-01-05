@@ -13,7 +13,7 @@ const redis = USING_REDIS
 };
 
 const outdatedPrefix = "webvault:outdated:";
-const passwordPrefix = "webvault:vaultauth:";
+const passwordPrefix = "webvault:vaultauth:password:";
 const noncePrefix = "webvault:vaultauth:nonce:";
 
 /**
@@ -44,20 +44,23 @@ async function redisVaultExists(vault: string) {
 
 async function redisSetVaultPassword(vault: string, hashedPassword: string) {
     await redis.set(passwordPrefix + vault, hashedPassword);
-    await redisSetVaultNonce(vault);
+    const currentNonce = await redis.get(noncePrefix + vault);
+    let nonce = Math.floor(Math.random() * 4294967295);
+    while(currentNonce && nonce === parseInt(currentNonce)) {
+        nonce = Math.floor(Math.random() * 4294967295);
+    }
+    await redis.set(noncePrefix + vault, nonce + "");
 }
 
 async function redisVerifyVaultPassword(vault: string, password: string) {
     return await redis.get(passwordPrefix + vault) === password;
 }
 
-async function redisDeleteVaultPassword(vault: string) {
-    await redis.del(passwordPrefix + vault);
-    await redisDeleteVaultNonce(vault);
-}
-
-async function redisVerifyVaultNonce(vault: string, nonce: number) {
-    return await redis.get(noncePrefix + vault) === nonce + "";
+async function redisDeleteVault(vault: string) {
+    await Promise.all([
+        redis.del(passwordPrefix + vault),
+        redis.del(noncePrefix + vault)
+    ]);
 }
 
 async function redisGetVaultNonce(vault: string): Promise<number | undefined> {
@@ -68,16 +71,8 @@ async function redisGetVaultNonce(vault: string): Promise<number | undefined> {
     return undefined;
 }
 
-async function redisSetVaultNonce(vault: string) {
-    let nonce = Math.floor(Math.random() * 4294967295);
-    while(await redisVerifyVaultNonce(vault, nonce)) {
-        nonce = Math.floor(Math.random() * 4294967295);
-    }
-    await redis.set(noncePrefix + vault, nonce + "");
-}
-
-async function redisDeleteVaultNonce(vault: string) {
-    await redis.del(noncePrefix + vault);
+async function redisVerifyVaultNonce(vault: string, nonce: number) {
+    return parseInt(await redis.get(noncePrefix + vault) || "Not a number") === nonce;
 }
 
 async function close() {
@@ -91,11 +86,10 @@ export {
     redisSetVaultPassword,
     redisVerifyVaultPassword,
     redisVaultExists,
-    redisDeleteVaultPassword,
+    redisDeleteVault,
     
-    redisVerifyVaultNonce,
     redisGetVaultNonce,
-    redisDeleteVaultNonce,
+    redisVerifyVaultNonce,
 
-    close,
+    close
 };

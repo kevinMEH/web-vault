@@ -1,22 +1,22 @@
 import {
     localAddOutdatedToken,
-    localDeleteVaultPassword,
     localIsOutdatedToken,
     localSetVaultPassword,
-    localVaultExists,
     localVerifyVaultPassword,
-    localVerifyVaultNonce,
+    localVaultExists,
+    localDeleteVault,
     localGetVaultNonce,
+    localVerifyVaultNonce,
 } from "./database/local";
 import {
     redisAddOutdatedToken,
-    redisDeleteVaultPassword,
     redisIsOutdatedToken,
     redisSetVaultPassword,
-    redisVaultExists,
     redisVerifyVaultPassword,
-    redisVerifyVaultNonce,
+    redisVaultExists,
+    redisDeleteVault,
     redisGetVaultNonce,
+    redisVerifyVaultNonce,
 } from "./database/redis";
 import { hashPassword } from "./password";
 
@@ -30,10 +30,10 @@ const addOutdatedTokenFunction = USING_REDIS ? redisAddOutdatedToken : (token: s
 const vaultExistsDatabase = USING_REDIS ? redisVaultExists : (vault: string) => Promise.resolve(localVaultExists(vault));
 const setVaultPasswordFunction = USING_REDIS ? redisSetVaultPassword : localSetVaultPassword;
 const verifyVaultPasswordFunction = USING_REDIS ? redisVerifyVaultPassword : (vault: string, password: string) => Promise.resolve(localVerifyVaultPassword(vault, password));
-const deleteVaultPasswordFunction = USING_REDIS ? redisDeleteVaultPassword : localDeleteVaultPassword;
+const deleteVaultFunction = USING_REDIS ? redisDeleteVault : localDeleteVault;
 
-const verifyVaultNonce = USING_REDIS ? redisVerifyVaultNonce : (vault: string, nonce: number) => Promise.resolve(localVerifyVaultNonce(vault, nonce));
 const getVaultNonce = USING_REDIS ? redisGetVaultNonce : (vault: string) => Promise.resolve(localGetVaultNonce(vault));
+const verifyVaultNonce = USING_REDIS ? redisVerifyVaultNonce : (vault: string, nonce: number) => Promise.resolve(localVerifyVaultNonce(vault, nonce));
 
 async function addOutdatedToken(token: string, expireAt: number) {
     await addOutdatedTokenFunction(token, expireAt);
@@ -54,7 +54,7 @@ async function verifyVaultPassword(vault: string, password: string) {
 }
 
 async function deleteVaultPassword(vault: string) {
-    await deleteVaultPasswordFunction(vault);
+    await deleteVaultFunction(vault);
     metaLog("authentication", "INFO", `Deleted vault ${vault} password.`);
 }
 
@@ -67,6 +67,6 @@ export {
     vaultExistsDatabase,
     deleteVaultPassword,
     
-    verifyVaultNonce,
-    getVaultNonce
+    getVaultNonce,
+    verifyVaultNonce
 };
