@@ -4,7 +4,6 @@ import readline from "readline/promises";
 import path from "path";
 import { unixTime } from "../../helper"
 import { metaLog } from "../../logger";
-import CustomError from "../../custom_error";
 
 import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL } from "../../env";
 
@@ -67,7 +66,7 @@ const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
 
 const vaultCredentialsMap: Map<string, [string, number]> = new Map();
 
-const outdatedTokensFile = path.join(process.cwd(), "database", "outdatedTokens.csv");
+const outdatedTokensFile = path.join(process.cwd(), "database", "outdated_tokens.csv");
 const vaultCredentialsFile = path.join(process.cwd(), "database", "vault_credentials.csv");
 
 if(PRODUCTION && !USING_REDIS) {
@@ -85,6 +84,9 @@ if(PRODUCTION && !USING_REDIS) {
         }
     }
 
+    await saveOutdatedTokensToFile();
+    firstTokenSave = false;
+
     try {
         await fs.access(vaultCredentialsFile);
         await loadVaultCredentialsFromFile();
@@ -99,7 +101,7 @@ if(PRODUCTION && !USING_REDIS) {
         }
     }
 
-    await saveVaultCredentialsToFile()
+    await saveVaultCredentialsToFile();
     firstVaultSave = false;
     
     // Interval for saving database to file. Default is once per hour.
@@ -149,12 +151,8 @@ async function loadOutdatedTokensFromFile() {
  * Saves outdated tokens from the local database to a file.
  * 
  * Returns an array of CustomErrors. If successful, the array will be empty.
- * 
- * Errors: `OUTDATEDTOKENS_NONEXISTANT`, `OUTDATEDTOKENS_OLD_NONEXISTANT`
- * 
- * @returns Promise<Array<CustomError>>
  */
-async function saveOutdatedTokensToFile(): Promise<Array<CustomError>> {
+async function saveOutdatedTokensToFile(): Promise<void> {
     metaLog("database", "INFO", "Saving in-memory outdated tokens database to file...")
     // We will write to a temp file and replace the main file with temp file
     // after we finish writing.
@@ -170,11 +168,11 @@ async function saveOutdatedTokensToFile(): Promise<Array<CustomError>> {
         if(code === "EEXIST") {
             const reason = `Trying to save tokens database to file, but temp file already exists. This means that there is currently an ongoing tokens database save operation, or that the last operation has completed unsuccessfully. Aborting...`;
             metaLog("database", "ERROR", reason);
-            return [ new CustomError(reason, "ERROR", "TEMP_FILE_EXISTS") ];
+            return;
         } else {
             const reason = `Encountered unrecognized error "${message}" while opening temp file for saving tokens database. Aborting...`;
             metaLog("database", "ERROR", reason);
-            return [ new CustomError(reason, "ERROR", code) ];
+            return;
         }
     }
 
@@ -193,11 +191,11 @@ async function saveOutdatedTokensToFile(): Promise<Array<CustomError>> {
         metaLog("database", "ERROR", reason);
         await file.close();
         await fs.unlink(tempFilePath);
-        return [ new CustomError(message, "ERROR", (error as NodeJS.ErrnoException).code) ];
     }
     
 
-    const errors: CustomError[] = [];
+    let catastrophic = false;
+    let noncatastrophic = false;
 
     // Replacing main file with temp file
     // Main file -> Old file
@@ -212,20 +210,19 @@ async function saveOutdatedTokensToFile(): Promise<Array<CustomError>> {
             if(!firstTokenSave) {
                 const reason = `outdatedTokens.csv is somehow nonexistant. Ignoring and continuing.`;
                 metaLog("database", "WARNING", reason);
-                errors.push(new CustomError(reason, "WARNING", "OUTDATEDTOKENS_NONEXISTANT"));
+                noncatastrophic = true;
             }
         } else {
             const reason = `Encountered unrecognized error "${message}" while renaming outdatedTokens.csv.`;
             metaLog("database", "ERROR", reason);
-            errors.push(new CustomError(reason, "ERROR", code));
+            noncatastrophic = true;
         }
     });
     await fs.rename(tempFilePath, realFilePath).catch(error => {
         const message = (error as Error).message;
-        const code = (error as NodeJS.ErrnoException).code;
         const reason = `There as an error "${message}" renaming tempOutdatedTokens.csv to outdatedTokens.csv.`;
         metaLog("database", "ERROR", reason);
-        errors.push(new CustomError(reason, "ERROR", code));
+        catastrophic = true;
     });
     await fs.unlink(oldFilePath).catch(error => {
         const message = (error as Error).message;
@@ -234,25 +231,22 @@ async function saveOutdatedTokensToFile(): Promise<Array<CustomError>> {
             if(!firstTokenSave) {
                 const reason = `There was an error unlinking outdatedTokens.csv.old because it does not exist.`;
                 metaLog("database", "ERROR", reason);
-                errors.push(new CustomError(reason, "ERROR", "OUTDATEDTOKENS_OLD_NONEXISTANT"));
+                noncatastrophic = true;
             }
         } else {
             const reason = `Encountered unrecognized error "${message}" while unlinking outdatedTokens.csv.old.`;
             metaLog("database", "ERROR", reason);
-            errors.push(new CustomError(reason, "ERROR", code));
+            noncatastrophic = true;
         }
     });
 
-    if(firstTokenSave) {
-        firstTokenSave = false;
-    }
-
-    if(errors.length == 0) {
+    if(!noncatastrophic && !catastrophic) {
         metaLog("database", "INFO", `Successfully saved in-memory outdated tokens database to file.`);
+    } else if(catastrophic) {
+        metaLog("database", "INFO", `Failed to save in-memory outdated tokens database to file.`);
     } else {
-        metaLog("database", "INFO", `Saved in-memory outdated tokens database to file with warnings / errors.`);
+        metaLog("database", "INFO", `Saved in-memory outdated tokens database to file with warnings and/or errors.`);
     }
-    return errors;
 }
 
 /**
