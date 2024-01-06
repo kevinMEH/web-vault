@@ -57,9 +57,10 @@ class Node {
 //      INITIAL SETUP
 // -----------------------
 
-// First time flags for tokens database and vault credentials database
+// First time saving flags (indicates that it's ok if database files do not exist)
 let firstTokenSave = true;
 let firstVaultSave = true;
+let firstAdminSave = true;
 
 const tokenSet: Set<string> = new Set();
 const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
@@ -68,6 +69,14 @@ const vaultCredentialsMap: Map<string, [string, number]> = new Map();
 
 const outdatedTokensFile = path.join(process.cwd(), "database", "outdated_tokens.csv");
 const vaultCredentialsFile = path.join(process.cwd(), "database", "vault_credentials.csv");
+
+// No need to track outdated admin tokens; once an admin logs out, a request
+// will be sent to update the admin's nonce, thereby invalidating all current
+// tokens issued for the admin.
+const adminCredentialsMap: Map<string, [string, number]> = new Map();
+
+const adminCredentialsFile = path.join(process.cwd(), "database", "admin_credentials.csv");
+
 
 if(PRODUCTION && !USING_REDIS) {
     try {
@@ -83,7 +92,7 @@ if(PRODUCTION && !USING_REDIS) {
             `Encountered unrecognized error "${message}" while checking if outdated tokens database file exists.`);
         }
     }
-
+    
     await saveOutdatedTokensToFile();
     firstTokenSave = false;
 
@@ -100,7 +109,7 @@ if(PRODUCTION && !USING_REDIS) {
             `Encountered unrecognized error "${message}" while checking if ${vaultCredentialsFile} exists.`);
         }
     }
-
+    
     await saveVaultCredentialsToFile();
     firstVaultSave = false;
     
@@ -239,7 +248,7 @@ async function saveOutdatedTokensToFile(): Promise<void> {
             noncatastrophic = true;
         }
     });
-
+    
     if(!noncatastrophic && !catastrophic) {
         metaLog("database", "INFO", `Successfully saved in-memory outdated tokens database to file.`);
     } else if(catastrophic) {
@@ -303,7 +312,7 @@ async function loadVaultCredentialsFromFile() {
         const [ vaultName, password, nonceString ] = parts;
         const nonce = parseInt(nonceString);
         if(isNaN(nonce)) {
-            metaLog("database", "ERROR", `While loading vault credentials, encountered line with invalid nonce: ${line}`)
+            metaLog("database", "ERROR", `While loading vault credentials, encountered line with invalid nonce: ${line}`);
             continue;
         }
         vaultCredentialsMap.set(vaultName, [ password, nonce ]);
@@ -339,9 +348,9 @@ async function saveVaultCredentialsToFile(): Promise<void> {
     // Writing to temp file
     try {
         for(const [vault, [password, nonce]] of vaultCredentialsMap) {
-            await file.appendFile(`${vault},${password},${nonce}\n`)
+            await file.appendFile(`${vault},${password},${nonce}\n`);
         }
-        await file.close()
+        await file.close();
     } catch(error) {
         const message = (error as Error).message;
         const reason = `Trying to save vault credentials to temp file ${tempFilePath}, but encountered unrecognized error "${message}" while writing. Aborting...`
@@ -350,10 +359,10 @@ async function saveVaultCredentialsToFile(): Promise<void> {
         await fs.unlink(tempFilePath);
         return;
     }
-
+    
     let catastrophic = false;
     let noncatastrophic = false;
-
+    
     const realFilePath = vaultCredentialsFile;
     const oldFilePath = vaultCredentialsFile + ".old";
     await fs.rename(realFilePath, oldFilePath).catch(error => {
@@ -390,7 +399,7 @@ async function saveVaultCredentialsToFile(): Promise<void> {
             noncatastrophic = true;
         }
     });
-        
+    
     if(!noncatastrophic && !catastrophic) {
         metaLog("database", "INFO", "Successfully saved vault credentials from in-memory database to file.");
     } else if(catastrophic) {
@@ -430,6 +439,156 @@ function localVerifyVaultNonce(vault: string, nonce: number) {
     return vaultCredentialsMap.get(vault)?.[1] === nonce;
 }
 
+
+
+
+/**
+ * An uncatchable error will be thrown if the file does not exist. Do not try
+ * catching it. TODO: In the future, try and handle this error.
+ */
+async function loadAdminCredentialsFromFile() {
+    metaLog("database", "INFO", `Loading admin credentials into memory from file ${adminCredentialsFile}`);
+    
+    const stream = createReadStream(adminCredentialsFile);
+    const readlineInterface = readline.createInterface({
+        input: stream,
+        crlfDelay: Infinity
+    });
+    
+    for await(const line of readlineInterface) {
+        if(line === "") continue;
+        const parts = line.split(",");
+        if(parts.length != 3) {
+            metaLog("database", "ERROR", `While loading admin credentials, encountered line with one or more fields missing: ${line}`);
+            continue;
+        }
+        const [ adminName, password, nonceString ] = parts;
+        const nonce = parseInt(nonceString);
+        if(isNaN(nonce)) {
+            metaLog("database", "ERROR", `While loading admin credentials, encountered line with invalid nonce: ${line}`);
+            continue;
+        }
+        adminCredentialsMap.set(adminName, [ password, nonce ]);
+    }
+    
+    readlineInterface.close();
+    stream.close();
+    
+    metaLog("database", "INFO", `Finished loading admin credentials from file ${adminCredentialsFile}`);
+}
+
+/**
+ * Will be called every time admin is created, password is changed, nonce is changed, or credentials
+ * is removed.
+ */
+async function saveAdminCredentialsToFile(): Promise<void> {
+    metaLog("database", "INFO", `Saving admin credentials to file ${adminCredentialsFile}`);
+    // Write to temp file, then replace main with temp once complete
+    const tempFilePath = adminCredentialsFile + ".temp";
+    
+    let file: fs.FileHandle;
+    try {
+        file = await fs.open(tempFilePath, "w");
+    } catch(error) {
+        const message = (error as Error).message;
+        const reason = `Trying to save admin credentials to temp file ${tempFilePath}, but encountered unrecognized error "${message}" while opening temp file. Aborting...`;
+        metaLog("database", "ERROR", reason);
+        return;
+    }
+    
+    // Writing to temp file
+    try {
+        for(const [adminName, [password, nonce]] of adminCredentialsMap) {
+            await file.appendFile(`${adminName},${password},${nonce}\n`);
+        }
+        await file.close();
+    } catch(error) {
+        const message = (error as Error).message;
+        const reason = `Trying to save admin credentials to temp file ${tempFilePath}, but encountered unrecognized error "${message}" while writing. Aborting...`
+        metaLog("database", "ERROR", reason);
+        await file.close();
+        await fs.unlink(tempFilePath);
+        return;
+    }
+    
+    let catastrophic = false;
+    let noncatastrophic = false;
+    
+    const realFilePath = adminCredentialsFile;
+    const oldFilePath = adminCredentialsFile + ".old";
+    await fs.rename(realFilePath, oldFilePath).catch(error => {
+        const message = (error as Error).message;
+        if((error as NodeJS.ErrnoException).code == "ENOENT") {
+            if(!firstAdminSave) {
+                const reason = `${realFilePath} is somehow nonexistant. Ignoring and continuing.`;
+                metaLog("database", "WARNING", reason);
+                noncatastrophic = true;
+            }
+        } else {
+            const reason = `Encountered unrecognized error "${message}" while renaming ${realFilePath} to ${oldFilePath}.`
+            metaLog("database", "ERROR", reason);
+            noncatastrophic = true;
+        }
+    });
+    await fs.rename(tempFilePath, realFilePath).catch(error => {
+        const message = (error as Error).message;
+        const reason = `Encountered unrecognized error "${message}" while renaming ${tempFilePath} to ${realFilePath}.`
+        metaLog("database", "ERROR", reason);
+        catastrophic = true;
+    });
+    await fs.unlink(oldFilePath).catch(error => {
+        const message = (error as Error).message;
+        if((error as NodeJS.ErrnoException).code === "ENOENT") {
+            if(!firstAdminSave) {
+                const reason = `${oldFilePath} is somehow nonexistant. Ignoring and continuing.`;
+                metaLog("database", "ERROR", reason);
+                noncatastrophic = true;
+            }
+        } else {
+            const reason = `Encountered unrecognized error "${message}" while unlinking ${oldFilePath}`;
+            metaLog("database", "ERROR", reason);
+            noncatastrophic = true;
+        }
+    });
+    
+    if(!noncatastrophic && !catastrophic) {
+        metaLog("database", "INFO", "Successfully saved admin credentials from in-memory database to file.");
+    } else if(catastrophic) {
+        metaLog("database", "INFO", "Failed to save admin credentials from in-memory database to file.");
+    } else {
+        metaLog("database", "INFO", "Saved admin credentials from in-memory database to file with warnings and/or errors.");
+    }
+}
+
+async function localSetAdminPassword(adminName: string, password: string) {
+    let nonce = Math.floor(Math.random() * 4294967295);
+    while(adminCredentialsMap.get(adminName)?.[1] === nonce) {
+        nonce = Math.floor(Math.random() * 4294967295);
+    }
+    adminCredentialsMap.set(adminName, [password, nonce]);
+    await saveAdminCredentialsToFile();
+}
+
+function localVerifyAdminPassword(adminName: string, password: string) {
+    return password === adminCredentialsMap.get(adminName)?.[0];
+}
+
+async function localDeleteAdmin(adminName: string) {
+    adminCredentialsMap.delete(adminName);
+    await saveAdminCredentialsToFile();
+}
+
+function localGetAdminNonce(adminName: string): number | undefined {
+    return adminCredentialsMap.get(adminName)?.[1];
+}
+
+function localVerifyAdminNonce(adminName: string, nonce: number) {
+    return adminCredentialsMap.get(adminName)?.[1] === nonce;
+}
+
+
+
+
 export type NodeType = InstanceType<typeof Node>;
 export {
     loadOutdatedTokensFromFile as _loadOutdatedTokensFromFile,
@@ -438,6 +597,9 @@ export {
 
     loadVaultCredentialsFromFile as _loadVaultCredentialsFromFile,
     saveVaultCredentialsToFile as _saveVaultCredentialsToFile,
+    
+    loadAdminCredentialsFromFile as _loadAdminCredentialsFromFile,
+    saveAdminCredentialsToFile as _saveAdminCredentialsToFile,
 
     localIsOutdatedToken,
     localAddOutdatedToken,
@@ -446,11 +608,17 @@ export {
     localVerifyVaultPassword,
     localVaultExists,
     localDeleteVault,
-
     localGetVaultNonce,
     localVerifyVaultNonce,
+    
+    localSetAdminPassword,
+    localVerifyAdminPassword,
+    localDeleteAdmin,
+    localGetAdminNonce,
+    localVerifyAdminNonce,
 
     tokenList as _tokenList,
     tokenSet as _tokenSet,
     vaultCredentialsMap as _vaultCredentialsMap,
+    adminCredentialsMap as _adminCredentialsMap
 };

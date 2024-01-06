@@ -13,8 +13,10 @@ const redis = USING_REDIS
 };
 
 const outdatedPrefix = "webvault:outdated:";
-const passwordPrefix = "webvault:vaultauth:password:";
-const noncePrefix = "webvault:vaultauth:nonce:";
+const vaultPasswordPrefix = "webvault:vaultauth:password:";
+const vaultNoncePrefix = "webvault:vaultauth:nonce:";
+const adminPasswordPrefix = "webvault:adminauth:password:";
+const adminNoncePrefix = "webvault:adminauth:nonce:";
 
 /**
  * Checks if the token is outdated (meaning that the user has requested
@@ -39,32 +41,32 @@ async function redisAddOutdatedToken(token: string, expireAt: number) {
 }
 
 async function redisVaultExists(vault: string) {
-    return await redis.get(passwordPrefix + vault) !== null;
+    return await redis.get(vaultPasswordPrefix + vault) !== null;
 }
 
 async function redisSetVaultPassword(vault: string, hashedPassword: string) {
-    await redis.set(passwordPrefix + vault, hashedPassword);
-    const currentNonce = await redis.get(noncePrefix + vault);
+    await redis.set(vaultPasswordPrefix + vault, hashedPassword);
+    const currentNonce = await redis.get(vaultNoncePrefix + vault);
     let nonce = Math.floor(Math.random() * 4294967295);
     while(currentNonce && nonce === parseInt(currentNonce)) {
         nonce = Math.floor(Math.random() * 4294967295);
     }
-    await redis.set(noncePrefix + vault, nonce + "");
+    await redis.set(vaultNoncePrefix + vault, nonce + "");
 }
 
 async function redisVerifyVaultPassword(vault: string, password: string) {
-    return await redis.get(passwordPrefix + vault) === password;
+    return await redis.get(vaultPasswordPrefix + vault) === password;
 }
 
 async function redisDeleteVault(vault: string) {
     await Promise.all([
-        redis.del(passwordPrefix + vault),
-        redis.del(noncePrefix + vault)
+        redis.del(vaultPasswordPrefix + vault),
+        redis.del(vaultNoncePrefix + vault)
     ]);
 }
 
 async function redisGetVaultNonce(vault: string): Promise<number | undefined> {
-    const nonce = await redis.get(noncePrefix + vault);
+    const nonce = await redis.get(vaultNoncePrefix + vault);
     if(nonce !== null) {
         return parseInt(nonce) as number;
     }
@@ -72,12 +74,53 @@ async function redisGetVaultNonce(vault: string): Promise<number | undefined> {
 }
 
 async function redisVerifyVaultNonce(vault: string, nonce: number) {
-    return parseInt(await redis.get(noncePrefix + vault) || "Not a number") === nonce;
+    return parseInt(await redis.get(vaultNoncePrefix + vault) || "Not a number") === nonce;
 }
+
+
+
+
+async function redisSetAdminPassword(adminName: string, hashedPassword: string) {
+    await redis.set(adminPasswordPrefix + adminName, hashedPassword);
+    const currentNonce = await redis.get(adminNoncePrefix + adminName);
+    let nonce = Math.floor(Math.random() * 4294967295);
+    while(currentNonce && nonce === parseInt(currentNonce)) {
+        nonce = Math.floor(Math.random() * 4294967295);
+    }
+    await redis.set(adminNoncePrefix + adminName, nonce + "");
+}
+
+async function redisVerifyAdminPassword(adminName: string, password: string) {
+    return await redis.get(adminPasswordPrefix + adminName) === password;
+}
+
+async function redisDeleteAdmin(adminName: string) {
+    await Promise.all([
+        redis.del(adminPasswordPrefix + adminName),
+        redis.del(adminNoncePrefix + adminName),
+    ]);
+}
+
+async function redisGetAdminNonce(adminName: string): Promise<number | undefined> {
+    const nonceString = await redis.get(adminNoncePrefix + adminName);
+    if(nonceString != null) {
+        return parseInt(nonceString) as number;
+    }
+    return undefined;
+}
+
+async function redisVerifyAdminNonce(adminName: string, nonce: number) {
+    return parseInt(await redis.get(adminNoncePrefix + adminName) || "Not a number") === nonce;
+}
+
+
+
 
 async function close() {
     await redis.quit();
 }
+
+
 
 export {
     redisIsOutdatedToken,
@@ -87,9 +130,14 @@ export {
     redisVerifyVaultPassword,
     redisVaultExists,
     redisDeleteVault,
-    
     redisGetVaultNonce,
     redisVerifyVaultNonce,
+    
+    redisSetAdminPassword,
+    redisVerifyAdminPassword,
+    redisDeleteAdmin,
+    redisGetAdminNonce,
+    redisVerifyAdminNonce,
 
     close
 };
