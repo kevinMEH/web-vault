@@ -28,7 +28,7 @@ import {
     redisGetAdminNonce,
     redisVerifyAdminNonce,
 } from "./database/redis";
-import { hashPassword } from "./password";
+import { HashedPassword, hashPassword } from "./password";
 
 import { metaLog } from "../logger";
 
@@ -44,7 +44,7 @@ async function addOutdatedToken(token: string, expireAt: number) {
 
 const vaultExistsDatabase = USING_REDIS ? redisVaultExists : (vault: string) => Promise.resolve(localVaultExists(vault));
 const setVaultPasswordFunction = USING_REDIS ? redisSetVaultPassword : localSetVaultPassword;
-const verifyVaultPasswordFunction = USING_REDIS ? redisVerifyVaultPassword : (vault: string, password: string) => Promise.resolve(localVerifyVaultPassword(vault, password));
+const verifyVaultPasswordFunction = USING_REDIS ? redisVerifyVaultPassword : (vault: string, password: HashedPassword) => Promise.resolve(localVerifyVaultPassword(vault, password));
 const deleteVaultFunction = USING_REDIS ? redisDeleteVault : localDeleteVault;
 const getVaultNonce = USING_REDIS ? redisGetVaultNonce : (vault: string) => Promise.resolve(localGetVaultNonce(vault));
 const verifyVaultNonce = USING_REDIS ? redisVerifyVaultNonce : (vault: string, nonce: number) => Promise.resolve(localVerifyVaultNonce(vault, nonce));
@@ -68,7 +68,7 @@ async function deleteVaultPassword(vault: string) {
 }
 
 const setAdminPasswordFunction = USING_REDIS ? redisSetAdminPassword : localSetAdminPassword;
-const verifyAdminPasswordFunction = USING_REDIS ? redisVerifyAdminPassword : (adminName: string, password: string) => Promise.resolve(localVerifyAdminPassword(adminName, password));
+const verifyAdminPasswordFunction = USING_REDIS ? redisVerifyAdminPassword : (adminName: string, password: HashedPassword) => Promise.resolve(localVerifyAdminPassword(adminName, password));
 const deleteAdminFunction = USING_REDIS ? redisDeleteAdmin : localDeleteAdmin;
 const getAdminNonce = USING_REDIS ? redisGetAdminNonce : (adminName: string) => Promise.resolve(localGetAdminNonce(adminName));
 const verifyAdminNonce = USING_REDIS ? redisVerifyAdminNonce : (adminName: string, nonce: number) => Promise.resolve(localVerifyAdminNonce(adminName, nonce));

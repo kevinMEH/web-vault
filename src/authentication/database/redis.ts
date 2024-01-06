@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import { USING_REDIS } from "../../env";
+import { HashedPassword } from "../password";
 
 const throwRedisError = () => { throw new Error("Attempting to use Redis with the REDIS environment variable turned off."); }
 
@@ -44,7 +45,7 @@ async function redisVaultExists(vault: string) {
     return await redis.get(vaultPasswordPrefix + vault) !== null;
 }
 
-async function redisSetVaultPassword(vault: string, hashedPassword: string) {
+async function redisSetVaultPassword(vault: string, hashedPassword: HashedPassword) {
     await redis.set(vaultPasswordPrefix + vault, hashedPassword);
     const currentNonce = await redis.get(vaultNoncePrefix + vault);
     let nonce = Math.floor(Math.random() * 4294967295);
@@ -54,7 +55,7 @@ async function redisSetVaultPassword(vault: string, hashedPassword: string) {
     await redis.set(vaultNoncePrefix + vault, nonce + "");
 }
 
-async function redisVerifyVaultPassword(vault: string, password: string) {
+async function redisVerifyVaultPassword(vault: string, password: HashedPassword) {
     return await redis.get(vaultPasswordPrefix + vault) === password;
 }
 
@@ -80,7 +81,7 @@ async function redisVerifyVaultNonce(vault: string, nonce: number) {
 
 
 
-async function redisSetAdminPassword(adminName: string, hashedPassword: string) {
+async function redisSetAdminPassword(adminName: string, hashedPassword: HashedPassword) {
     await redis.set(adminPasswordPrefix + adminName, hashedPassword);
     const currentNonce = await redis.get(adminNoncePrefix + adminName);
     let nonce = Math.floor(Math.random() * 4294967295);
@@ -90,7 +91,7 @@ async function redisSetAdminPassword(adminName: string, hashedPassword: string) 
     await redis.set(adminNoncePrefix + adminName, nonce + "");
 }
 
-async function redisVerifyAdminPassword(adminName: string, password: string) {
+async function redisVerifyAdminPassword(adminName: string, password: HashedPassword) {
     return await redis.get(adminPasswordPrefix + adminName) === password;
 }
 

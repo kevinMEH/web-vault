@@ -6,6 +6,7 @@ import { unixTime } from "../../helper"
 import { metaLog } from "../../logger";
 
 import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL } from "../../env";
+import { HashedPassword } from "../password";
 
 type TokenPair = {
     token: string,
@@ -409,7 +410,7 @@ async function saveVaultCredentialsToFile(): Promise<void> {
     }
 }
 
-async function localSetVaultPassword(vault: string, password: string) {
+async function localSetVaultPassword(vault: string, password: HashedPassword) {
     let nonce = Math.floor(Math.random() * 4294967295);
     while(vaultCredentialsMap.get(vault)?.[1] === nonce) {
         nonce = Math.floor(Math.random() * 4294967295);
@@ -418,7 +419,7 @@ async function localSetVaultPassword(vault: string, password: string) {
     await saveVaultCredentialsToFile();
 }
 
-function localVerifyVaultPassword(vault: string, password: string) {
+function localVerifyVaultPassword(vault: string, password: HashedPassword) {
     return password === vaultCredentialsMap.get(vault)?.[0];
 }
 
@@ -560,7 +561,7 @@ async function saveAdminCredentialsToFile(): Promise<void> {
     }
 }
 
-async function localSetAdminPassword(adminName: string, password: string) {
+async function localSetAdminPassword(adminName: string, password: HashedPassword) {
     let nonce = Math.floor(Math.random() * 4294967295);
     while(adminCredentialsMap.get(adminName)?.[1] === nonce) {
         nonce = Math.floor(Math.random() * 4294967295);
@@ -569,7 +570,7 @@ async function localSetAdminPassword(adminName: string, password: string) {
     await saveAdminCredentialsToFile();
 }
 
-function localVerifyAdminPassword(adminName: string, password: string) {
+function localVerifyAdminPassword(adminName: string, password: HashedPassword) {
     return password === adminCredentialsMap.get(adminName)?.[0];
 }
 

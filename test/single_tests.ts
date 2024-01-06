@@ -15,7 +15,7 @@ import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdate
     localIsOutdatedToken, _purgeAllOutdated, _loadVaultCredentialsFromFile, localSetVaultPassword,
     localVaultExists, localDeleteVault, localGetVaultNonce, _tokenList, _tokenSet,
     _vaultCredentialsMap, NodeType as Node, localSetAdminPassword, _adminCredentialsMap, _loadAdminCredentialsFromFile, localDeleteAdmin, localVerifyAdminPassword, localGetAdminNonce, localVerifyAdminNonce,  } from "../src/authentication/database/local";
-import { hashPassword } from "../src/authentication/password";
+import { HashedPassword, hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
 import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
 import { fileNameMap, folderBaseMap, fileExtensionMap } from "../src/icons/iconMap";
@@ -178,9 +178,9 @@ describe("Single Tests", () => {
         await context.test("Saves the in memory vault credentials database to a file and loads from the file", async () => {
             // Setting passwords directly, in reality should be hashed first and local*() should never be called.
             // Setting passwords automatically saves
-            await localSetVaultPassword("test-vault-test", "password112233");
-            await localSetVaultPassword("testing2", "Password22");
-            await localSetVaultPassword("helloworld", "GoodAndSecure111");
+            await localSetVaultPassword("test-vault-test", "password112233" as HashedPassword);
+            await localSetVaultPassword("testing2", "Password22" as HashedPassword);
+            await localSetVaultPassword("helloworld", "GoodAndSecure111" as HashedPassword);
     
             assert(localVaultExists("test-vault-test"));
             assert(localVaultExists("helloworld"));
@@ -211,8 +211,8 @@ describe("Single Tests", () => {
         
         await context.test("Setting password sets nonces", async () => {
             // Setting passwords, which will also set the nonces
-            await localSetVaultPassword("some-test-vault", "password");
-            await localSetVaultPassword("another-test-vault", "password2");
+            await localSetVaultPassword("some-test-vault", "password" as HashedPassword);
+            await localSetVaultPassword("another-test-vault", "password2" as HashedPassword);
             
             assert(localVaultExists("some-test-vault"));
             assert(localVaultExists("another-test-vault"));
@@ -222,8 +222,8 @@ describe("Single Tests", () => {
             const previousNonceTwo = localGetVaultNonce("another-test-vault");
             assert(previousNonceTwo !== undefined);
 
-            await localSetVaultPassword("some-test-vault", "password");
-            await localSetVaultPassword("another-test-vault", "password2");
+            await localSetVaultPassword("some-test-vault", "password" as HashedPassword);
+            await localSetVaultPassword("another-test-vault", "password2" as HashedPassword);
             
             assert(localGetVaultNonce("some-test-vault") !== undefined);
             assert(localGetVaultNonce("some-test-vault") !== previousNonceOne);
@@ -235,13 +235,13 @@ describe("Single Tests", () => {
         });
         
         await context.test("Saves the in memory admin credentials database to a file and loads from the file", async () => {
-            await localSetAdminPassword("kevin", "keviniscool");
-            await localSetAdminPassword("hello", "world");
+            await localSetAdminPassword("kevin", "keviniscool" as HashedPassword);
+            await localSetAdminPassword("hello", "world" as HashedPassword);
             
-            assert(localVerifyAdminPassword("kevin", "keviniscool"));
-            assert(localVerifyAdminPassword("hello", "world"));
-            assert(!localVerifyAdminPassword("hello", "wworld"));
-            assert(!localVerifyAdminPassword("hhello", "world"));
+            assert(localVerifyAdminPassword("kevin", "keviniscool" as HashedPassword));
+            assert(localVerifyAdminPassword("hello", "world" as HashedPassword));
+            assert(!localVerifyAdminPassword("hello", "wworld" as HashedPassword));
+            assert(!localVerifyAdminPassword("hhello", "world" as HashedPassword));
             
             const kevinNonce = localGetAdminNonce("kevin");
             const helloNonce = localGetAdminNonce("hello");
@@ -253,19 +253,19 @@ describe("Single Tests", () => {
             assert(localVerifyAdminNonce("hello", helloNonce));
             
             _adminCredentialsMap.clear();
-            assert(!localVerifyAdminPassword("kevin", "keviniscool"));
-            assert(!localVerifyAdminPassword("hello", "world"));
-            assert(!localVerifyAdminPassword("hello", "wworld"));
+            assert(!localVerifyAdminPassword("kevin", "keviniscool" as HashedPassword));
+            assert(!localVerifyAdminPassword("hello", "world" as HashedPassword));
+            assert(!localVerifyAdminPassword("hello", "wworld" as HashedPassword));
             assert(!localVerifyAdminNonce("kevin", kevinNonce));
             assert(!localVerifyAdminNonce("kevin", kevinNonce + 1));
             assert(!localVerifyAdminNonce("hello", helloNonce));
             
             await _loadAdminCredentialsFromFile();
 
-            assert(localVerifyAdminPassword("kevin", "keviniscool"));
-            assert(localVerifyAdminPassword("hello", "world"));
-            assert(!localVerifyAdminPassword("hello", "wworld"));
-            assert(!localVerifyAdminPassword("hhello", "world"));
+            assert(localVerifyAdminPassword("kevin", "keviniscool" as HashedPassword));
+            assert(localVerifyAdminPassword("hello", "world" as HashedPassword));
+            assert(!localVerifyAdminPassword("hello", "wworld" as HashedPassword));
+            assert(!localVerifyAdminPassword("hhello", "world" as HashedPassword));
 
             assert(localGetAdminNonce("kevin") !== undefined);
             assert(localGetAdminNonce("hello") !== undefined);
@@ -281,16 +281,16 @@ describe("Single Tests", () => {
         });
         
         await context.test("Setting admin passwords sets nonces", async () => {
-            await localSetAdminPassword("kevin2", "kevin2");
-            assert(localVerifyAdminPassword("kevin2", "kevin2"));
+            await localSetAdminPassword("kevin2", "kevin2" as HashedPassword);
+            assert(localVerifyAdminPassword("kevin2", "kevin2" as HashedPassword));
 
             const previousNonce = localGetAdminNonce("kevin2");
             assert(previousNonce !== undefined);
             assert(localVerifyAdminNonce("kevin2", previousNonce));
             
-            await localSetAdminPassword("kevin2", "kevin222")
-            assert(localVerifyAdminPassword("kevin2", "kevin222"));
-            assert(!localVerifyAdminPassword("kevin2", "kevin2"));
+            await localSetAdminPassword("kevin2", "kevin222" as HashedPassword);
+            assert(localVerifyAdminPassword("kevin2", "kevin222" as HashedPassword));
+            assert(!localVerifyAdminPassword("kevin2", "kevin2" as HashedPassword));
             
             const currentNonce = localGetAdminNonce("kevin2");
             assert(currentNonce !== undefined);
