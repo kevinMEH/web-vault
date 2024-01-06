@@ -280,8 +280,6 @@ function purgeAllOutdated() {
     tokenList.tail = lastValid;
 }
 
-
-
 /**
  * An uncatchable error will be thrown if the file does not exist. Do not try
  * catching it. TODO: In the future, try and handle this error.
@@ -304,7 +302,7 @@ async function loadVaultCredentialsFromFile() {
         }
         const [ vaultName, password, nonceString ] = parts;
         const nonce = parseInt(nonceString);
-        if(nonce == NaN) {
+        if(isNaN(nonce)) {
             metaLog("database", "ERROR", `While loading vault credentials, encountered line with invalid nonce: ${line}`)
             continue;
         }
