@@ -14,7 +14,7 @@ import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authenticati
 import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdatedToken,
     localIsOutdatedToken, _purgeAllOutdated, _loadVaultCredentialsFromFile, localSetVaultPassword,
     localVaultExists, localDeleteVault, localGetVaultNonce, _tokenList, _tokenSet,
-    _vaultCredentialsMap, NodeType as Node,  } from "../src/authentication/database/local";
+    _vaultCredentialsMap, NodeType as Node, localSetAdminPassword, _adminCredentialsMap, _loadAdminCredentialsFromFile, localDeleteAdmin, localVerifyAdminPassword, localGetAdminNonce, localVerifyAdminNonce,  } from "../src/authentication/database/local";
 import { hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
 import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
@@ -175,7 +175,7 @@ describe("Single Tests", () => {
             assert(localIsOutdatedToken("save.me.too"));
         });
         
-        await context.test("Saves the in memory vault passwords database to a file and loads from the file", async () => {
+        await context.test("Saves the in memory vault credentials database to a file and loads from the file", async () => {
             // Setting passwords directly, in reality should be hashed first and local*() should never be called.
             // Setting passwords automatically saves
             await localSetVaultPassword("test-vault-test", "password112233");
@@ -189,12 +189,16 @@ describe("Single Tests", () => {
     
             assert(!localVaultExists("testing2"));
             assert(!localVaultExists("helloworld"));
+            assert(localGetVaultNonce("testing2") === undefined);
+            assert(localGetVaultNonce("helloworld") === undefined);
             
             await _loadVaultCredentialsFromFile();
             assert(localVaultExists("test-vault-test"));
             assert(localVaultExists("testing2"));
             assert(localVaultExists("helloworld"));
             assert(!localVaultExists("nonexistant-vault"));
+            assert(localGetVaultNonce("testing2") !== undefined);
+            assert(localGetVaultNonce("helloworld") !== undefined);
             
             // Deleting passwords automatically saves to file
             await localDeleteVault("test-vault-test");
@@ -230,29 +234,71 @@ describe("Single Tests", () => {
             await localDeleteVault("another-test-vault");
         });
         
-        await context.test("Saves the in memory vault nonces database to a file and loads from the file", async () => {
-            // Setting passwords, which will also set the nonces
-            // Setting passwords will set nonces, which automatically saves
-            await localSetVaultPassword("test-test", "password");
-            await localSetVaultPassword("test-test-test", "password2");
+        await context.test("Saves the in memory admin credentials database to a file and loads from the file", async () => {
+            await localSetAdminPassword("kevin", "keviniscool");
+            await localSetAdminPassword("hello", "world");
             
-            assert(localVaultExists("test-test"));
-            assert(localVaultExists("test-test-test"));
+            assert(localVerifyAdminPassword("kevin", "keviniscool"));
+            assert(localVerifyAdminPassword("hello", "world"));
+            assert(!localVerifyAdminPassword("hello", "wworld"));
+            assert(!localVerifyAdminPassword("hhello", "world"));
+            
+            const kevinNonce = localGetAdminNonce("kevin");
+            const helloNonce = localGetAdminNonce("hello");
+            
+            assert(kevinNonce !== undefined);
+            assert(helloNonce !== undefined);
+            assert(localVerifyAdminNonce("kevin", kevinNonce));
+            assert(!localVerifyAdminNonce("kevin", kevinNonce + 1));
+            assert(localVerifyAdminNonce("hello", helloNonce));
+            
+            _adminCredentialsMap.clear();
+            assert(!localVerifyAdminPassword("kevin", "keviniscool"));
+            assert(!localVerifyAdminPassword("hello", "world"));
+            assert(!localVerifyAdminPassword("hello", "wworld"));
+            assert(!localVerifyAdminNonce("kevin", kevinNonce));
+            assert(!localVerifyAdminNonce("kevin", kevinNonce + 1));
+            assert(!localVerifyAdminNonce("hello", helloNonce));
+            
+            await _loadAdminCredentialsFromFile();
 
-            _vaultCredentialsMap.clear();
+            assert(localVerifyAdminPassword("kevin", "keviniscool"));
+            assert(localVerifyAdminPassword("hello", "world"));
+            assert(!localVerifyAdminPassword("hello", "wworld"));
+            assert(!localVerifyAdminPassword("hhello", "world"));
+
+            assert(localGetAdminNonce("kevin") !== undefined);
+            assert(localGetAdminNonce("hello") !== undefined);
+            assert(localVerifyAdminNonce("kevin", kevinNonce));
+            assert(!localVerifyAdminNonce("kevin", kevinNonce + 1));
+            assert(localVerifyAdminNonce("hello", helloNonce));
             
-            assert(localGetVaultNonce("test-test") === undefined);
-            assert(localGetVaultNonce("test-test-test") === undefined);
+            await localDeleteAdmin("kevin");
+            await localDeleteAdmin("hello");
             
-            await _loadVaultCredentialsFromFile();
-            assert(localGetVaultNonce("test-test") !== undefined);
-            assert(localGetVaultNonce("test-test-test") !== undefined);
+            await _loadAdminCredentialsFromFile();
+            assert(_adminCredentialsMap.size === 0);
+        });
+        
+        await context.test("Setting admin passwords sets nonces", async () => {
+            await localSetAdminPassword("kevin2", "kevin2");
+            assert(localVerifyAdminPassword("kevin2", "kevin2"));
+
+            const previousNonce = localGetAdminNonce("kevin2");
+            assert(previousNonce !== undefined);
+            assert(localVerifyAdminNonce("kevin2", previousNonce));
             
-            await localDeleteVault("test-test");
-            await localDeleteVault("test-test-test");
+            await localSetAdminPassword("kevin2", "kevin222")
+            assert(localVerifyAdminPassword("kevin2", "kevin222"));
+            assert(!localVerifyAdminPassword("kevin2", "kevin2"));
             
-            await _loadVaultCredentialsFromFile();
-            assert(_vaultCredentialsMap.size === 0);
+            const currentNonce = localGetAdminNonce("kevin2");
+            assert(currentNonce !== undefined);
+            assert(currentNonce !== previousNonce);
+            assert(localVerifyAdminNonce("kevin2", currentNonce));
+            assert(!localVerifyAdminNonce("kevin2", previousNonce));
+
+            await localDeleteAdmin("kevin2");
         });
     });
     

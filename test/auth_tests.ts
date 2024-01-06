@@ -14,7 +14,16 @@ const { cleanup } = await import("../src/cleanup");
 const { default: JWT } = await import("../src/authentication/jwt");
 import type { Header, Payload, Token } from "../src/authentication/jwt";
 const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/authentication");
-const { addOutdatedToken, setVaultPassword, verifyVaultPassword, vaultExistsDatabase, deleteVaultPassword } = await import("../src/authentication/database");
+const {
+    addOutdatedToken,
+    setVaultPassword,
+    verifyVaultPassword,
+    vaultExistsDatabase,
+    deleteVaultPassword,
+    setAdminPassword,
+    verifyAdminPassword,
+    deleteAdminPassword
+} = await import("../src/authentication/database");
 
 describe("Authentication tests", () => {
     describe("Testing token authentication module", () => {
@@ -126,6 +135,17 @@ describe("Authentication tests", () => {
             assert(!await vaultExistsDatabase("nonexistant_vault"));
             await deleteVaultPassword("existing_peacefully");
             assert(!await vaultExistsDatabase("existing_peacefully"));
+        });
+    });
+    
+    describe("Testing admin authentication functions", () => {
+        it("Sets the password for an admin and checks if successful", async () => {
+            await setAdminPassword("some_admin", "some_password");
+            assert(await verifyAdminPassword("some_admin", "some_password"));
+            assert(!await verifyAdminPassword("some_admin", "not_password"));
+            assert(!await verifyAdminPassword("nonexistant", "some_password"));
+            await deleteAdminPassword("some_admin");
+            assert(!await verifyAdminPassword("some_admin", "some_password"));
         });
     });
 
