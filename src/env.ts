@@ -4,8 +4,8 @@ const throwEnvError = (variableName: string, reason?: string) => { throw new Err
 
 
 export const PRODUCTION = process.env.PRODUCTION === "true" ? true : false;
-export const DOMAIN = process.env.DOMAIN ? process.env.DOMAIN :
-    PRODUCTION ? throwEnvError("DOMAIN", `It is used as the "issuer" field in the JWT.`) : "kevin";
+export const DOMAIN = process.env.DOMAIN ? process.env.DOMAIN
+    : PRODUCTION ? throwEnvError("DOMAIN", `It is used as the "issuer" field in the JWT.`) : "kevin";
 
 
 export const USING_REDIS = process.env.REDIS === "true" ? true : false;
@@ -22,13 +22,19 @@ export const JWT_SECRET = (() => {
 })();
 export const PASSWORD_SALT = (() => {
     const salt = process.env.PASSWORD_SALT ? process.env.PASSWORD_SALT :
-        PRODUCTION ? throwEnvError("PASSWORD_SALT") : "123456789";
+        PRODUCTION ? throwEnvError("PASSWORD_SALT") : "12345678";
     if(false === /^[a-fA-F0-9]+$/.test(salt)) {
         throw new Error("Password must be a hex string. (No 0x)");
     }
     return Buffer.from(salt, "hex");
 })();
 export const ITERATION_COUNT = parseInt(process.env.ITERATION_COUNT as string) || 123456;
+
+
+export const DEFAULT_ADMIN_NAME = process.env.DEFAULT_ADMIN_NAME ? process.env.DEFAULT_ADMIN_NAME
+    : PRODUCTION ? throwEnvError("DEFAULT_ADMIN_NAME", "It is used as the default admin account for online vault management.") : "admin";
+export const DEFAULT_ADMIN_PASSWORD_HASH = process.env.DEFAULT_ADMIN_PASSWORD_HASH ? process.env.DEFAULT_ADMIN_PASSWORD_HASH
+    : PRODUCTION ? throwEnvError("DEFAULT_ADMIN_PASSWORD_HASH", "It is used as the password hash for the default admin account. WARNING: THE VALUE PROVIDED MUST BE A HASH, NOT THE PASSWORD ITSELF.") : "admin123";
 
 
 export const BASE_VAULT_DIRECTORY = process.env.VAULT_DIRECTORY || path.join(process.cwd(), "vaults");
