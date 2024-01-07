@@ -13,7 +13,7 @@ const { cleanup } = await import("../src/cleanup");
 
 const { default: JWT } = await import("../src/authentication/jwt");
 import type { Header, Payload, Token } from "../src/authentication/jwt";
-const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/authentication");
+const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/token");
 const {
     addOutdatedToken,
     setVaultPassword,
