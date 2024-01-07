@@ -13,15 +13,15 @@ const { cleanup } = await import("../src/cleanup");
 
 const { default: JWT } = await import("../src/authentication/jwt");
 import type { Header, Payload, Token } from "../src/authentication/jwt";
-const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/token");
+const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/authentication/token");
 const {
-    addOutdatedToken,
+    _addOutdatedToken,
     setVaultPassword,
     verifyVaultPassword,
     vaultExistsDatabase,
     deleteVaultPassword,
     setAdminPassword,
-    verifyAdminPassword,
+    _verifyAdminPassword,
     deleteAdminPassword
 } = await import("../src/authentication/database");
 
@@ -36,20 +36,20 @@ describe("Authentication tests", () => {
                     .addClaim("nonces", [payload?.nonces[0]])
                     .getToken(process.env.JWT_SECRET);
             assert(token === token2);
-            assert((await getUnwrappedToken(token))[0] !== null);
-            assert((await getUnwrappedToken(token2))[0] !== null);
+            assert(await getUnwrappedToken(token) !== null);
+            assert(await getUnwrappedToken(token2) !== null);
             await deleteVaultPassword("main_vault");
         });
         
         it("Checks that expired tokens and bad tokens are not valid", async () => {
             await setVaultPassword("vault", "password");
             const token = await createToken(["vault"]);
-            assert((await getUnwrappedToken(token))[0] !== null);
-            assert((await getUnwrappedToken(token.substring(0, token.length - 1) as Token))[0] === null);
+            assert(await getUnwrappedToken(token) !== null);
+            assert(await getUnwrappedToken(token.substring(0, token.length - 1) as Token) === null);
             
             // Taken from main tests. exp was at 1000000000 unix time (Sept 9, 2001) (A long time ago)
             const oldToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ";
-            assert((await getUnwrappedToken(oldToken as Token))[0] === null);
+            assert(await getUnwrappedToken(oldToken as Token) === null);
             await deleteVaultPassword("vault");
         });
         
@@ -57,8 +57,8 @@ describe("Authentication tests", () => {
             await setVaultPassword("log_me_out", "asdfasd");
             const token = await createToken(["log_me_out"]);
             const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string) as [Header, Payload];
-            addOutdatedToken(token, payload.exp);
-            assert((await getUnwrappedToken(token))[0] === null);
+            _addOutdatedToken(token, payload.exp);
+            assert(await getUnwrappedToken(token) === null);
             await deleteVaultPassword("log_me_out");
         });
         
@@ -99,20 +99,20 @@ describe("Authentication tests", () => {
             const [_newHeader, newPayload] = JWT.unwrap(newToken, process.env.JWT_SECRET as string) as [Header, Payload];
             assert(newPayload.exp > payload.exp);
             assert(newPayload.iat > payload.iat);
-            assert((await getUnwrappedToken(token))[0] === null);
+            assert(await getUnwrappedToken(token) === null);
         });
         
         it("Changing a vault's password invalidates token as nonces change", async () => {
             await setVaultPassword("change my password", "first password");
             const token = await createToken(["change my password"]);
             const unwrapped = await getUnwrappedToken(token);
-            assert(unwrapped[0] !== null);
+            assert(unwrapped !== null);
             assert(unwrapped[1].vaults.length === 1);
             assert(unwrapped[1].nonces.length === 1);
             
             await setVaultPassword("change my password", "second password");
             const unwrappedAfter = await getUnwrappedToken(token);
-            assert(unwrappedAfter[0] !== null);
+            assert(unwrappedAfter !== null);
             assert(unwrappedAfter[1].vaults.length === 0);
             assert(unwrappedAfter[1].nonces.length === 0);
             await deleteVaultPassword("change my password");
@@ -141,11 +141,11 @@ describe("Authentication tests", () => {
     describe("Testing admin authentication functions", () => {
         it("Sets the password for an admin and checks if successful", async () => {
             await setAdminPassword("some_admin", "some_password");
-            assert(await verifyAdminPassword("some_admin", "some_password"));
-            assert(!await verifyAdminPassword("some_admin", "not_password"));
-            assert(!await verifyAdminPassword("nonexistant", "some_password"));
+            assert(await _verifyAdminPassword("some_admin", "some_password"));
+            assert(!await _verifyAdminPassword("some_admin", "not_password"));
+            assert(!await _verifyAdminPassword("nonexistant", "some_password"));
             await deleteAdminPassword("some_admin");
-            assert(!await verifyAdminPassword("some_admin", "some_password"));
+            assert(!await _verifyAdminPassword("some_admin", "some_password"));
         });
     });
 

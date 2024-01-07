@@ -1,9 +1,9 @@
-import JWT, { Header, Token } from "./authentication/jwt";
-import { metaLog } from "./logger";
-import { unixTime } from "./helper";
-import { isOutdatedToken, addOutdatedToken, getVaultNonce, verifyVaultNonce } from "./authentication/database";
+import JWT, { Header, Token } from "./jwt";
+import { metaLog } from "../logger";
+import { unixTime } from "../helper";
+import { isOutdatedToken, _addOutdatedToken, getVaultNonce, verifyVaultNonce } from "./database";
 
-import { JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "./env";
+import { JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "../env";
 
 export type WebVaultPayload = {
     iss: string,
@@ -25,17 +25,18 @@ export type WebVaultPayload = {
  * @param token 
  * @returns Promise<[Header, WebVaultPayload, Token] | [null, null, null]>
  */
-async function getUnwrappedToken(token: Token): Promise<[Header, WebVaultPayload, Token] | [null, null, null]> {
-    if(await isOutdatedToken(token)) return [null, null, null];
+async function getUnwrappedToken(token: Token): Promise<[Header, WebVaultPayload, Token] | null> {
+    token = token + "" as Token;
+    if(await isOutdatedToken(token)) return null;
     const unwrapped = JWT.unwrap(token, JWT_SECRET);
     // Malformed or inconsistent
-    if(unwrapped == null) {
-        return [null, null, null];
+    if(unwrapped === null) {
+        return null;
     }
     const [header, payload] = unwrapped as [Header, WebVaultPayload];
     // If expired
     if(payload.exp < unixTime()) {
-        return [null, null, null];
+        return null;
     }
     // Checks that nonces are consistent, if not remove vault from payload
     for(let i = 0; i < payload.vaults.length; i++) {
@@ -141,6 +142,11 @@ function refreshTokenExpiration(unwrappedToken: [Header, WebVaultPayload, Token]
     metaLog("authentication", "INFO",`Refreshing token ${token}`);
     addOutdatedToken(token, payload.exp);
     return createToken(payload.vaults);
+}
+
+function addOutdatedToken(token: string, expireAt: number) {
+    metaLog("authentication", "INFO", `Outdating token ${token}, expiring at ${expireAt}`);
+    _addOutdatedToken(token, expireAt);
 }
 
 export {

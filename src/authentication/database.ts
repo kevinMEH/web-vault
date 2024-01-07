@@ -35,12 +35,7 @@ import { metaLog } from "../logger";
 import { USING_REDIS, PASSWORD_SALT, ITERATION_COUNT } from "../env";
 
 const isOutdatedToken = USING_REDIS ? redisIsOutdatedToken : (token: string) => Promise.resolve(localIsOutdatedToken(token));
-const addOutdatedTokenFunction = USING_REDIS ? redisAddOutdatedToken : (token: string, expireAt: number) => Promise.resolve(localAddOutdatedToken(token, expireAt));
-
-async function addOutdatedToken(token: string, expireAt: number) {
-    await addOutdatedTokenFunction(token, expireAt);
-    metaLog("authentication", "INFO", `Outdating token ${token}, expiring at ${expireAt}`);
-}
+const _addOutdatedToken = USING_REDIS ? redisAddOutdatedToken : (token: string, expireAt: number) => Promise.resolve(localAddOutdatedToken(token, expireAt));
 
 const vaultExistsDatabase = USING_REDIS ? redisVaultExists : (vault: string) => Promise.resolve(localVaultExists(vault));
 const setVaultPasswordFunction = USING_REDIS ? redisSetVaultPassword : localSetVaultPassword;
@@ -71,7 +66,7 @@ const setAdminPasswordFunction = USING_REDIS ? redisSetAdminPassword : localSetA
 const verifyAdminPasswordFunction = USING_REDIS ? redisVerifyAdminPassword : (adminName: string, password: HashedPassword) => Promise.resolve(localVerifyAdminPassword(adminName, password));
 const deleteAdminFunction = USING_REDIS ? redisDeleteAdmin : localDeleteAdmin;
 const getAdminNonce = USING_REDIS ? redisGetAdminNonce : (adminName: string) => Promise.resolve(localGetAdminNonce(adminName));
-const verifyAdminNonce = USING_REDIS ? redisVerifyAdminNonce : (adminName: string, nonce: number) => Promise.resolve(localVerifyAdminNonce(adminName, nonce));
+const _verifyAdminNonce = USING_REDIS ? redisVerifyAdminNonce : (adminName: string, nonce: number) => Promise.resolve(localVerifyAdminNonce(adminName, nonce));
 
 // TODO: Error handling on hashPassword
 async function setAdminPassword(adminName: string, password: string) {
@@ -81,7 +76,7 @@ async function setAdminPassword(adminName: string, password: string) {
 }
 
 // TODO: Error handling on hashPassword
-async function verifyAdminPassword(adminName: string, password: string) {
+async function _verifyAdminPassword(adminName: string, password: string) {
     const hashedPassword = await hashPassword(password, PASSWORD_SALT, ITERATION_COUNT);
     return verifyAdminPasswordFunction(adminName, hashedPassword)
 }
@@ -92,7 +87,7 @@ async function deleteAdminPassword(adminName: string) {
 }
 
 export {
-    addOutdatedToken,
+    _addOutdatedToken,
     isOutdatedToken,
 
     setVaultPassword,
@@ -103,8 +98,8 @@ export {
     verifyVaultNonce,
     
     setAdminPassword,
-    verifyAdminPassword,
+    _verifyAdminPassword,
     deleteAdminPassword,
     getAdminNonce,
-    verifyAdminNonce
+    _verifyAdminNonce
 };
