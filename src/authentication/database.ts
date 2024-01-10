@@ -5,13 +5,11 @@ import {
     localVerifyVaultPassword,
     localVaultExists,
     localDeleteVault,
-    localGetVaultNonce,
-    localVerifyVaultNonce,
+    localIssuedAfterVaultNonce,
     localSetAdminPassword,
     localVerifyAdminPassword,
     localDeleteAdmin,
-    localGetAdminNonce,
-    localVerifyAdminNonce,
+    localIssuedAfterAdminNonce,
 } from "./database/local";
 import {
     redisAddOutdatedToken,
@@ -20,13 +18,11 @@ import {
     redisVerifyVaultPassword,
     redisVaultExists,
     redisDeleteVault,
-    redisGetVaultNonce,
-    redisVerifyVaultNonce,
+    redisIssuedAfterVaultNonce,
     redisSetAdminPassword,
     redisVerifyAdminPassword,
     redisDeleteAdmin,
-    redisGetAdminNonce,
-    redisVerifyAdminNonce,
+    redisIssuedAfterAdminNonce,
 } from "./database/redis";
 import { HashedPassword, hashPassword } from "./password";
 
@@ -41,8 +37,7 @@ const vaultExistsDatabase = USING_REDIS ? redisVaultExists : (vault: string) => 
 const setVaultPasswordFunction = USING_REDIS ? redisSetVaultPassword : localSetVaultPassword;
 const verifyVaultPasswordFunction = USING_REDIS ? redisVerifyVaultPassword : (vault: string, password: HashedPassword) => Promise.resolve(localVerifyVaultPassword(vault, password));
 const deleteVaultFunction = USING_REDIS ? redisDeleteVault : localDeleteVault;
-const getVaultNonce = USING_REDIS ? redisGetVaultNonce : (vault: string) => Promise.resolve(localGetVaultNonce(vault));
-const verifyVaultNonce = USING_REDIS ? redisVerifyVaultNonce : (vault: string, nonce: number) => Promise.resolve(localVerifyVaultNonce(vault, nonce));
+const issuedAfterVaultNonce = USING_REDIS ? redisIssuedAfterVaultNonce : (vault: string, issuingDate: number) => Promise.resolve(localIssuedAfterVaultNonce(vault, issuingDate));
 
 // TODO: Error handling on hashPassword
 async function setVaultPassword(vault: string, password: string) {
@@ -65,8 +60,7 @@ async function deleteVaultPassword(vault: string) {
 const setAdminPasswordFunction = USING_REDIS ? redisSetAdminPassword : localSetAdminPassword;
 const verifyAdminPasswordFunction = USING_REDIS ? redisVerifyAdminPassword : (adminName: string, password: HashedPassword) => Promise.resolve(localVerifyAdminPassword(adminName, password));
 const deleteAdminFunction = USING_REDIS ? redisDeleteAdmin : localDeleteAdmin;
-const getAdminNonce = USING_REDIS ? redisGetAdminNonce : (adminName: string) => Promise.resolve(localGetAdminNonce(adminName));
-const _verifyAdminNonce = USING_REDIS ? redisVerifyAdminNonce : (adminName: string, nonce: number) => Promise.resolve(localVerifyAdminNonce(adminName, nonce));
+const _issuedAfterAdminNonce = USING_REDIS ? redisIssuedAfterAdminNonce : (adminName: string, issuingDate: number) => Promise.resolve(localIssuedAfterAdminNonce(adminName, issuingDate));
 
 // TODO: Error handling on hashPassword
 async function setAdminPassword(adminName: string, password: string) {
@@ -94,12 +88,10 @@ export {
     verifyVaultPassword,
     vaultExistsDatabase,
     deleteVaultPassword,
-    getVaultNonce,
-    verifyVaultNonce,
+    issuedAfterVaultNonce,
     
     setAdminPassword,
     _verifyAdminPassword,
     deleteAdminPassword,
-    getAdminNonce,
-    _verifyAdminNonce
+    _issuedAfterAdminNonce
 };

@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import { USING_REDIS } from "../../env";
+import { unixTime } from "../../helper";
 import { HashedPassword } from "../password";
 
 const throwRedisError = () => { throw new Error("Attempting to use Redis with the REDIS environment variable turned off."); }
@@ -46,13 +47,10 @@ async function redisVaultExists(vault: string) {
 }
 
 async function redisSetVaultPassword(vault: string, hashedPassword: HashedPassword) {
-    await redis.set(vaultPasswordPrefix + vault, hashedPassword);
-    const currentNonce = await redis.get(vaultNoncePrefix + vault);
-    let nonce = Math.floor(Math.random() * 4294967295);
-    while(currentNonce && nonce === parseInt(currentNonce)) {
-        nonce = Math.floor(Math.random() * 4294967295);
-    }
-    await redis.set(vaultNoncePrefix + vault, nonce + "");
+    await Promise.all([
+        redis.set(vaultPasswordPrefix + vault, hashedPassword),
+        redis.set(vaultNoncePrefix + vault, unixTime() + "")
+    ]);
 }
 
 async function redisVerifyVaultPassword(vault: string, password: HashedPassword) {
@@ -66,29 +64,19 @@ async function redisDeleteVault(vault: string) {
     ]);
 }
 
-async function redisGetVaultNonce(vault: string): Promise<number | undefined> {
-    const nonce = await redis.get(vaultNoncePrefix + vault);
-    if(nonce !== null) {
-        return parseInt(nonce) as number;
-    }
-    return undefined;
-}
-
-async function redisVerifyVaultNonce(vault: string, nonce: number) {
-    return parseInt(await redis.get(vaultNoncePrefix + vault) || "Not a number") === nonce;
+async function redisIssuedAfterVaultNonce(vault: string, issuingDate: number) {
+    const vaultNonce = parseInt(await redis.get(vaultNoncePrefix + vault) || "Not a number")
+    return isNaN(vaultNonce) === false && issuingDate >= vaultNonce;
 }
 
 
 
 
 async function redisSetAdminPassword(adminName: string, hashedPassword: HashedPassword) {
-    await redis.set(adminPasswordPrefix + adminName, hashedPassword);
-    const currentNonce = await redis.get(adminNoncePrefix + adminName);
-    let nonce = Math.floor(Math.random() * 4294967295);
-    while(currentNonce && nonce === parseInt(currentNonce)) {
-        nonce = Math.floor(Math.random() * 4294967295);
-    }
-    await redis.set(adminNoncePrefix + adminName, nonce + "");
+    await Promise.all([
+        redis.set(adminPasswordPrefix + adminName, hashedPassword),
+        redis.set(adminNoncePrefix + adminName, unixTime() + "")
+    ]);
 }
 
 async function redisVerifyAdminPassword(adminName: string, password: HashedPassword) {
@@ -102,16 +90,9 @@ async function redisDeleteAdmin(adminName: string) {
     ]);
 }
 
-async function redisGetAdminNonce(adminName: string): Promise<number | undefined> {
-    const nonceString = await redis.get(adminNoncePrefix + adminName);
-    if(nonceString != null) {
-        return parseInt(nonceString) as number;
-    }
-    return undefined;
-}
-
-async function redisVerifyAdminNonce(adminName: string, nonce: number) {
-    return parseInt(await redis.get(adminNoncePrefix + adminName) || "Not a number") === nonce;
+async function redisIssuedAfterAdminNonce(adminName: string, issuingDate: number) {
+    const adminNonce = parseInt(await redis.get(adminNoncePrefix + adminName) || "Not a number");
+    return isNaN(adminNonce) === false && issuingDate >= adminNonce;
 }
 
 
@@ -131,14 +112,12 @@ export {
     redisVerifyVaultPassword,
     redisVaultExists,
     redisDeleteVault,
-    redisGetVaultNonce,
-    redisVerifyVaultNonce,
+    redisIssuedAfterVaultNonce,
     
     redisSetAdminPassword,
     redisVerifyAdminPassword,
     redisDeleteAdmin,
-    redisGetAdminNonce,
-    redisVerifyAdminNonce,
+    redisIssuedAfterAdminNonce,
 
     close
 };

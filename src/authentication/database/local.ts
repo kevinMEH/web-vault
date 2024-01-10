@@ -58,6 +58,15 @@ class Node {
 //      INITIAL SETUP
 // -----------------------
 
+/**
+ * 
+ * ATTENTION: For purposes here, the nonce refers to the last time the password was changed for a
+ * vault, or the last time an admin requested a logout in unix time.
+ * 
+ * To verify if a token is valid, we check if the issuing date of the token is AFTER the nonce date
+ * 
+ */
+
 // First time saving flags (indicates that it's ok if database files do not exist)
 let firstTokenSave = true;
 let firstVaultSave = true;
@@ -90,10 +99,9 @@ if(PRODUCTION && !USING_REDIS) {
             metaLog("database", "WARNING", "No outdated tokens database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
         } else {
             metaLog("database", "ERROR",
-            `Encountered unrecognized error "${message}" while checking if outdated tokens database file exists.`);
+            `Encountered unrecognized error "${message}" while checking if ${outdatedTokensFile} exists.`);
         }
     }
-    
     await saveOutdatedTokensToFile();
     firstTokenSave = false;
 
@@ -110,9 +118,24 @@ if(PRODUCTION && !USING_REDIS) {
             `Encountered unrecognized error "${message}" while checking if ${vaultCredentialsFile} exists.`);
         }
     }
-    
     await saveVaultCredentialsToFile();
     firstVaultSave = false;
+    
+    try {
+        await fs.access(adminCredentialsFile);
+        await loadAdminCredentialsFromFile();
+    } catch(error) {
+        const message = (error as Error).message;
+        const code = (error as NodeJS.ErrnoException).code;
+        if(code === "ENOENT") {
+            metaLog("database", "WARNING", "No admin credentials database file found, skipping load from database. If this is your first time running Web Vault, this is normal, you can safely ignore this message.");
+        } else {
+            metaLog("database", "ERROR",
+            `Encountered unrecognized error "${message}" while checking if ${adminCredentialsFile} exists.`);
+        }
+    }
+    await saveAdminCredentialsToFile();
+    firstAdminSave = false;
     
     // Interval for saving database to file. Default is once per hour.
     setInterval(() => {
@@ -204,8 +227,8 @@ async function saveOutdatedTokensToFile(): Promise<void> {
     }
     
 
-    let catastrophic = false;
-    let noncatastrophic = false;
+    let catastrophic = false as boolean;
+    let noncatastrophic = false as boolean;
 
     // Replacing main file with temp file
     // Main file -> Old file
@@ -361,8 +384,8 @@ async function saveVaultCredentialsToFile(): Promise<void> {
         return;
     }
     
-    let catastrophic = false;
-    let noncatastrophic = false;
+    let catastrophic = false as boolean;
+    let noncatastrophic = false as boolean;
     
     const realFilePath = vaultCredentialsFile;
     const oldFilePath = vaultCredentialsFile + ".old";
@@ -411,11 +434,7 @@ async function saveVaultCredentialsToFile(): Promise<void> {
 }
 
 async function localSetVaultPassword(vault: string, password: HashedPassword) {
-    let nonce = Math.floor(Math.random() * 4294967295);
-    while(vaultCredentialsMap.get(vault)?.[1] === nonce) {
-        nonce = Math.floor(Math.random() * 4294967295);
-    }
-    vaultCredentialsMap.set(vault, [password, nonce]);
+    vaultCredentialsMap.set(vault, [password, unixTime()]);
     await saveVaultCredentialsToFile();
 }
 
@@ -432,12 +451,9 @@ async function localDeleteVault(vault: string) {
     await saveVaultCredentialsToFile();
 }
 
-function localGetVaultNonce(vault: string): number | undefined {
-    return vaultCredentialsMap.get(vault)?.[1];
-}
-
-function localVerifyVaultNonce(vault: string, nonce: number) {
-    return vaultCredentialsMap.get(vault)?.[1] === nonce;
+function localIssuedAfterVaultNonce(vault: string, issuingDate: number) {
+    const vaultNonce = vaultCredentialsMap.get(vault)?.[1];
+    return vaultNonce !== undefined && issuingDate >= vaultNonce;
 }
 
 
@@ -512,8 +528,8 @@ async function saveAdminCredentialsToFile(): Promise<void> {
         return;
     }
     
-    let catastrophic = false;
-    let noncatastrophic = false;
+    let catastrophic = false as boolean;
+    let noncatastrophic = false as boolean;
     
     const realFilePath = adminCredentialsFile;
     const oldFilePath = adminCredentialsFile + ".old";
@@ -562,11 +578,7 @@ async function saveAdminCredentialsToFile(): Promise<void> {
 }
 
 async function localSetAdminPassword(adminName: string, password: HashedPassword) {
-    let nonce = Math.floor(Math.random() * 4294967295);
-    while(adminCredentialsMap.get(adminName)?.[1] === nonce) {
-        nonce = Math.floor(Math.random() * 4294967295);
-    }
-    adminCredentialsMap.set(adminName, [password, nonce]);
+    adminCredentialsMap.set(adminName, [password, unixTime()]);
     await saveAdminCredentialsToFile();
 }
 
@@ -579,12 +591,9 @@ async function localDeleteAdmin(adminName: string) {
     await saveAdminCredentialsToFile();
 }
 
-function localGetAdminNonce(adminName: string): number | undefined {
-    return adminCredentialsMap.get(adminName)?.[1];
-}
-
-function localVerifyAdminNonce(adminName: string, nonce: number) {
-    return adminCredentialsMap.get(adminName)?.[1] === nonce;
+function localIssuedAfterAdminNonce(adminName: string, issuingDate: number) {
+    const adminNonce = adminCredentialsMap.get(adminName)?.[1];
+    return adminNonce !== undefined && issuingDate >= adminNonce;
 }
 
 
@@ -609,14 +618,12 @@ export {
     localVerifyVaultPassword,
     localVaultExists,
     localDeleteVault,
-    localGetVaultNonce,
-    localVerifyVaultNonce,
+    localIssuedAfterVaultNonce,
     
     localSetAdminPassword,
     localVerifyAdminPassword,
     localDeleteAdmin,
-    localGetAdminNonce,
-    localVerifyAdminNonce,
+    localIssuedAfterAdminNonce,
 
     tokenList as _tokenList,
     tokenSet as _tokenSet,
