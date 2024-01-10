@@ -24,6 +24,7 @@
         ],
         "@typescript-eslint/no-explicit-any": 0,
         "@typescript-eslint/await-thenable": 1,
+        "@typescript-eslint/no-unnecessary-condition": 2,
         "no-return-await": "warn",
         "no-constant-condition": [
             "error", {
