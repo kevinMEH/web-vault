@@ -11,8 +11,8 @@ if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
 const { cleanup } = await import("../src/cleanup");
 
-const { default: JWT } = await import("../src/authentication/jwt");
-import type { Header, Payload, Token } from "../src/authentication/jwt";
+const { default: JWT } = await import("jwt-km");
+import type { Header, Payload } from "jwt-km";
 const { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, refreshTokenExpiration } = await import("../src/authentication/token");
 const {
     _addOutdatedToken,

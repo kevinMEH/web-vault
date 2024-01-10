@@ -9,7 +9,7 @@ import fs from "fs/promises";
 import { unixTime } from "../src/helper";
 
 import { vaultLog, logFileNameFromDate } from "../src/logger";
-import JWT, { Header, Payload, Token } from "../src/authentication/jwt";
+import JWT, { Header, Payload } from "jwt-km";
 import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/database/redis";
 import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdatedToken,
     localIsOutdatedToken, _purgeAllOutdated, _loadVaultCredentialsFromFile, localSetVaultPassword,
@@ -43,14 +43,13 @@ describe("Single Tests", () => {
         await context.test("Generates a JWT", () => {
             const token = new JWT("Kevin", 1000000000, 1111111111)
                 .addClaim("issuerIsCool", true)
-                .finalize("4B6576696E20697320636F6F6C")
-                .getToken();
+                .getToken("4B6576696E20697320636F6F6C");
             assert(token === "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ");
             // RHS obtained from https://jwt.io/
         });
         
         await context.test("Verifies and extracts header and payload from JWT", () => {
-            const [header, payload] = JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ" as Token,
+            const [header, payload] = JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
                 "4B6576696E20697320636F6F6C") as [Header, Payload];
             assert(header.alg === "HS256");
             assert(header.typ !== "asd")
@@ -60,27 +59,27 @@ describe("Single Tests", () => {
         })
     
         await context.test("Returns null on incorrect signature", () => {
-            assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJi" as Token,
+            assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJi",
                 "4B6576696E20697320636F6F6C") === null);
         });
     
         await context.test("Returns null on incorrect signature", () => {
-            assert(JWT.unwrap("bad.token.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ" as Token,
+            assert(JWT.unwrap("bad.token.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
                 "4B6576696E20697320636F6F6C") === null);
         });
     
         await context.test("Returns null on correct signature but incorrect secret", () => {
-            assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ" as Token,
+            assert(JWT.unwrap("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJLZXZpbiIsImV4cCI6MTAwMDAwMDAwMCwiaWF0IjoxMTExMTExMTExLCJpc3N1ZXJJc0Nvb2wiOnRydWV9.wm1_FGup-Jkj8b9_EtV0sLWc8Z-xkW2sIq0y48TaJiQ",
                 "4B6576696E20697320636F6F6D") === null);
         });
     
         await context.test("Returns null on bad token formatting", () => {
-            assert(JWT.unwrap("bad.token" as Token, "4B6576696E20697320636F6F6C") === null);
+            assert(JWT.unwrap("bad.token", "4B6576696E20697320636F6F6C") === null);
         });
         
         await context.test("Throws error on bad secret", () => {
             try {
-                JWT.unwrap("asdf.asdf.asdf" as Token, "Z");
+                JWT.unwrap("asdf.asdf.asdf", "Z");
                 assert(false, "The unwarp() call should've thrown an error.");
             } catch(error) {
                 assert((error as Error).message.includes("must be a hex string"));
