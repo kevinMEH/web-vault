@@ -7,6 +7,12 @@
     ],
     "plugins": ["@typescript-eslint"],
     "rules": {
+        "no-restricted-syntax": [
+            "error", {
+                "message": "Do not use the setInterval() function directly. Instead, use the addInterval() function available in src/cleanup.ts.",
+                "selector": "CallExpression[callee.name='setInterval']"
+            }
+        ],
         "require-await": 2,
         "@typescript-eslint/no-unused-vars": [
             "warn",

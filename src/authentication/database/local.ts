@@ -7,6 +7,7 @@ import { metaLog } from "../../logger";
 
 import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL } from "../../env";
 import { HashedPassword } from "../password";
+import { addInterval } from "../../cleanup";
 
 type TokenPair = {
     token: string,
@@ -136,15 +137,15 @@ if(PRODUCTION && !USING_REDIS) {
     }
     await saveAdminCredentialsToFile();
     firstAdminSave = false;
+
+    addInterval("Purge outdated tokens", () => {
+        purgeAllOutdated();
+    }, PURGE_INTERVAL * 1000, true);
     
     // Interval for saving database to file. Default is once per hour.
-    setInterval(() => {
+    addInterval("Save outdated tokens to file interval", () => {
         saveOutdatedTokensToFile();
-    }, DATABASE_SAVE_INTERVAL * 1000);
-
-    setInterval(() => {
-        purgeAllOutdated();
-    }, PURGE_INTERVAL * 1000);
+    }, DATABASE_SAVE_INTERVAL * 1000, true);
 }
 
 // --------------------

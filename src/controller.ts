@@ -10,6 +10,7 @@ import { metaLog } from "./logger";
 import CustomError from "./custom_error";
 
 import { VFS_STORE_DIRECTORY, VFS_BACKUP_INTERVAL, PRODUCTION } from "./env";
+import { addInterval } from "./cleanup";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
 export type VaultPath = string & { __type: "VaultPath" };
@@ -38,9 +39,9 @@ if(PRODUCTION) {
     if(loadVFSResult !== null && loadVFSResult.code === "ENOENT") {
         console.log("No VFS store found. No VFS were loaded. (Normal if this is the first time running.)");
     }
-    setInterval(() => {
+    addInterval("VFS backup interval", () => {
         storeVFS();
-    }, VFS_BACKUP_INTERVAL * 1000);
+    }, VFS_BACKUP_INTERVAL * 1000, true);
 }
 
 
