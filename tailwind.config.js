@@ -9,14 +9,11 @@ export default {
     ],
     theme: {
         screens: {
+            // Below specified size; We use desktop first design philosophy.
             'b2xl': {'max': '1535px'},
-      
             'bxl': {'max': '1279px'},
-      
             'blg': {'max': '1023px'},
-      
             'bmd': {'max': '767px'},
-      
             'bsm': {'max': '639px'},
         },
         colors: {
