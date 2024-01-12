@@ -3,7 +3,7 @@ import { metaLog } from "../logger";
 import { unixTime } from "../helper";
 import { isOutdatedToken, _addOutdatedToken, issuedAfterVaultNonce, vaultExistsDatabase } from "./database";
 
-import { JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "../env";
+import { JWT_EXPIRATION, DOMAIN, JWT_SECRET, ALLOW_REFRESH } from "../env";
 
 export type VaultAccess = {
     vault: string,
@@ -170,6 +170,9 @@ async function removeVaultFromToken(token: string, vault: string): Promise<strin
  * @returns New token as a base64url string or null if token is invalid.
  */
 async function _refreshVaultExpiration(token: string, vault: string): Promise<string | null> {
+    if(!ALLOW_REFRESH) {
+        return token;
+    }
     const unwrappedToken = await getUnwrappedToken(token);
     if(unwrappedToken === null) {
         return null;
