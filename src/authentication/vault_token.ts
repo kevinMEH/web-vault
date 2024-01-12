@@ -28,7 +28,7 @@ export type WebVaultPayload = {
  * (Issued before nonce, expired vaults, etc.)
  * 
  * @param token 
- * @returns Promise<[Header, WebVaultPayload, Token] | [null, null, null]>
+ * @returns Promise<[Header, WebVaultPayload, Token] | null>
  */
 async function getUnwrappedToken(token: string): Promise<[Header, WebVaultPayload] | null> {
     if(await isOutdatedToken(token)) return null;
@@ -84,12 +84,9 @@ async function createToken(vault: string): Promise<string | null> {
  * Returns a new token (with updated expiration) with the new vault added if it
  * isn't already present. The new vault's issuing and expiration will be reset.
  * 
- * If the new vault is successfully added, the input token is invalidated.
- * 
  * @param token
  * @param vault 
- * @returns New token as a base64url string, or old token if vault is already
- *          accessible or if vault does not exist, or null if token is invalid.
+ * @returns New token as a base64url string or null if token is invalid.
  */
 async function addNewVaultToToken(token: string, vault: string): Promise<string | null> {
     const unwrappedToken = await getUnwrappedToken(token);
@@ -126,15 +123,12 @@ async function addNewVaultToToken(token: string, vault: string): Promise<string 
  * Returns a new token (with updated expiration) with the vault removed if it
  * is present.
  * 
- * If the vault is successfully removed, the input token is invalidated.
- * 
  * A token with an empty array as its "vaults" field is safe. An invalid vault
  * is safe.
  * 
  * @param token
  * @param vault 
- * @returns New token as a base64url string, or old token if vault was never
- *          present, or null if token is invalid.
+ * @returns New token as a base64url string or null if token is invalid.
  */
 async function removeVaultFromToken(token: string, vault: string): Promise<string | null> {
     const unwrappedToken = await getUnwrappedToken(token);
@@ -165,8 +159,7 @@ async function removeVaultFromToken(token: string, vault: string): Promise<strin
  * 
  * @param token
  * @param vault
- * @returns New token as a base64url string, or old token if vault is not 
- *          present in the token, or null if token is invalid.
+ * @returns New token as a base64url string or null if token is invalid.
  */
 async function _refreshVaultExpiration(token: string, vault: string): Promise<string | null> {
     const unwrappedToken = await getUnwrappedToken(token);
