@@ -15,13 +15,6 @@ import JWT from "jwt-km";
 import type { Header, Payload } from "jwt-km";
 import type { VaultAccess } from "../src/authentication/vault_token";
 const {
-    getUnwrappedToken,
-    createToken,
-    addNewVaultToToken,
-    removeVaultFromToken,
-    _refreshVaultExpiration
-} = await import("../src/authentication/vault_token");
-const {
     _addOutdatedToken,
     setVaultPassword,
     verifyVaultPassword,
@@ -31,6 +24,20 @@ const {
     _verifyAdminPassword,
     deleteAdminPassword
 } = await import("../src/authentication/database");
+const {
+    getUnwrappedToken,
+    createToken,
+    addNewVaultToToken,
+    removeVaultFromToken,
+    _refreshVaultExpiration
+} = await import("../src/authentication/vault_token");
+const {
+    vaultLogin,
+    vaultLogout,
+    vaultAccessible,
+    refreshVaultExpiration
+} = await import("../src/vault_auth");
+
 
 describe("Authentication tests", () => {
     describe("Testing database vault authentication functions (src/authentication/database.ts)", () => {
@@ -73,6 +80,7 @@ describe("Authentication tests", () => {
             assert(payload.access?.length === 1);
             assert(payload.access[0].vault === "main_vault");
             const token2 = new JWT(process.env.DOMAIN as string, payload.exp, payload.iat)
+                    .addClaim("random", payload.random)
                     .addClaim("access", [{
                         vault: "main_vault",
                         issuedAt: payload.access[0].issuedAt,
@@ -181,6 +189,157 @@ describe("Authentication tests", () => {
             assert(unwrappedAfter[1].access.length === 0);
 
             await deleteVaultPassword("change my password");
+        });
+    });
+    
+    describe("Vault authentication tests (src/vault_auth.ts)", () => {
+        it("Tests vaultLogin()", async () => {
+            await setVaultPassword("new_vault", "!!secure123");
+            await setVaultPassword("new_vault_too", "1234");
+            
+            assert(await vaultLogin("new_vault", "!secure123") === null);
+            assert(await vaultLogin("new_vault", "#secure123") === null);
+            assert(await vaultLogin("new_vault", "wrong") === null);
+            assert(await vaultLogin("new_vault", "") === null);
+            assert(await vaultLogin("nonexist", "!!secure123") === null);
+
+            const token = await vaultLogin("new_vault", "!!secure123");
+            assert(token !== null);
+            
+            const unwrapped = await getUnwrappedToken(token);
+            assert(unwrapped !== null);
+            assert(unwrapped[1].access.length === 1);
+            assert(unwrapped[1].access[0].vault === "new_vault");
+            
+            assert(await vaultLogin("new_vault_too", "wrong", token) === null);
+            assert(await vaultLogin("new_vault_too", "wrong", "") === null);
+            assert(await vaultLogin("new_vault_too", "wrong", "bad.token.nonsensical") === null);
+            
+            const newToken = await vaultLogin("new_vault_too", "1234", token);
+            assert(newToken !== null);
+            
+            assert(await getUnwrappedToken(token) === null);
+            const newUnwrapped = await getUnwrappedToken(newToken);
+            assert(newUnwrapped !== null);
+            assert(newUnwrapped[1].access.length === 2);
+            assert(newUnwrapped[1].access.some(access => access.vault === "new_vault"));
+            assert(newUnwrapped[1].access.some(access => access.vault === "new_vault_too"));
+            
+            const validToken = await vaultLogin("new_vault_too", "1234", "bad.token.incorrect");
+            assert(validToken !== null);
+            
+            const validUnwrapped = await getUnwrappedToken(validToken);
+            assert(validUnwrapped !== null);
+            assert(validUnwrapped[1].access.length === 1);
+            assert(validUnwrapped[1].access[0].vault === "new_vault_too");
+            
+            await deleteVaultPassword("new_vault");
+            await deleteVaultPassword("new_vault_too");
+        });
+        
+        it("Tests vaultLogout()", async () => {
+            await setVaultPassword("another_vault", "password2222");
+            
+            const token = await vaultLogin("another_vault", "password2222");
+            assert(token !== null);
+            
+            const unwrapped = await getUnwrappedToken(token);
+            assert(unwrapped !== null);
+            assert(unwrapped[1].access.length === 1);
+            assert(unwrapped[1].access[0].vault === "another_vault");
+            
+            const newToken = await vaultLogout("another_vault", token);
+            assert(newToken !== null);
+            
+            assert(await getUnwrappedToken(token) === null);
+            const newUnwrapped = await getUnwrappedToken(newToken);
+            assert(newUnwrapped !== null);
+            assert(newUnwrapped[1].access.length === 0);
+            
+            const readdedToken = await vaultLogin("another_vault", "password2222", newToken);
+            assert(readdedToken !== null);
+            const readdedUnwrapped = await getUnwrappedToken(readdedToken);
+            assert(readdedUnwrapped !== null);
+            assert(await getUnwrappedToken(newToken) === null);
+            assert(readdedUnwrapped[1].access.length === 1);
+            assert(readdedUnwrapped[1].access[0].vault === "another_vault");
+            
+            const similarToken = await vaultLogout("nonexistant", readdedToken);
+            assert(similarToken !== null);
+            const similarUnwarpped = await getUnwrappedToken(similarToken);
+            assert(similarUnwarpped !== null);
+            assert(await getUnwrappedToken(readdedToken) === null);
+            assert(similarToken !== readdedToken);
+            assert(similarUnwarpped[1].access.length === 1);
+            assert(similarUnwarpped[1].access[0].vault === "another_vault");
+            
+            await deleteVaultPassword("another_vault");
+        });
+        
+        it("Tests vaultAccessible()", async () => {
+            await setVaultPassword("another_another_vault", "!@#$");
+            await setVaultPassword("existant", "12313123123")
+            
+            const token = await vaultLogin("another_another_vault", "!@#$");
+            assert(token !== null);
+            
+            assert(await vaultAccessible("nonexistant", token) === false);
+            assert(await vaultAccessible("existant", token) === false);
+            assert(await vaultAccessible("another_another_vault", token));
+            
+            const newToken = await vaultLogout("another_another_vault", token);
+            assert(newToken !== null);
+
+            assert(await vaultAccessible("nonexistant", token) === false);
+            assert(await vaultAccessible("existant", token) === false);
+            assert(await vaultAccessible("another_another_vault", token) === false);
+            
+            await deleteVaultPassword("another_another_vault");
+            await deleteVaultPassword("existant");
+        });
+        
+        it("Tests refreshVaultExpiration()", async () => {
+            await setVaultPassword("first", "first");
+            await setVaultPassword("second", "second");
+            
+            let token: string | null;
+            token = await vaultLogin("first", "first");
+            assert(token !== null);
+            token = await vaultLogin("second", "second", token);
+            assert(token !== null);
+            
+            const originalUnwrapped = await getUnwrappedToken(token);
+            assert(originalUnwrapped !== null);
+            const [ _originalHeader, originalPayload ] = originalUnwrapped;
+            const originalFirstAccess = originalPayload.access.find(access => access.vault === "first");
+            assert(originalFirstAccess !== undefined);
+            const originalSecondAccess = originalPayload.access.find(access => access.vault === "second");
+            assert(originalSecondAccess !== undefined);
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const oldToken = token;
+            token = await refreshVaultExpiration("first", token);
+            assert(token !== null);
+            assert(await getUnwrappedToken(oldToken) === null);
+            
+            const newUnwrapped = await getUnwrappedToken(token);
+            assert(newUnwrapped !== null);
+            const [ _newHeader, newPayload ] = newUnwrapped;
+            const newFirstAccess = newPayload.access.find(access => access.vault === "first");
+            assert(newFirstAccess !== undefined);
+            const newSecondAccess = newPayload.access.find(access => access.vault === "second");
+            assert(newSecondAccess !== undefined);
+            
+            assert(newPayload.iat > originalPayload.iat);
+            assert(newPayload.exp > originalPayload.exp);
+            assert(newFirstAccess.issuedAt === originalFirstAccess.issuedAt);
+            assert(newFirstAccess.expiration > originalFirstAccess.expiration);
+            assert(newSecondAccess.issuedAt === originalSecondAccess.issuedAt);
+            assert(newSecondAccess.expiration === originalSecondAccess.expiration);
+            
+            await deleteVaultPassword("first");
+            await deleteVaultPassword("second");
         });
     });
 
