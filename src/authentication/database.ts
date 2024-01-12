@@ -10,6 +10,7 @@ import {
     localVerifyAdminPassword,
     localDeleteAdmin,
     localIssuedAfterAdminNonce,
+    localResetAdminNonce,
 } from "./database/local";
 import {
     redisAddOutdatedToken,
@@ -23,6 +24,7 @@ import {
     redisVerifyAdminPassword,
     redisDeleteAdmin,
     redisIssuedAfterAdminNonce,
+    redisResetAdminNonce,
 } from "./database/redis";
 import { HashedPassword, hashPassword } from "./password";
 
@@ -60,7 +62,8 @@ async function deleteVaultPassword(vault: string) {
 const setAdminPasswordFunction = USING_REDIS ? redisSetAdminPassword : localSetAdminPassword;
 const verifyAdminPasswordFunction = USING_REDIS ? redisVerifyAdminPassword : (adminName: string, password: HashedPassword) => Promise.resolve(localVerifyAdminPassword(adminName, password));
 const deleteAdminFunction = USING_REDIS ? redisDeleteAdmin : localDeleteAdmin;
-const _issuedAfterAdminNonce = USING_REDIS ? redisIssuedAfterAdminNonce : (adminName: string, issuingDate: number) => Promise.resolve(localIssuedAfterAdminNonce(adminName, issuingDate));
+const issuedAfterAdminNonce = USING_REDIS ? redisIssuedAfterAdminNonce : (adminName: string, issuingDate: number) => Promise.resolve(localIssuedAfterAdminNonce(adminName, issuingDate));
+const resetAdminNonce = USING_REDIS ? redisResetAdminNonce : (adminName: string) => Promise.resolve(localResetAdminNonce(adminName));
 
 // TODO: Error handling on hashPassword
 async function setAdminPassword(adminName: string, password: string) {
@@ -70,9 +73,9 @@ async function setAdminPassword(adminName: string, password: string) {
 }
 
 // TODO: Error handling on hashPassword
-async function _verifyAdminPassword(adminName: string, password: string) {
+async function verifyAdminPassword(adminName: string, password: string) {
     const hashedPassword = await hashPassword(password, PASSWORD_SALT, ITERATION_COUNT);
-    return verifyAdminPasswordFunction(adminName, hashedPassword)
+    return verifyAdminPasswordFunction(adminName, hashedPassword);
 }
 
 async function deleteAdminPassword(adminName: string) {
@@ -91,7 +94,8 @@ export {
     issuedAfterVaultNonce,
     
     setAdminPassword,
-    _verifyAdminPassword,
+    verifyAdminPassword,
     deleteAdminPassword,
-    _issuedAfterAdminNonce
+    issuedAfterAdminNonce,
+    resetAdminNonce
 };

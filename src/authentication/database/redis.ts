@@ -95,6 +95,10 @@ async function redisIssuedAfterAdminNonce(adminName: string, issuingDate: number
     return isNaN(adminNonce) === false && issuingDate >= adminNonce;
 }
 
+async function redisResetAdminNonce(adminName: string) {
+    await redis.set(adminNoncePrefix + adminName, unixTime() + "");
+}
+
 
 
 
@@ -118,6 +122,7 @@ export {
     redisVerifyAdminPassword,
     redisDeleteAdmin,
     redisIssuedAfterAdminNonce,
+    redisResetAdminNonce,
 
     close
 };

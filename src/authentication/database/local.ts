@@ -597,6 +597,15 @@ function localIssuedAfterAdminNonce(adminName: string, issuingDate: number) {
     return adminNonce !== undefined && issuingDate >= adminNonce;
 }
 
+function localResetAdminNonce(adminName: string) {
+    const password = adminCredentialsMap.get(adminName)?.[0];
+    if(password === undefined) {
+        metaLog("database", "ERROR", `Resetting admin nonce for admin ${adminName}, but the admin does not exist.`);
+        return;
+    }
+    adminCredentialsMap.set(adminName, [ password, unixTime() ]);
+}
+
 
 
 
@@ -625,6 +634,7 @@ export {
     localVerifyAdminPassword,
     localDeleteAdmin,
     localIssuedAfterAdminNonce,
+    localResetAdminNonce,
 
     tokenList as _tokenList,
     tokenSet as _tokenSet,

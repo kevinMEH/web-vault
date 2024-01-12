@@ -11,7 +11,7 @@ if(process.env.REDIS) console.log("Using Redis");
 else console.log("Using in memory database");
 const { cleanup } = await import("../src/cleanup");
 
-import JWT from "jwt-km";
+import JWT, { unixTime } from "jwt-km";
 import type { Header, Payload } from "jwt-km";
 import type { VaultAccess } from "../src/authentication/vault_token";
 const {
@@ -21,8 +21,10 @@ const {
     vaultExistsDatabase,
     deleteVaultPassword,
     setAdminPassword,
-    _verifyAdminPassword,
-    deleteAdminPassword
+    verifyAdminPassword,
+    deleteAdminPassword,
+    issuedAfterAdminNonce,
+    resetAdminNonce
 } = await import("../src/authentication/database");
 const {
     getUnwrappedToken,
@@ -62,11 +64,35 @@ describe("Authentication tests", () => {
     describe("Testing database admin authentication functions (src/authentication/database.ts)", () => {
         it("Sets the password for an admin and checks if successful", async () => {
             await setAdminPassword("some_admin", "some_password");
-            assert(await _verifyAdminPassword("some_admin", "some_password"));
-            assert(!await _verifyAdminPassword("some_admin", "not_password"));
-            assert(!await _verifyAdminPassword("nonexistant", "some_password"));
+            assert(await verifyAdminPassword("some_admin", "some_password"));
+            assert(!await verifyAdminPassword("some_admin", "not_password"));
+            assert(!await verifyAdminPassword("nonexistant", "some_password"));
             await deleteAdminPassword("some_admin");
-            assert(!await _verifyAdminPassword("some_admin", "some_password"));
+            assert(!await verifyAdminPassword("some_admin", "some_password"));
+        });
+        
+        it("Tests issuedAfterAdminNonce()", async () => {
+            await setAdminPassword("random", "random");
+
+            assert(await issuedAfterAdminNonce("random", unixTime() - 60) === false);
+            assert(await issuedAfterAdminNonce("random", unixTime() - 30) === false);
+            assert(await issuedAfterAdminNonce("random", unixTime() + 1));
+            assert(await issuedAfterAdminNonce("random", unixTime() + 30));
+            
+            await deleteAdminPassword("random");
+        });
+        
+        it("Tests resetAdminNonce()", async () => {
+            await setAdminPassword("hello", "hello");
+            
+            const afterOriginalNonce = unixTime();
+            assert(await issuedAfterAdminNonce("hello", afterOriginalNonce));
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await resetAdminNonce("hello");
+            assert(await issuedAfterAdminNonce("hello", afterOriginalNonce) === false);
+            assert(await issuedAfterAdminNonce("hello", unixTime()));
+
+            await deleteAdminPassword("hello");
         });
     });
 
