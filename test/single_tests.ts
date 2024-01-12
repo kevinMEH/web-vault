@@ -6,10 +6,8 @@ import assert from "assert";
 import path from "path";
 import fs from "fs/promises";
 
-import { unixTime } from "../src/helper";
-
 import { vaultLog, logFileNameFromDate } from "../src/logger";
-import JWT, { Header, Payload } from "jwt-km";
+import JWT, { unixTime, Header, Payload } from "jwt-km";
 import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/database/redis";
 import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdatedToken,
     localIsOutdatedToken, _purgeAllOutdated, _loadVaultCredentialsFromFile, localSetVaultPassword,

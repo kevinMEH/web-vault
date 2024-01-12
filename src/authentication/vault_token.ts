@@ -1,6 +1,5 @@
-import JWT, { Header } from "jwt-km";
+import JWT, { unixTime, Header } from "jwt-km";
 import { metaLog } from "../logger";
-import { unixTime } from "../helper";
 import { isOutdatedToken, _addOutdatedToken, issuedAfterVaultNonce, vaultExistsDatabase } from "./database";
 
 import { JWT_EXPIRATION, DOMAIN, JWT_SECRET, ALLOW_REFRESH } from "../env";
