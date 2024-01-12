@@ -15,7 +15,10 @@ export type WebVaultPayload = {
     iss: string,
     exp: number,
     iat: number,
-    access: VaultAccess[]
+    access: VaultAccess[],
+    // Random number to ensure that 2 tokens created at the same time with the
+    // same contents is still somehow unique. It should never be used.
+    random: number
 }
 
 /**
@@ -31,7 +34,9 @@ export type WebVaultPayload = {
  * @returns Promise<[Header, WebVaultPayload, Token] | null>
  */
 async function getUnwrappedToken(token: string): Promise<[Header, WebVaultPayload] | null> {
-    if(await isOutdatedToken(token)) return null;
+    if(await isOutdatedToken(token)) {
+        return null;
+    }
     const unwrapped = JWT.unwrap(token, JWT_SECRET);
     // Malformed or inconsistent
     if(unwrapped === null) {
@@ -74,6 +79,7 @@ async function createToken(vault: string): Promise<string | null> {
         expiration: current + JWT_EXPIRATION
     };
     const jwt = new JWT(DOMAIN, current + JWT_EXPIRATION, current);
+    jwt.addClaim("random", Math.floor(Math.random() * 4294967296));
     jwt.addClaim("access", [ singleAccess ]);
     const token = jwt.getToken(JWT_SECRET);
     metaLog("authentication", "INFO", `Created new token ${token}. (Vault: ${vault}, Issued at: ${current}, Expiration: ${current + JWT_EXPIRATION})`);
@@ -113,6 +119,7 @@ async function addNewVaultToToken(token: string, vault: string): Promise<string 
         expiration: current + JWT_EXPIRATION
     });
     const jwt = new JWT(DOMAIN, current + JWT_EXPIRATION, current);
+    jwt.addClaim("random", Math.floor(Math.random() * 4294967296));
     jwt.addClaim("access", vaultAccesses);
     const newToken = jwt.getToken(JWT_SECRET);
     metaLog("authentication", "INFO", `Adding new vault ${vault} to token ${token}, receiving new token ${newToken}`);
@@ -147,6 +154,7 @@ async function removeVaultFromToken(token: string, vault: string): Promise<strin
     
     const current = unixTime();
     const jwt = new JWT(DOMAIN, current + JWT_EXPIRATION, current);
+    jwt.addClaim("random", Math.floor(Math.random() * 4294967296));
     jwt.addClaim("access", vaultAccesses);
     const newToken = jwt.getToken(JWT_SECRET);
     metaLog("authentication", "INFO", `Removed vault ${vault} from token ${token}, receiving new token ${newToken}`);
@@ -177,6 +185,7 @@ async function _refreshVaultExpiration(token: string, vault: string): Promise<st
     await addOutdatedToken(token, payload.exp);
 
     const jwt = new JWT(DOMAIN, current + JWT_EXPIRATION, current);
+    jwt.addClaim("random", Math.floor(Math.random() * 4294967296));
     jwt.addClaim("access", vaultAccesses);
     const newToken = jwt.getToken(JWT_SECRET);
     metaLog("authentication", "INFO",`Refreshing token ${token} to new token ${newToken}`);
