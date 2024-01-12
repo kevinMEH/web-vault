@@ -106,12 +106,13 @@ describe("Authentication tests", () => {
             assert(payload.access?.length === 1);
             assert(payload.access[0].vault === "main_vault");
             const token2 = new JWT(process.env.DOMAIN as string, payload.exp, payload.iat)
-                    .addClaim("random", payload.random)
-                    .addClaim("access", [{
-                        vault: "main_vault",
-                        issuedAt: payload.access[0].issuedAt,
-                        expiration: payload.access[0].expiration
-                    }]).getToken(process.env.JWT_SECRET as string);
+                .addClaim("type", "vault")
+                .addClaim("random", payload.random)
+                .addClaim("access", [{
+                    vault: "main_vault",
+                    issuedAt: payload.access[0].issuedAt,
+                    expiration: payload.access[0].expiration
+                }]).getToken(process.env.JWT_SECRET as string);
             assert(token === token2);
             assert(await getUnwrappedToken(token2) !== null);
 
