@@ -2,6 +2,7 @@ import JWT, { unixTime, Header } from "jwt-km";
 import { metaLog } from "../logger";
 import { isOutdatedToken, _addOutdatedToken, invalidVaultIssuingDate, vaultExistsDatabase } from "./database";
 import { JWT_EXPIRATION, DOMAIN, JWT_SECRET, ALLOW_REFRESH } from "../env";
+import type { AdminPayload } from "../admin_auth";
 
 export type VaultAccess = {
     vault: string,
@@ -50,7 +51,7 @@ async function getUnwrappedToken(token: string): Promise<[Header, WebVaultPayloa
     if(unwrapped === null) {
         return null;
     }
-    const [header, payload] = unwrapped as [Header, WebVaultPayload];
+    const [header, payload] = unwrapped as [Header, WebVaultPayload | AdminPayload];
     if(payload.type !== "vault") {
         return null;
     }
@@ -68,7 +69,7 @@ async function getUnwrappedToken(token: string): Promise<[Header, WebVaultPayloa
             i--;
         }
     }
-    return [header, payload as WebVaultPayload];
+    return [header, payload];
 }
 
 /**
