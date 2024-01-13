@@ -39,6 +39,11 @@ const {
     vaultAccessible,
     refreshVaultExpiration
 } = await import("../src/vault_auth");
+const {
+    adminLogin,
+    adminLogout,
+    adminAccess
+} = await import("../src/admin_auth");
 
 
 describe("Authentication tests", () => {
@@ -46,6 +51,7 @@ describe("Authentication tests", () => {
         it("Sets the password for a vault and checks if successful", async () => {
             await setVaultPassword("testing", "password123");
             assert(await verifyVaultPassword("testing", "password123"));
+            assert(!await verifyVaultPassword("testing", "⬈⋘▀ⵃ⡚⼅⤩⛾⁻⃧⍪Ⓢ⵴✡⩱ⷱ⯠⢪ℨⵖ⎓⹹⯞⾱₧ₔⲺ⚀⣗⦿⠇⸥☑⑈ⷫ⌀⎥␿ⷞ⼝⍜⢥⃊♻∩ⱁ⯣⁮❐⹦⢋⋞⾰ⴂ∎⋪⤲ⴚ⯄⸥⁙⿔⧢ⷙⰪ⛻Ⳅ⛀≳⌅⎖⣧⨬⅌␈⶿ⷡ█ⱼ⟵⥿⍠₶⌔ⳭⰖ⥳⢹≭♢⮦⸗⾄ⵉ⬻⍫⍂☏⢶⼠"));
             assert(!await verifyVaultPassword("testing", "Password123"));
             assert(!await verifyVaultPassword("nonexistant", "password123"));
             await deleteVaultPassword("testing");
@@ -66,6 +72,7 @@ describe("Authentication tests", () => {
             await setAdminPassword("some_admin", "some_password");
             assert(await verifyAdminPassword("some_admin", "some_password"));
             assert(!await verifyAdminPassword("some_admin", "not_password"));
+            assert(!await verifyAdminPassword("some_admin", "⬈⋘▀ⵃ⡚⼅⤩⛾⁻⃧⍪Ⓢ⵴✡⩱ⷱ⯠⢪ℨⵖ⎓⹹⯞⾱₧ₔⲺ⚀⣗⦿⠇⸥☑⑈ⷫ⌀⎥␿ⷞ⼝⍜⢥⃊♻∩ⱁ⯣⁮❐⹦⢋⋞⾰ⴂ∎⋪⤲ⴚ⯄⸥⁙⿔⧢ⷙⰪ⛻Ⳅ⛀≳⌅⎖⣧⨬⅌␈⶿ⷡ█ⱼ⟵⥿⍠₶⌔ⳭⰖ⥳⢹≭♢⮦⸗⾄ⵉ⬻⍫⍂☏⢶⼠"));
             assert(!await verifyAdminPassword("nonexistant", "some_password"));
             await deleteAdminPassword("some_admin");
             assert(!await verifyAdminPassword("some_admin", "some_password"));
@@ -225,6 +232,7 @@ describe("Authentication tests", () => {
             await setVaultPassword("new_vault_too", "1234");
             
             assert(await vaultLogin("new_vault", "!secure123") === null);
+            assert(await vaultLogin("new_vault", "⬈⋘▀ⵃ⡚⼅⤩⛾⁻⃧⍪Ⓢ⵴✡⩱ⷱ⯠⢪ℨⵖ⎓⹹⯞⾱₧ₔⲺ⚀⣗⦿⠇⸥☑⑈ⷫ⌀⎥␿ⷞ⼝⍜⢥⃊♻∩ⱁ⯣⁮❐⹦⢋⋞⾰ⴂ∎⋪⤲ⴚ⯄⸥⁙⿔⧢ⷙⰪ⛻Ⳅ⛀≳⌅⎖⣧⨬⅌␈⶿ⷡ█ⱼ⟵⥿⍠₶⌔ⳭⰖ⥳⢹≭♢⮦⸗⾄ⵉ⬻⍫⍂☏⢶⼠") === null);
             assert(await vaultLogin("new_vault", "#secure123") === null);
             assert(await vaultLogin("new_vault", "wrong") === null);
             assert(await vaultLogin("new_vault", "") === null);
@@ -367,6 +375,75 @@ describe("Authentication tests", () => {
             
             await deleteVaultPassword("first");
             await deleteVaultPassword("second");
+        });
+        
+        it("getUnwrappedToken() doesn't work on admin tokens", async () => {
+            await setAdminPassword("abcd", "1234");
+            
+            const token = await adminLogin("abcd", "1234");
+            assert(token !== null);
+            assert(await getUnwrappedToken(token) === null);
+
+            await deleteAdminPassword("abcd");
+        });
+    });
+    
+    describe("Admin authentication tests (src/admin_auth.ts)", () => {
+        it("Tests adminLogin()", async () => {
+            await setAdminPassword("kevin", "admin1324");
+            
+            assert(await adminLogin("kevin", "admin1234") === null);
+            assert(await adminLogin("kevin", "") === null);
+            assert(await adminLogin("kevin", "!%*@*`") === null);
+            assert(await adminLogin("kevin", "⬈⋘▀ⵃ⡚⼅⤩⛾⁻⃧⍪Ⓢ⵴✡⩱ⷱ⯠⢪ℨⵖ⎓⹹⯞⾱₧ₔⲺ⚀⣗⦿⠇⸥☑⑈ⷫ⌀⎥␿ⷞ⼝⍜⢥⃊♻∩ⱁ⯣⁮❐⹦⢋⋞⾰ⴂ∎⋪⤲ⴚ⯄⸥⁙⿔⧢ⷙⰪ⛻Ⳅ⛀≳⌅⎖⣧⨬⅌␈⶿ⷡ█ⱼ⟵⥿⍠₶⌔ⳭⰖ⥳⢹≭♢⮦⸗⾄ⵉ⬻⍫⍂☏⢶⼠") === null);
+            
+            const token = await adminLogin("kevin", "admin1324");
+            assert(token !== null);
+            assert(await adminAccess(token));
+
+            await deleteAdminPassword("kevin");
+        });
+        
+        it("Tests adminLogout()", async () => {
+            await setAdminPassword("kevin2", "admin1324");
+            
+            const token = await adminLogin("kevin2", "admin1324");
+            assert(token !== null);
+            
+            assert(await adminAccess(token));
+            
+            await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
+            assert(await adminLogout(token));
+            assert(await adminAccess(token) === false);
+            
+            await deleteAdminPassword("kevin2");
+        });
+        
+        it("Tests adminAccess()", async () => {
+            await setAdminPassword("aadminn", "admin1324");
+            
+            const token = await adminLogin("aadminn", "admin1324");
+            assert(token !== null);
+            
+            assert(await adminAccess(token));
+            assert(await adminAccess(token + "1") === false);
+            assert(await adminAccess(token + ".") === false);
+            assert(await adminAccess("asdf.aaba.") === false);
+            assert(await adminAccess(token.substring(1)) === false);
+            assert(await adminAccess(token.substring(0, token.length - 2)) === false);
+            
+            await deleteAdminPassword("aadminn");
+        });
+        
+        it("Admin functions don't work on vault tokens", async () => {
+            await setVaultPassword("aadminn", "admin1324");
+
+            const vaultToken = await vaultLogin("aadminn", "admin1324");
+            assert(vaultToken !== null);
+            assert(await adminAccess(vaultToken) === false);
+            assert(await adminLogout(vaultToken) === false);
+
+            await deleteVaultPassword("aadminn");
         });
     });
 
