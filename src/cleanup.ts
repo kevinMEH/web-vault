@@ -10,7 +10,7 @@ function addInterval(intervalName: string, intervalFunction: Function, interval:
 
 async function runClearIntervals() {
     for(const [intervalName, intervalFunction, identifier, runBeforeShutdown] of intervals) {
-        console.log("Clearing interval " + intervalName)
+        console.log("Clearing interval " + intervalName);
         clearInterval(identifier);
         if(runBeforeShutdown) {
             console.log("Running interval function one last time for " + intervalName);
@@ -23,37 +23,32 @@ type TimeoutInfo = {
     timeoutName: string,
     timeoutFunction: Function,
     timeoutIdentifier: NodeJS.Timeout,
-    theoreticalExecutionTime: number,
-    selfIdentifier: number
+    theoreticalExecutionTime: number
 }
 const timeouts: TimeoutInfo[] = [];
 
-let selfIdentifierCounter = 0;
-
 // Cleans up after self after it is finished executing runFunction
-function runFunctionAndSelfDelete(runFunction: Function, selfIdentifier: number) {
+function runFunctionAndSelfDelete(runFunction: Function, selfTimeoutInfo: TimeoutInfo) {
     runFunction();
     for(let i = 0; i < timeouts.length; i++) {
-        if(timeouts[i].selfIdentifier === selfIdentifier) {
+        if(timeouts[i] === selfTimeoutInfo) {
             timeouts.splice(i, 1);
             return;
         }
     }
-    metaLog("runtime", "ERROR", "Attempting to delete timeout with selfIdentifier " + selfIdentifier + " from timeouts, but it does not exist.");
+    metaLog("runtime", "ERROR", "Attempting to delete timeout with identified by " + selfTimeoutInfo + " from timeouts, but it does not exist.");
 }
 
 function addLongTimeout(timeoutName: string, timeoutFunction: Function, delay: number) {
     const theoreticalExecutionTime = Date.now() + delay;
-    const selfIdentifier = selfIdentifierCounter++;
     const timeoutInfo: TimeoutInfo = {
         timeoutName,
         timeoutFunction,
         timeoutIdentifier: undefined as any,
-        theoreticalExecutionTime,
-        selfIdentifier
-    }
+        theoreticalExecutionTime
+    };
     timeouts.push(timeoutInfo);
-    timeoutInfo.timeoutIdentifier = setTimeout(() => runFunctionAndSelfDelete(timeoutFunction, selfIdentifier), delay); // eslint-disable-line
+    timeoutInfo.timeoutIdentifier = setTimeout(() => runFunctionAndSelfDelete(timeoutFunction, timeoutInfo), delay); // eslint-disable-line
 }
 
 async function runClearTimeouts() {
@@ -76,17 +71,17 @@ async function cleanup() {
     console.log("Closed.");
 
     console.log("Clearing intervals...");
-    runClearIntervals();
+    await runClearIntervals();
     console.log("Intervals cleared.");
     
     console.log("Clearing timeouts...");
-    runClearTimeouts();
+    await runClearTimeouts();
     console.log("Timeouts cleared.");
     
     console.log("Done.");
 
     console.log("If the application still have not exited by this point, please wait 5 more seconds. If it has not exitted after 5 more seconds, there may be a problem.");
-    // 15 seconds = deletion timeout for vault and VFS files
+    // 5 seconds = deletion timeout for vault and VFS files
 }
 
 async function shutdown() {
