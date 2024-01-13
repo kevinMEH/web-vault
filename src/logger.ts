@@ -4,7 +4,7 @@ import { BASE_LOGGING_DIRECTORY } from "./env";
 
 import type { VaultPath } from "./controller";
 
-async function metaLog(name: "database" | "authentication" | "admin" | "vfs" | "file system" | "runtime", type: "ERROR" | "WARNING" | "INFO", message: string) {
+async function metaLog(name: "database" | "authentication" | "admin" | "vfs" | "file system" | "runtime" | "requests", type: "ERROR" | "WARNING" | "INFO", message: string) {
     const filePath = path.join(BASE_LOGGING_DIRECTORY, name, logFileNameFromDate());
     message = (new Date()).toUTCString() + "\n" + type + ": " + message + "\n\n";
     await fs.appendFile(filePath, message, { mode: 0o640, flag: "a" });
