@@ -66,10 +66,6 @@ async function runClearTimeouts() {
 }
 
 async function cleanup() {
-    console.log("Closing Redis connection...");
-    await close();
-    console.log("Closed.");
-
     console.log("Clearing intervals...");
     await runClearIntervals();
     console.log("Intervals cleared.");
@@ -77,6 +73,10 @@ async function cleanup() {
     console.log("Clearing timeouts...");
     await runClearTimeouts();
     console.log("Timeouts cleared.");
+
+    console.log("Closing Redis connection...");
+    await close();
+    console.log("Closed.");
     
     console.log("Done.");
 
