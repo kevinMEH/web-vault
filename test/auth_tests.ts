@@ -87,7 +87,7 @@ describe("Authentication tests", () => {
             
             const afterOriginalNonce = unixTime();
             assert(await issuedAfterAdminNonce("hello", afterOriginalNonce));
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
             await resetAdminNonce("hello");
             assert(await issuedAfterAdminNonce("hello", afterOriginalNonce) === false);
             assert(await issuedAfterAdminNonce("hello", unixTime()));
@@ -187,7 +187,7 @@ describe("Authentication tests", () => {
             assert(await getUnwrappedToken(token) !== null);
             const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string) as [Header, Payload];
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
             const newToken = await _refreshVaultExpiration(token, "unique_name");
 
             assert(newToken !== null);
@@ -208,7 +208,7 @@ describe("Authentication tests", () => {
             assert(unwrapped !== null);
             assert(unwrapped[1].access.length === 1);
             
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
             await setVaultPassword("change my password", "second password");
 
             const unwrappedAfter = await getUnwrappedToken(token);
@@ -343,7 +343,7 @@ describe("Authentication tests", () => {
             const originalSecondAccess = originalPayload.access.find(access => access.vault === "second");
             assert(originalSecondAccess !== undefined);
             
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
             
             const oldToken = token;
             token = await refreshVaultExpiration("first", token);

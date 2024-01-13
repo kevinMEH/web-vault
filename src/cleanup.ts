@@ -1,4 +1,5 @@
 import { close } from "./authentication/database/redis";
+import { metaLog } from "./logger";
 
 const intervals: Array<[string, Function, number, boolean]> = [];
 
@@ -18,6 +19,57 @@ async function runClearIntervals() {
     }
 }
 
+type TimeoutInfo = {
+    timeoutName: string,
+    timeoutFunction: Function,
+    timeoutIdentifier: NodeJS.Timeout,
+    theoreticalExecutionTime: number,
+    selfIdentifier: number
+}
+const timeouts: TimeoutInfo[] = [];
+
+let selfIdentifierCounter = 0;
+
+// Cleans up after self after it is finished executing runFunction
+function runFunctionAndSelfDelete(runFunction: Function, selfIdentifier: number) {
+    runFunction();
+    for(let i = 0; i < timeouts.length; i++) {
+        if(timeouts[i].selfIdentifier === selfIdentifier) {
+            timeouts.splice(i, 1);
+            return;
+        }
+    }
+    metaLog("runtime", "ERROR", "Attempting to delete timeout with selfIdentifier " + selfIdentifier + " from timeouts, but it does not exist.");
+}
+
+function addLongTimeout(timeoutName: string, timeoutFunction: Function, delay: number) {
+    const theoreticalExecutionTime = Date.now() + delay;
+    const selfIdentifier = selfIdentifierCounter++;
+    const timeoutInfo: TimeoutInfo = {
+        timeoutName,
+        timeoutFunction,
+        timeoutIdentifier: undefined as any,
+        theoreticalExecutionTime,
+        selfIdentifier
+    }
+    timeouts.push(timeoutInfo);
+    timeoutInfo.timeoutIdentifier = setTimeout(() => runFunctionAndSelfDelete(timeoutFunction, selfIdentifier), delay); // eslint-disable-line
+}
+
+async function runClearTimeouts() {
+    for(let i = 0; i < timeouts.length; i++) {
+        const { timeoutName, timeoutFunction, timeoutIdentifier, theoreticalExecutionTime } = timeouts[i];
+        if(theoreticalExecutionTime >= Date.now()) { // Hasn't executed yet
+            console.log("Clearing timeout " + timeoutName);
+            clearTimeout(timeoutIdentifier);
+            console.log("Running timeout function for " + timeoutName + " immediately.");
+            await timeoutFunction();
+        } else { // Should've executed, but somehow still not removed
+            metaLog("runtime", "ERROR", `While running cleanup, the timeout ${timeoutName} should've been executed at ${theoreticalExecutionTime} (which was ${Date.now() - theoreticalExecutionTime} ms ago) but has not been removed from timeouts.`);
+        }
+    }
+}
+
 async function cleanup() {
     console.log("Closing Redis connection...");
     await close();
@@ -27,7 +79,14 @@ async function cleanup() {
     runClearIntervals();
     console.log("Intervals cleared.");
     
+    console.log("Clearing timeouts...");
+    runClearTimeouts();
+    console.log("Timeouts cleared.");
+    
     console.log("Done.");
+
+    console.log("If the application still have not exited by this point, please wait 5 more seconds. If it has not exitted after 5 more seconds, there may be a problem.");
+    // 15 seconds = deletion timeout for vault and VFS files
 }
 
 async function shutdown() {
@@ -35,4 +94,4 @@ async function shutdown() {
     process.exit();
 }
 
-export { addInterval, cleanup, shutdown };
+export { addInterval, addLongTimeout, cleanup, shutdown };

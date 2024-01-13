@@ -16,7 +16,7 @@ import CustomError from "./custom_error";
 
 import { BASE_VAULT_DIRECTORY, BASE_LOGGING_DIRECTORY } from "./env";
 
-const deletionTimeout = 15 * 1000;
+const deletionTimeout = 5 * 1000;
 const baseVaultLoggingDirectory = path.join(BASE_LOGGING_DIRECTORY, "vaults");
 // Must create corresponding log folder with creation of vault.
 // (The vaultLog function expects the folder to be present or error)
@@ -165,7 +165,7 @@ async function deleteVault(vaultName: string, deleteImmediately: boolean) {
             }
         });
     } else {
-        setTimeout(() => {
+        setTimeout(() => { // eslint-disable-line
             fs.rm(path.join(BASE_VAULT_DIRECTORY, vaultName), { recursive: true }).then(() => {
                 metaLog("admin", "INFO", `Successfully deleted vault ${vaultName} at ${path.join(BASE_VAULT_DIRECTORY, vaultName)}.`);
             }).catch(error => {

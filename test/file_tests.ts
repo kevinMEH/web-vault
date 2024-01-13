@@ -485,8 +485,8 @@ describe("File function tests", () => {
         assert(getAt(testVaultOne + "/folder2" as ValidatedPath) === null);
         assert(getAt(tsconfigPath) === null);
         
-        // Delete delay is 15 seconds, 16 should be more than enough
-        await new Promise(resolve => setTimeout(resolve, 16 * 1000));
+        // Delete delay is 5 seconds, 6 should be more than enough
+        await new Promise(resolve => setTimeout(resolve, 6 * 1000)); // eslint-disable-line
         for(const [deletionReason, realPath] of assertDeletedFiles) {
             try {
                 await fs.stat(path.join(BASE_VAULT_DIRECTORY, realPath));

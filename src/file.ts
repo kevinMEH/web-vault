@@ -8,7 +8,7 @@ import { BASE_VAULT_DIRECTORY } from "./env";
 
 import { shutdown } from "./cleanup";
 
-const deletionTimeout = 15 * 1000;
+const deletionTimeout = 5 * 1000;
 const tempFileDirectory = path.join(BASE_VAULT_DIRECTORY, "temp");
 const hexTo12 = Math.pow(16, 12);
 
@@ -272,7 +272,7 @@ function deleteItem(targetPath: ValidatedPath): boolean {
         const realPath = path.join(BASE_VAULT_DIRECTORY, vault, file.realFile);
         // Timeout before deletion so that other possible operations on the same
         // file may finish.
-        setTimeout(() => {
+        setTimeout(() => { // eslint-disable-line
             fs.rm(realPath, { recursive: true }).then(() => {
                 vaultLog(vault, "INFO", `Removed real file "${realPath}" of target path "${targetPath}".`);
             }).catch(error => {

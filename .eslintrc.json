@@ -11,6 +11,9 @@
             "error", {
                 "message": "Do not use the setInterval() function directly. Instead, use the addInterval() function available in src/cleanup.ts.",
                 "selector": "CallExpression[callee.name='setInterval']"
+            }, {
+                "message": "Consider using the addLongTimeout() function available in src/cleanup.ts instead if the timeout is long and infrequent. If you've confirmed this is not the case, please mark line with eslint-disable-line.",
+                "selector": "CallExpression[callee.name='setTimeout']"
             }
         ],
         "require-await": 2,

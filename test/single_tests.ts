@@ -221,7 +221,7 @@ describe("Single Tests", () => {
             const previousNonceTwo = _vaultCredentialsMap.get("another-test-vault")?.[1];
             assert(previousNonceTwo !== undefined);
             
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
 
             await localSetVaultPassword("some-test-vault", "password" as HashedPassword);
             await localSetVaultPassword("another-test-vault", "password2" as HashedPassword);
@@ -292,7 +292,7 @@ describe("Single Tests", () => {
             assert(previousNonce !== undefined);
             assert(localIssuedAfterAdminNonce("kevin2", previousNonce));
             
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
 
             await localSetAdminPassword("kevin2", "kevin222" as HashedPassword);
             assert(localVerifyAdminPassword("kevin2", "kevin222" as HashedPassword));
