@@ -13,7 +13,7 @@ import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdate
     localIsOutdatedToken, _purgeAllOutdated, _loadVaultCredentialsFromFile, localSetVaultPassword,
     localVaultExists, localDeleteVault, _tokenList, _tokenSet,
     _vaultCredentialsMap, NodeType as Node, localSetAdminPassword, _adminCredentialsMap,
-    _loadAdminCredentialsFromFile, localDeleteAdmin, localVerifyAdminPassword, localIssuedAfterAdminNonce
+    _loadAdminCredentialsFromFile, localDeleteAdmin, localVerifyAdminPassword, localInvalidAdminIssuingDate
 } from "../src/authentication/database/local";
 import { HashedPassword, hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
@@ -249,18 +249,18 @@ describe("Single Tests", () => {
             
             assert(kevinNonce !== undefined);
             assert(helloNonce !== undefined);
-            assert(localIssuedAfterAdminNonce("kevin", kevinNonce));
-            assert(localIssuedAfterAdminNonce("kevin", kevinNonce + 60));
-            assert(!localIssuedAfterAdminNonce("kevin", kevinNonce - 60));
-            assert(localIssuedAfterAdminNonce("hello", helloNonce));
+            assert(localInvalidAdminIssuingDate("kevin", kevinNonce - 60));
+            assert(localInvalidAdminIssuingDate("kevin", kevinNonce) === false);
+            assert(localInvalidAdminIssuingDate("kevin", kevinNonce + 60) === false);
+            assert(localInvalidAdminIssuingDate("hello", helloNonce) === false);
             
             _adminCredentialsMap.clear();
             assert(!localVerifyAdminPassword("kevin", "keviniscool" as HashedPassword));
             assert(!localVerifyAdminPassword("hello", "world" as HashedPassword));
             assert(!localVerifyAdminPassword("hello", "wworld" as HashedPassword));
-            assert(!localIssuedAfterAdminNonce("kevin", kevinNonce));
-            assert(!localIssuedAfterAdminNonce("kevin", kevinNonce + 1));
-            assert(!localIssuedAfterAdminNonce("hello", helloNonce));
+            assert(localInvalidAdminIssuingDate("kevin", kevinNonce));
+            assert(localInvalidAdminIssuingDate("kevin", kevinNonce + 1));
+            assert(localInvalidAdminIssuingDate("hello", helloNonce));
             
             await _loadAdminCredentialsFromFile();
 
@@ -271,10 +271,10 @@ describe("Single Tests", () => {
 
             assert(_adminCredentialsMap.get("kevin")?.[1] !== undefined);
             assert(_adminCredentialsMap.get("hello")?.[1] !== undefined);
-            assert(localIssuedAfterAdminNonce("kevin", kevinNonce));
-            assert(localIssuedAfterAdminNonce("kevin", kevinNonce + 60));
-            assert(!localIssuedAfterAdminNonce("kevin", kevinNonce - 60));
-            assert(localIssuedAfterAdminNonce("hello", helloNonce));
+            assert(localInvalidAdminIssuingDate("kevin", kevinNonce - 60));
+            assert(localInvalidAdminIssuingDate("kevin", kevinNonce) === false);
+            assert(localInvalidAdminIssuingDate("kevin", kevinNonce + 60) === false);
+            assert(localInvalidAdminIssuingDate("hello", helloNonce) === false);
             
             await localDeleteAdmin("kevin");
             await localDeleteAdmin("hello");
@@ -290,7 +290,7 @@ describe("Single Tests", () => {
 
             const previousNonce = _adminCredentialsMap.get("kevin2")?.[1];
             assert(previousNonce !== undefined);
-            assert(localIssuedAfterAdminNonce("kevin2", previousNonce));
+            assert(localInvalidAdminIssuingDate("kevin2", previousNonce) === false);
             
             await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
 
@@ -301,8 +301,8 @@ describe("Single Tests", () => {
             const currentNonce = _adminCredentialsMap.get("kevin2")?.[1];
             assert(currentNonce !== undefined);
             assert(currentNonce !== previousNonce);
-            assert(localIssuedAfterAdminNonce("kevin2", currentNonce));
-            assert(!localIssuedAfterAdminNonce("kevin2", previousNonce));
+            assert(localInvalidAdminIssuingDate("kevin2", currentNonce) === false);
+            assert(localInvalidAdminIssuingDate("kevin2", previousNonce));
 
             await localDeleteAdmin("kevin2");
         });

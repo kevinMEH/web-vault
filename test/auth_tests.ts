@@ -23,7 +23,7 @@ const {
     setAdminPassword,
     verifyAdminPassword,
     deleteAdminPassword,
-    issuedAfterAdminNonce,
+    invalidAdminIssuingDate,
     resetAdminNonce
 } = await import("../src/authentication/database");
 const {
@@ -71,13 +71,13 @@ describe("Authentication tests", () => {
             assert(!await verifyAdminPassword("some_admin", "some_password"));
         });
         
-        it("Tests issuedAfterAdminNonce()", async () => {
+        it("Tests invalidAdminIssuingDate()", async () => {
             await setAdminPassword("random", "random");
 
-            assert(await issuedAfterAdminNonce("random", unixTime() - 60) === false);
-            assert(await issuedAfterAdminNonce("random", unixTime() - 30) === false);
-            assert(await issuedAfterAdminNonce("random", unixTime() + 1));
-            assert(await issuedAfterAdminNonce("random", unixTime() + 30));
+            assert(await invalidAdminIssuingDate("random", unixTime() - 60));
+            assert(await invalidAdminIssuingDate("random", unixTime() - 30));
+            assert(await invalidAdminIssuingDate("random", unixTime() + 1) === false);
+            assert(await invalidAdminIssuingDate("random", unixTime() + 30) === false);
             
             await deleteAdminPassword("random");
         });
@@ -86,11 +86,11 @@ describe("Authentication tests", () => {
             await setAdminPassword("hello", "hello");
             
             const afterOriginalNonce = unixTime();
-            assert(await issuedAfterAdminNonce("hello", afterOriginalNonce));
+            assert(await invalidAdminIssuingDate("hello", afterOriginalNonce) === false);
             await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
             await resetAdminNonce("hello");
-            assert(await issuedAfterAdminNonce("hello", afterOriginalNonce) === false);
-            assert(await issuedAfterAdminNonce("hello", unixTime()));
+            assert(await invalidAdminIssuingDate("hello", afterOriginalNonce));
+            assert(await invalidAdminIssuingDate("hello", unixTime()) === false);
 
             await deleteAdminPassword("hello");
         });

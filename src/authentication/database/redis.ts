@@ -64,9 +64,9 @@ async function redisDeleteVault(vault: string) {
     ]);
 }
 
-async function redisIssuedAfterVaultNonce(vault: string, issuingDate: number) {
+async function redisInvalidVaultIssuingDate(vault: string, issuingDate: number) {
     const vaultNonce = parseInt(await redis.get(vaultNoncePrefix + vault) || "Not a number")
-    return isNaN(vaultNonce) === false && issuingDate >= vaultNonce;
+    return isNaN(vaultNonce) || issuingDate < vaultNonce;
 }
 
 
@@ -90,9 +90,9 @@ async function redisDeleteAdmin(adminName: string) {
     ]);
 }
 
-async function redisIssuedAfterAdminNonce(adminName: string, issuingDate: number) {
+async function redisInvalidAdminIssuingDate(adminName: string, issuingDate: number) {
     const adminNonce = parseInt(await redis.get(adminNoncePrefix + adminName) || "Not a number");
-    return isNaN(adminNonce) === false && issuingDate >= adminNonce;
+    return isNaN(adminNonce) || issuingDate < adminNonce;
 }
 
 async function redisResetAdminNonce(adminName: string) {
@@ -116,12 +116,12 @@ export {
     redisVerifyVaultPassword,
     redisVaultExists,
     redisDeleteVault,
-    redisIssuedAfterVaultNonce,
+    redisInvalidVaultIssuingDate,
     
     redisSetAdminPassword,
     redisVerifyAdminPassword,
     redisDeleteAdmin,
-    redisIssuedAfterAdminNonce,
+    redisInvalidAdminIssuingDate,
     redisResetAdminNonce,
 
     close

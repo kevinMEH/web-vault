@@ -1,7 +1,6 @@
 import JWT, { unixTime, Header } from "jwt-km";
 import { metaLog } from "../logger";
-import { isOutdatedToken, _addOutdatedToken, issuedAfterVaultNonce, vaultExistsDatabase } from "./database";
-
+import { isOutdatedToken, _addOutdatedToken, invalidVaultIssuingDate, vaultExistsDatabase } from "./database";
 import { JWT_EXPIRATION, DOMAIN, JWT_SECRET, ALLOW_REFRESH } from "../env";
 
 export type VaultAccess = {
@@ -64,7 +63,7 @@ async function getUnwrappedToken(token: string): Promise<[Header, WebVaultPayloa
         if(expiration < unixTime()) {
             payload.access.splice(i, 1);
             i--;
-        } else if(await issuedAfterVaultNonce(vault, issuedAt) === false) {
+        } else if(await invalidVaultIssuingDate(vault, issuedAt)) {
             payload.access.splice(i, 1);
             i--;
         }

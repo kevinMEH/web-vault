@@ -452,9 +452,9 @@ async function localDeleteVault(vault: string) {
     await saveVaultCredentialsToFile();
 }
 
-function localIssuedAfterVaultNonce(vault: string, issuingDate: number) {
+function localInvalidVaultIssuingDate(vault: string, issuingDate: number) {
     const vaultNonce = vaultCredentialsMap.get(vault)?.[1];
-    return vaultNonce !== undefined && issuingDate >= vaultNonce;
+    return vaultNonce === undefined || issuingDate < vaultNonce;
 }
 
 
@@ -592,9 +592,9 @@ async function localDeleteAdmin(adminName: string) {
     await saveAdminCredentialsToFile();
 }
 
-function localIssuedAfterAdminNonce(adminName: string, issuingDate: number) {
+function localInvalidAdminIssuingDate(adminName: string, issuingDate: number) {
     const adminNonce = adminCredentialsMap.get(adminName)?.[1];
-    return adminNonce !== undefined && issuingDate >= adminNonce;
+    return adminNonce === undefined || issuingDate < adminNonce;
 }
 
 function localResetAdminNonce(adminName: string) {
@@ -628,12 +628,12 @@ export {
     localVerifyVaultPassword,
     localVaultExists,
     localDeleteVault,
-    localIssuedAfterVaultNonce,
+    localInvalidVaultIssuingDate,
     
     localSetAdminPassword,
     localVerifyAdminPassword,
     localDeleteAdmin,
-    localIssuedAfterAdminNonce,
+    localInvalidAdminIssuingDate,
     localResetAdminNonce,
 
     tokenList as _tokenList,
