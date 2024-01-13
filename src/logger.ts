@@ -1,9 +1,10 @@
 import fs from "fs/promises";
 import path from "path";
-import { VaultPath } from "./controller";
 import { BASE_LOGGING_DIRECTORY } from "./env";
 
-async function metaLog(name: "database" | "authentication" | "admin" | "vfs" | "file system", type: "ERROR" | "WARNING" | "INFO", message: string) {
+import type { VaultPath } from "./controller";
+
+async function metaLog(name: "database" | "authentication" | "admin" | "vfs" | "file system" | "runtime", type: "ERROR" | "WARNING" | "INFO", message: string) {
     const filePath = path.join(BASE_LOGGING_DIRECTORY, name, logFileNameFromDate());
     message = (new Date()).toUTCString() + "\n" + type + ": " + message + "\n\n";
     await fs.appendFile(filePath, message, { mode: 0o640, flag: "a" });
