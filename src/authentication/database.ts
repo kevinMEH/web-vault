@@ -1,4 +1,4 @@
-import {
+const {
     localAddOutdatedToken,
     localIsOutdatedToken,
     localSetVaultPassword,
@@ -11,7 +11,7 @@ import {
     localDeleteAdmin,
     localInvalidAdminIssuingDate,
     localResetAdminNonce,
-} from "./database/local";
+} = await import("./database/local");
 import {
     redisAddOutdatedToken,
     redisIsOutdatedToken,
