@@ -2,12 +2,13 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import readline from "readline/promises";
 import path from "path";
+
+import { HashedPassword } from "../password";
 import { unixTime } from "../../helper"
 import { metaLog } from "../../logger";
-
-import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL } from "../../env";
-import { HashedPassword } from "../password";
 import { addInterval } from "../../cleanup";
+
+import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL, DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH } from "../../env";
 
 type TokenPair = {
     token: string,
@@ -85,6 +86,7 @@ const vaultCredentialsFile = path.join(process.cwd(), "database", "vault_credent
 // will be sent to update the admin's nonce, thereby invalidating all current
 // tokens issued for the admin.
 const adminCredentialsMap: Map<string, [string, number]> = new Map();
+adminCredentialsMap.set(DEFAULT_ADMIN_NAME, [ DEFAULT_ADMIN_PASSWORD_HASH, unixTime() ]);
 
 const adminCredentialsFile = path.join(process.cwd(), "database", "admin_credentials.csv");
 

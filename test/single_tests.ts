@@ -19,6 +19,7 @@ import { HashedPassword, hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
 import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
 import { fileNameMap, folderBaseMap, fileExtensionMap } from "../src/icons/iconMap";
+import { DEFAULT_ADMIN_NAME } from "../src/env";
 
 import { cleanup } from "../src/cleanup";
 
@@ -278,6 +279,7 @@ describe("Single Tests", () => {
             
             await localDeleteAdmin("kevin");
             await localDeleteAdmin("hello");
+            await localDeleteAdmin(DEFAULT_ADMIN_NAME)
             assert(_adminCredentialsMap.size === 0);
             
             await _loadAdminCredentialsFromFile();
