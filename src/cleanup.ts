@@ -44,7 +44,7 @@ function addLongTimeout(timeoutName: string, timeoutFunction: Function, delay: n
     const timeoutInfo: TimeoutInfo = {
         timeoutName,
         timeoutFunction,
-        timeoutIdentifier: undefined as any,
+        timeoutIdentifier: undefined as unknown as NodeJS.Timeout,
         theoreticalExecutionTime
     };
     timeouts.push(timeoutInfo);

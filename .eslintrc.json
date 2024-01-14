@@ -31,7 +31,7 @@
                 "extendDefaults": true
             }
         ],
-        "@typescript-eslint/no-explicit-any": 0,
+        "@typescript-eslint/no-explicit-any": 2,
         "@typescript-eslint/await-thenable": 1,
         "@typescript-eslint/no-unnecessary-condition": [
             "error", {
