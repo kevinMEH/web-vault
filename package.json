@@ -16,7 +16,8 @@
     "controller_tests_local": "./ts_node.sh test/controller_tests.ts",
     "controller_tests_redis": "REDIS=true ./ts_node.sh test/controller_tests.ts",
     "file_tests": "REDIS=true ./ts_node.sh test/file_tests.ts",
-    "test_all": "bash test/test_all.sh"
+    "test_backend": "bash test/test_backend.sh",
+    "api_tests": "./ts_node.sh test/api_tests.ts"
   },
   "dependencies": {
     "@types/node": "18.11.18",
