@@ -5,7 +5,7 @@ import TextField from "../components/TextField";
 import { post } from "../src/requests";
 
 import type { Expect, Data } from "../pages/api/admin/login";
-import { getVaultToken, setVaultToken } from "../src/storage";
+import { getAdminToken, setAdminToken } from "../src/storage";
 import { useRouter } from "next/router";
 
 type AdminLoginParameters = {
@@ -25,7 +25,7 @@ const AdminLogin = ({ title, description, image, imageAlt, className = "" }: Adm
     const router = useRouter();
     
     useEffect(() => {
-        if(getVaultToken() !== null) {
+        if(getAdminToken() !== null) {
             router.push("/admin/dashboard")
         }
     }, [router]);
@@ -42,7 +42,7 @@ const AdminLogin = ({ title, description, image, imageAlt, className = "" }: Adm
             setError("Invalid admin name and password combination.");
             return;
         }
-        setVaultToken(token);
+        setAdminToken(token);
         router.push("/admin/dashboard");
     }
 
