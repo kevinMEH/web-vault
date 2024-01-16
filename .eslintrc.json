@@ -7,6 +7,12 @@
     ],
     "plugins": ["@typescript-eslint"],
     "rules": {
+        "no-restricted-imports": [
+            "warn", {
+                "name": "axios",
+                "message": "If using on the frontend, consider fetching using src/requests.ts instead. If you are sure this import is necessary, please mark line with eslint-disable-line."
+            }
+        ],
         "no-restricted-syntax": [
             "error", {
                 "message": "Do not use the setInterval() function directly. Instead, use the addInterval() function available in src/cleanup.ts.",

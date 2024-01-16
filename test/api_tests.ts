@@ -3,8 +3,8 @@
 
 import { after, describe, it } from "node:test";
 import assert from "node:assert";
-import axios from "axios";
-import type { AxiosResponse } from "axios";
+import axios from "axios"; // eslint-disable-line
+import type { AxiosResponse } from "axios"; // eslint-disable-line
 
 import { cleanup } from "../src/cleanup";
 
