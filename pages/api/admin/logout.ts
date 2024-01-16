@@ -1,6 +1,5 @@
 import { adminLogout } from "../../../src/admin_auth";
-import { metaLog } from "../../../src/logger";
-import type { ForceReturned, ForceSendResponse, SafeBodyRequest } from "../../../src/request_helpers";
+import { badParameters, ForceReturned, ForceSendResponse, logServerError, SafeBodyRequest, serverError } from "../../../src/request_helpers";
 
 type _Expect = {
     token: string
@@ -26,13 +25,13 @@ export default async function handler(
         }
         return response.status(200).json({
             success: false,
-            error: "Bad parameters. Expected body with string attributes token."
+            error: badParameters("Expected body with string attributes token.")
         });
     } catch(error) {
-        metaLog("requests", "ERROR", `Unexpected error "${(error as Error).message}" has occurred in api/admin/logout.ts with request ${request}.`)
+        logServerError(error as Error, "api/admin/logout.ts", request);
         return response.status(500).json({
             success: false,
-            error: "Some kind of server error has occurred. Please notify admins."
+            error: serverError()
         });
     }
 }

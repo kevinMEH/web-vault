@@ -1,4 +1,5 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { metaLog } from "./logger";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 /**
  * Helper type to force undefined check on body, null check on body, and affirm
@@ -24,4 +25,16 @@ export interface ForceSendResponse<Data = any> extends NextApiResponse { // esli
     status: (statusCode: number) => ForceSendResponse<Data>;
     redirect(url: string): ForceSendResponse<Data>;
     redirect(status: number, url: string): ForceSendResponse<Data>;
+}
+
+export function badParameters(expect: string) {
+    return `Bad parameters. ${expect}`;
+}
+
+export function serverError() {
+    return "Some kind of server error has occured. Please notify admins.";
+}
+
+export function logServerError(error: Error, fileName: string, request: SafeBodyRequest) {
+    metaLog("requests", "ERROR", `Unexpected error "${error.message}" has occured in ${fileName} with request body ${JSON.stringify(request.body)}.`);
 }

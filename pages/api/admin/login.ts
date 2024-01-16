@@ -1,13 +1,12 @@
 import { adminLogin } from "../../../src/admin_auth";
-import { metaLog } from "../../../src/logger";
-import type { ForceSendResponse, ForceReturned, SafeBodyRequest } from "../../../src/request_helpers";
+import { badParameters, serverError, logServerError, ForceSendResponse, ForceReturned, SafeBodyRequest } from "../../../src/request_helpers";
 
-type _Expect = {
+export type Expect = {
     adminName: string,
     password: string
 }
 
-type Data = {
+export type Data = {
     token: string | null,
     error?: string
 }
@@ -27,13 +26,13 @@ export default async function handler(
         }
         return response.status(400).json({
             token: null,
-            error: "Bad parameters. Expected body with string attributes adminName and password."
+            error: badParameters("Expected body with string attributes adminName and password.")
         });
     } catch(error) {
-        metaLog("requests", "ERROR", `Unexpected error "${(error as Error).message}" has occurred in api/admin/login.ts with request ${request}.`)
+        logServerError(error as Error, "api/admin/login.ts", request);
         return response.status(500).json({
             token: null,
-            error: "Some kind of server error has occurred. Please notify admins."
+            error: serverError()
         });
     }
 }
