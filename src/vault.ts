@@ -10,7 +10,7 @@ import fs from "fs/promises";
 import path from "path";
 import { metaLog } from "./logger";
 import { deleteVaultPassword, setVaultPassword, vaultExistsDatabase } from "./authentication/database";
-import { validNameRegex, deleteVaultVFS, newVaultVFS } from "./controller";
+const { validNameRegex, deleteVaultVFS, newVaultVFS } = await import("./controller");
 
 import CustomError from "./custom_error";
 
