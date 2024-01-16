@@ -20,6 +20,9 @@
             }, {
                 "message": "Consider using the addLongTimeout() function available in src/cleanup.ts instead if the timeout is long and infrequent. If you've confirmed this is not the case, please mark line with eslint-disable-line.",
                 "selector": "CallExpression[callee.name='setTimeout']"
+            }, {
+                "message": "It is not recommended to use localStorage directory. Instead, use the standardized functions available in src/storage.ts.",
+                "selector": "MemberExpression[object.name='localStorage']"
             }
         ],
         "require-await": 2,
