@@ -1,5 +1,5 @@
 import { verifyVaultPassword } from "./authentication/database";
-import { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, _refreshVaultExpiration } from "./authentication/vault_token";
+import { getUnwrappedToken, createToken, addNewVaultToToken, removeVaultFromToken, _refreshVaultExpiration, _trimToken } from "./authentication/vault_token";
 
 async function vaultLogin(vaultName: string, password: string, existingToken?: string): Promise<string | null> {
     if(await verifyVaultPassword(vaultName, password)) {
@@ -31,6 +31,10 @@ async function vaultAccessible(vaultName: string, token: string): Promise<boolea
     return false;
 }
 
+function trimToken(token: string): Promise<string | null> {
+    return _trimToken(token);
+}
+
 function refreshVaultExpiration(vaultName: string, token: string): Promise<string | null> {
     return _refreshVaultExpiration(token, vaultName);
 }
@@ -39,5 +43,6 @@ export {
     vaultLogin,
     vaultLogout,
     vaultAccessible,
+    trimToken,
     refreshVaultExpiration
 };

@@ -162,6 +162,23 @@ async function removeVaultFromToken(token: string, vault: string): Promise<strin
 }
 
 /**
+ * Returns a new token with invalid vaults trimmed out. Input token is invalidated.
+ * 
+ * @param token 
+ * @returns New token as a base64url string or null if token is invalid.
+ */
+async function _trimToken(token: string): Promise<string | null> {
+    const payload = await getUnwrappedToken(token);
+    if(payload === null) {
+        return null;
+    }
+    await addOutdatedToken(token, payload.exp);
+    const newToken = __createToken(payload.access);
+    metaLog("authentication", "INFO", `Trimming token ${token} into new token ${newToken}`);
+    return newToken;
+}
+
+/**
  * Returns a new token with updated expiration for the given vault. Input token
  * is invalidated.
  * 
@@ -171,7 +188,7 @@ async function removeVaultFromToken(token: string, vault: string): Promise<strin
  */
 async function _refreshVaultExpiration(token: string, vault: string): Promise<string | null> {
     if(!ALLOW_REFRESH) {
-        return token;
+        return _trimToken(token);
     }
     const payload = await getUnwrappedToken(token);
     if(payload === null) {
@@ -201,5 +218,6 @@ export {
     createToken,
     addNewVaultToToken,
     removeVaultFromToken,
+    _trimToken,
     _refreshVaultExpiration
 };
