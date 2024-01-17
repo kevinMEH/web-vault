@@ -134,17 +134,22 @@ async function changeVaultPassword(vaultName: string, password: string): Promise
  * The async function will wait for vault deletion if deleteImmediately is set
  * to true.
  * 
+ * TODO: Test vault file functions behaviors when that file is deleted halfway
+ * through the operation. For ex: Download file, but vault and file gets deleted
+ * halfway through download. What happens? Error handling?
+ * Is a delayed delete really necessary?
+ * 
  * @param vaultName 
  * @param deleteImmediately
  * @returns
  */
 async function deleteVault(vaultName: string, deleteImmediately: boolean) {
-    vaultExistsDatabase(vaultName).then(exists => {
-        if(!exists) {
-            metaLog("admin", "ERROR", `${vaultName} does not exist in the database. Deletion still proceeding.`);
-        }
-        deleteVaultPassword(vaultName);
-    })
+    const exists = await vaultExistsDatabase(vaultName);
+    if(exists) {
+        await deleteVaultPassword(vaultName);
+    } else {
+        metaLog("admin", "ERROR", `${vaultName} does not exist in the database. Deletion still proceeding.`);
+    }
     
     if(!deleteVaultVFS(vaultName)) {
         metaLog("admin", "ERROR", `${vaultName} VFS somehow does not exist. Deletion still proceeding.`);
