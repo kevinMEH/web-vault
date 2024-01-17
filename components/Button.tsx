@@ -8,13 +8,11 @@ type ButtonParameters = {
     className?: string;
 }
 
-const defaultClassNames = `justify-center inline-flex rounded-lg`;
-
 const Button = ({ children, href, onClick = undefined, disabled = false, className = "" }: ButtonParameters) => {
     return <>
-        {href ? <a href={href} onClick={onClick as any} className={defaultClassNames + " " + className}>
+        {href ? <a href={href} onClick={onClick as any} className={className}>
             {children}
-        </a> : <button disabled={disabled} onClick={onClick as any} className={defaultClassNames + " " + className}>
+        </a> : <button disabled={disabled} onClick={onClick as any} className={className}>
             {children}
         </button>}
     </>

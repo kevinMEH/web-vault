@@ -64,7 +64,7 @@ const AdminLogin = ({ title, description, image, imageAlt, className = "" }: Adm
                 />
                 <Button onClick={onLogin} disabled={adminName === "" || password === "" || submitting}
                     className="mt-5 text-sm font-inter font-medium text-main w-full max-w-xs
-                    py-3 bg-accent-light hover:bg-accent-medium transition-colors
+                    rounded-lg py-3 bg-accent-light hover:bg-accent-medium transition-colors
                     disabled:bg-accent-extra-light disabled:text-main/50"
                 >Login</Button>
             </div>
