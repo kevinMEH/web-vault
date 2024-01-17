@@ -1,5 +1,5 @@
 import { adminLogout } from "../../../src/admin_auth";
-import { badParameters, ForceReturned, ForceSendResponse, logServerError, SafeBodyRequest, serverError } from "../../../src/request_helpers";
+import { badParameters, NonAuthResponse, ForceSendResponse, logServerError, SafeBodyRequest, serverError } from "../../../src/request_helpers";
 
 type _Expect = {
     token: string
@@ -13,7 +13,7 @@ type Data = {
 export default async function handler(
     request: SafeBodyRequest,
     response: ForceSendResponse<Data>
-): Promise<ForceReturned> {
+): Promise<NonAuthResponse> {
     try {
         if(typeof request.body === "object" && request.body !== null) {
             const { token } = request.body;

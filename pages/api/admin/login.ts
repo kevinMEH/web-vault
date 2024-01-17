@@ -1,5 +1,5 @@
 import { adminLogin } from "../../../src/admin_auth";
-import { badParameters, serverError, logServerError, ForceSendResponse, ForceReturned, SafeBodyRequest } from "../../../src/request_helpers";
+import { badParameters, serverError, logServerError, ForceSendResponse, NonAuthResponse, SafeBodyRequest } from "../../../src/request_helpers";
 
 export type Expect = {
     adminName: string,
@@ -14,7 +14,7 @@ export type Data = {
 export default async function handler(
     request: SafeBodyRequest,
     response: ForceSendResponse<Data>
-): Promise<ForceReturned> {
+): Promise<NonAuthResponse> {
     try {
         if(typeof request.body === "object" && request.body !== null) {
             const { adminName, password } = request.body;
