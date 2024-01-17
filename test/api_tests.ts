@@ -7,24 +7,30 @@ import axios from "axios"; // eslint-disable-line
 import type { AxiosResponse } from "axios"; // eslint-disable-line
 
 import { cleanup } from "../src/cleanup";
+import { createToken } from "../src/authentication/vault_token";
+import { deleteVaultPassword, setVaultPassword } from "../src/authentication/database";
+import JWT, { unixTime } from "jwt-km";
+import { DEFAULT_ADMIN_NAME, DOMAIN, JWT_SECRET } from "../src/env";
+import { adminAccess } from "../src/admin_auth";
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 axios.defaults.baseURL = "http://172.20.80.1:3000/api"; // Windows localhost IP from WSL
 axios.defaults.validateStatus = null;
 
-async function checkResponse(url: string, parameters: Array<unknown>, checks: (response: AxiosResponse<any, any>, parameter: any) => any) {
+async function checkResponse(url: string, parameters: Array<unknown>, checks: (data: any, parameter: any) => any) {
     for(const parameter of parameters) {
-        await axios.post(url, parameter).then(response => checks(response, parameter));
+        await axios.post(url, parameter).then(response => checks(response.data, parameter));
     }
 }
 
+// Request with body ${parameter} failed the ${checkName} check.
 function failString(data: object, parameter: string, checkName: string) {
     return `Request with body ${JSON.stringify(parameter)} failed the ${checkName} check. Data: ${JSON.stringify(data)}`
 }
 
 describe("API tests", () => {
-    describe("Authentication API tests", () => {
-        it("Tests api/admin/login", async () => {
+    describe("Admin API tests", () => {
+        it("Tests admin/login", async () => {
             await checkResponse("admin/login", [
                 undefined,
                 null,
@@ -42,26 +48,27 @@ describe("API tests", () => {
                 { adminName: null, password: undefined },
                 { randomParameter: null },
                 { randomParameter: "adminName" }
-            ], ({ data }, parameter) => {
+            ], (data, parameter) => {
                 assert(data.token === null, failString(data, parameter, "token null"));
                 assert(data.error?.includes("Bad parameters"), failString(data, parameter, "bad parameters error"));
             });
             
             const data = (await axios.post("admin/login", { adminName: "admin", password: "password" })).data;
-            assert(data.token !== null);
+            const token = data.token;
+            assert(token !== null);
             assert(typeof data.token === "string");
             assert(data.error === undefined);
-            // TODO: Test that token indeed works
+            assert(await adminAccess(token));
         });
         
-        it("Tests api/admin/logout", async () => {
+        it("Tests admin/logout", async () => {
             await checkResponse("admin/logout", [
                 undefined, null, "asdf", {},
                 { token: 123 },
                 { token: null },
                 { token: undefined },
                 { token: { asdf: "asdf" } },
-            ], ({ data }, parameter) => {
+            ], (data, parameter) => {
                 assert(data.success === false, failString(data, parameter, "success is false"));
                 assert(data.error?.includes("Bad parameters"), failString(data, parameter, "bad parameters error"));
             });
@@ -70,7 +77,7 @@ describe("API tests", () => {
                 { token: "" },
                 { token: "abasdf" },
                 { token: "abasdf.asdfsa.ashhbha" },
-            ], ({ data }, parameter) => {
+            ], (data, parameter) => {
                 assert(data.success === false, failString(data, parameter, "success is false"));
             });
             
@@ -81,6 +88,108 @@ describe("API tests", () => {
             const data = (await axios.post("admin/logout", { token })).data;
             assert(data.success === true);
             assert(data.error === undefined);
+        });
+        
+        it("Tests admin/create_vault.ts, admin/delete_vault, and admin/get_vaults", async () => {
+            await checkResponse("admin/create_vault", [
+                undefined, null, "asdf", {},
+                { vaultName: "new_vault", password: "password" },
+                { vaultName: 123, password: 1231 },
+                { adminToken: 123, vaultName: "new_vault", password: "password" },
+                { adminToken: null, vaultName: "new_vault", password: "password" },
+                { adminToken: "invalid.token.invalid", vaultName: "new_vault", password: "password" },
+            ], (data, parameter) => {
+                assert(data.success === false);
+                assert(data.error?.includes("Unauthorized admin request"), failString(data, parameter, "unauthorized admin request error"));
+            });
+            {
+                const token = (await axios.post("admin/login", { adminName: "admin", password: "password" })).data.token;
+                assert(token !== null);
+                assert(JWT.unwrap(token, JWT_SECRET) !== null, "The secret key used by the server and the test is not the same. Please fix or the next few tests may be ineffective.");
+            }
+            {
+                await setVaultPassword("vault123", "password");
+                const token = await createToken("vault123");
+                assert(token !== null);
+                const data = (await axios.post("admin/create_vault", { adminToken: token, vaultName: "new_vault", password: "password" })).data;
+                assert(data.success === false);
+                assert(data.error?.includes("Unauthorized admin request"));
+                await deleteVaultPassword("vault123");
+            }
+            {
+                const jwt = new JWT(DOMAIN, unixTime() - 1000, unixTime() - 100);
+                jwt.addClaim("type", "admin");
+                jwt.addClaim("adminName", DEFAULT_ADMIN_NAME);
+                const token = jwt.getToken(JWT_SECRET);
+                const data = (await axios.post("admin/create_vault", { adminToken: token, vaultName: "new_vault", password: "password" })).data;
+                assert(data.success === false);
+                assert(data.error?.includes("Unauthorized admin request"));
+            }
+
+            const token = (await axios.post("admin/login", { adminName: "admin", password: "password" })).data.token;
+            assert(token !== null);
+            {
+                const data = (await axios.post("admin/create_vault", { adminToken: token, vaultName: "new_vault", password: "password" })).data;
+                assert(data.success);
+                assert(data.error === undefined);
+            }
+            {
+                // Cannot create vault when it already exists
+                const data = (await axios.post("admin/create_vault", { adminToken: token, vaultName: "new_vault", password: "password" })).data;
+                assert(data.success === false);
+                assert(data.error?.toLowerCase().includes("exists"));
+            }
+
+            
+            
+
+
+            {
+                await checkResponse("admin/get_vaults", [
+                    undefined, null, "asdf", {},
+                    { adminToken: "asdfasdf" },
+                    { adminToken: "asdfasdf.asdfa.ab" },
+                    { adminToken: null },
+                ], (data, parameter) => {
+                    assert(data.vaults === null, failString(data, parameter, "vaults is null"));
+                    assert(data.error?.includes("Unauthorized admin request"), failString(data, parameter, "unauthorized admin request error"));
+                })
+            }
+            {
+                const data = (await axios.post("admin/get_vaults", { adminToken: token })).data;
+                assert(data.vaults !== null);
+                console.log(data.vaults);
+                assert(data.vaults.some((name: string) => name === "new_vault"));
+                assert(data.error === undefined);
+            }
+            
+            
+
+            
+
+            await checkResponse("admin/delete_vault", [
+                undefined, null, "asdf", {},
+                { vaultName: "nonexist" },
+                { vaultName: "new_vault" },
+                { adminToken: "asdjfajsdfja", vaultName: "new_vault" },
+                { adminToken: null, vaultName: "new_vault" },
+                { adminToken: "anbnansdfnan.asdfdansnbnasdf.asdhnasdfasd", vaultName: "new_vault" },
+                { adminToken: 123, vaultName: "new_vault" },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Unauthorized admin request"), failString(data, parameter, "unauthorized admin request error"));
+            });
+            // Note: No need to test the scenario where a nonexistant vault is
+            // inputted because deletion will proceed regardless of vault existance.
+            {
+                const data = (await axios.post("admin/delete_vault", { adminToken: token, vaultName: "new_vault" })).data;
+                assert(data.error === undefined);
+            }
+            {
+                const data = (await axios.post("admin/get_vaults", { adminToken: token })).data;
+                assert(data.vaults !== null);
+                assert(data.vaults.every((name: string) => name !== "new_vault"));
+                assert(data.error === undefined);
+            }
         });
     });
     

@@ -32,7 +32,7 @@ const vfsOldLocation = path.join(VFS_STORE_DIRECTORY, "vfs.old.json");
 
 
 
-const vaultMap: Map<string, Directory> = new Map();
+export const vaultMap: Map<string, Directory> = new Map();
 
 if(PRODUCTION) {
     const loadVFSResult = await loadVFS();
