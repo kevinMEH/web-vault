@@ -19,11 +19,10 @@ function vaultLogout(vaultName: string, existingToken: string): Promise<string |
 }
 
 async function vaultAccessible(vaultName: string, token: string): Promise<boolean> {
-    const unwrapped = await getUnwrappedToken(token);
-    if(unwrapped === null) {
+    const payload = await getUnwrappedToken(token);
+    if(payload === null) {
         return false;
     }
-    const [ _header, payload ] = unwrapped;
     for(const { vault } of payload.access) {
         if(vault === vaultName) {
             return true;

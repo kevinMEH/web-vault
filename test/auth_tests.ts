@@ -213,14 +213,14 @@ describe("Authentication tests", () => {
             assert(token !== null);
             const unwrapped = await getUnwrappedToken(token);
             assert(unwrapped !== null);
-            assert(unwrapped[1].access.length === 1);
+            assert(unwrapped.access.length === 1);
             
             await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
             await setVaultPassword("change my password", "second password");
 
             const unwrappedAfter = await getUnwrappedToken(token);
             assert(unwrappedAfter !== null);
-            assert(unwrappedAfter[1].access.length === 0);
+            assert(unwrappedAfter.access.length === 0);
 
             await deleteVaultPassword("change my password");
         });
@@ -243,8 +243,8 @@ describe("Authentication tests", () => {
             
             const unwrapped = await getUnwrappedToken(token);
             assert(unwrapped !== null);
-            assert(unwrapped[1].access.length === 1);
-            assert(unwrapped[1].access[0].vault === "new_vault");
+            assert(unwrapped.access.length === 1);
+            assert(unwrapped.access[0].vault === "new_vault");
             
             assert(await vaultLogin("new_vault_too", "wrong", token) === null);
             assert(await vaultLogin("new_vault_too", "wrong", "") === null);
@@ -256,17 +256,17 @@ describe("Authentication tests", () => {
             assert(await getUnwrappedToken(token) === null);
             const newUnwrapped = await getUnwrappedToken(newToken);
             assert(newUnwrapped !== null);
-            assert(newUnwrapped[1].access.length === 2);
-            assert(newUnwrapped[1].access.some(access => access.vault === "new_vault"));
-            assert(newUnwrapped[1].access.some(access => access.vault === "new_vault_too"));
+            assert(newUnwrapped.access.length === 2);
+            assert(newUnwrapped.access.some(access => access.vault === "new_vault"));
+            assert(newUnwrapped.access.some(access => access.vault === "new_vault_too"));
             
             const validToken = await vaultLogin("new_vault_too", "1234", "bad.token.incorrect");
             assert(validToken !== null);
             
             const validUnwrapped = await getUnwrappedToken(validToken);
             assert(validUnwrapped !== null);
-            assert(validUnwrapped[1].access.length === 1);
-            assert(validUnwrapped[1].access[0].vault === "new_vault_too");
+            assert(validUnwrapped.access.length === 1);
+            assert(validUnwrapped.access[0].vault === "new_vault_too");
             
             await deleteVaultPassword("new_vault");
             await deleteVaultPassword("new_vault_too");
@@ -280,8 +280,8 @@ describe("Authentication tests", () => {
             
             const unwrapped = await getUnwrappedToken(token);
             assert(unwrapped !== null);
-            assert(unwrapped[1].access.length === 1);
-            assert(unwrapped[1].access[0].vault === "another_vault");
+            assert(unwrapped.access.length === 1);
+            assert(unwrapped.access[0].vault === "another_vault");
             
             const newToken = await vaultLogout("another_vault", token);
             assert(newToken !== null);
@@ -289,15 +289,15 @@ describe("Authentication tests", () => {
             assert(await getUnwrappedToken(token) === null);
             const newUnwrapped = await getUnwrappedToken(newToken);
             assert(newUnwrapped !== null);
-            assert(newUnwrapped[1].access.length === 0);
+            assert(newUnwrapped.access.length === 0);
             
             const readdedToken = await vaultLogin("another_vault", "password2222", newToken);
             assert(readdedToken !== null);
             const readdedUnwrapped = await getUnwrappedToken(readdedToken);
             assert(readdedUnwrapped !== null);
             assert(await getUnwrappedToken(newToken) === null);
-            assert(readdedUnwrapped[1].access.length === 1);
-            assert(readdedUnwrapped[1].access[0].vault === "another_vault");
+            assert(readdedUnwrapped.access.length === 1);
+            assert(readdedUnwrapped.access[0].vault === "another_vault");
             
             const similarToken = await vaultLogout("nonexistant", readdedToken);
             assert(similarToken !== null);
@@ -305,8 +305,8 @@ describe("Authentication tests", () => {
             assert(similarUnwarpped !== null);
             assert(await getUnwrappedToken(readdedToken) === null);
             assert(similarToken !== readdedToken);
-            assert(similarUnwarpped[1].access.length === 1);
-            assert(similarUnwarpped[1].access[0].vault === "another_vault");
+            assert(similarUnwarpped.access.length === 1);
+            assert(similarUnwarpped.access[0].vault === "another_vault");
             
             await deleteVaultPassword("another_vault");
         });
@@ -343,9 +343,8 @@ describe("Authentication tests", () => {
             token = await vaultLogin("second", "second", token);
             assert(token !== null);
             
-            const originalUnwrapped = await getUnwrappedToken(token);
-            assert(originalUnwrapped !== null);
-            const [ _originalHeader, originalPayload ] = originalUnwrapped;
+            const originalPayload = await getUnwrappedToken(token);
+            assert(originalPayload !== null);
             const originalFirstAccess = originalPayload.access.find(access => access.vault === "first");
             assert(originalFirstAccess !== undefined);
             const originalSecondAccess = originalPayload.access.find(access => access.vault === "second");
@@ -358,9 +357,8 @@ describe("Authentication tests", () => {
             assert(token !== null);
             assert(await getUnwrappedToken(oldToken) === null);
             
-            const newUnwrapped = await getUnwrappedToken(token);
-            assert(newUnwrapped !== null);
-            const [ _newHeader, newPayload ] = newUnwrapped;
+            const newPayload = await getUnwrappedToken(token);
+            assert(newPayload !== null);
             const newFirstAccess = newPayload.access.find(access => access.vault === "first");
             assert(newFirstAccess !== undefined);
             const newSecondAccess = newPayload.access.find(access => access.vault === "second");

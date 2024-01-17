@@ -42,7 +42,7 @@ function __createToken(access: VaultAccess[]): string {
  * @param token 
  * @returns Promise<[Header, WebVaultPayload, Token] | null>
  */
-async function getUnwrappedToken(token: string): Promise<[Header, WebVaultPayload] | null> {
+async function getUnwrappedToken(token: string): Promise<WebVaultPayload | null> {
     if(await isOutdatedToken(token)) {
         return null;
     }
@@ -51,7 +51,7 @@ async function getUnwrappedToken(token: string): Promise<[Header, WebVaultPayloa
     if(unwrapped === null) {
         return null;
     }
-    const [header, payload] = unwrapped as [Header, WebVaultPayload | AdminPayload];
+    const [_header, payload] = unwrapped as [Header, WebVaultPayload | AdminPayload];
     if(payload.type !== "vault") {
         return null;
     }
@@ -69,7 +69,7 @@ async function getUnwrappedToken(token: string): Promise<[Header, WebVaultPayloa
             i--;
         }
     }
-    return [header, payload];
+    return payload;
 }
 
 /**
@@ -104,14 +104,13 @@ async function createToken(vault: string): Promise<string | null> {
  * @returns New token as a base64url string or null if token is invalid.
  */
 async function addNewVaultToToken(token: string, vault: string): Promise<string | null> {
-    const unwrappedToken = await getUnwrappedToken(token);
-    if(unwrappedToken === null) {
+    const payload = await getUnwrappedToken(token);
+    if(payload === null) {
         return null;
     }
     if(await vaultExistsDatabase(vault) === false) {
         return null;
     }
-    const [ _header, payload ] = unwrappedToken;
     const vaultAccesses = payload.access;
     for(let i = 0; i < vaultAccesses.length; i++) {
         if(vaultAccesses[i].vault === vault) {
@@ -144,11 +143,10 @@ async function addNewVaultToToken(token: string, vault: string): Promise<string 
  * @returns New token as a base64url string or null if token is invalid.
  */
 async function removeVaultFromToken(token: string, vault: string): Promise<string | null> {
-    const unwrappedToken = await getUnwrappedToken(token);
-    if(unwrappedToken === null) {
+    const payload = await getUnwrappedToken(token);
+    if(payload === null) {
         return null;
     }
-    const [ _header, payload ] = unwrappedToken;
     const vaultAccesses = payload.access;
     for(let i = 0; i < vaultAccesses.length; i++) {
         if(vaultAccesses[i].vault === vault) {
@@ -175,11 +173,10 @@ async function _refreshVaultExpiration(token: string, vault: string): Promise<st
     if(!ALLOW_REFRESH) {
         return token;
     }
-    const unwrappedToken = await getUnwrappedToken(token);
-    if(unwrappedToken === null) {
+    const payload = await getUnwrappedToken(token);
+    if(payload === null) {
         return null;
     }
-    const [ _header, payload ] = unwrappedToken;
     const vaultAccesses = payload.access;
     const current = unixTime();
     for(const access of vaultAccesses) {
