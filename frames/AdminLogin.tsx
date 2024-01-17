@@ -62,8 +62,8 @@ const AdminLogin = ({ title, description, image, imageAlt, className = "" }: Adm
                     type="password" error={error !== null} disabled={submitting} required={true}
                     className="pt-5 max-w-xs !w-auto"
                 />
-                <Button wrapperClassName="pt-5" onClick={onLogin} disabled={adminName === "" || password === "" || submitting}
-                    className="text-sm font-inter font-medium text-main w-full max-w-xs
+                <Button onClick={onLogin} disabled={adminName === "" || password === "" || submitting}
+                    className="mt-5 text-sm font-inter font-medium text-main w-full max-w-xs
                     py-3 bg-accent-light hover:bg-accent-medium transition-colors
                     disabled:bg-accent-extra-light disabled:text-main/50"
                 >Login</Button>

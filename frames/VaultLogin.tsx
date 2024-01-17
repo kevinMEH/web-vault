@@ -21,10 +21,11 @@ const VaultLogin = ({ title, description, image, imageAlt, className = "" }: Vau
         // Check non empty values and regexes. Set error if necessary
         setSubmitting(true);
         // Send a request. Check response, set error if needed.
-        // JWT Will be set by cookie. Redirect to main vault page
+        // JWT set in local storage. Redirect to main vault page
     }
 
-    return <div className={"flex flex-row bsm:flex-col-reverse bg-white border border-gray rounded-3xl bsm:rounded-2xl overflow-clip " + className}>
+    return <div className={`flex flex-row bsm:flex-col-reverse bg-white border border-gray
+    rounded-3xl bsm:rounded-2xl overflow-clip ` + className}>
         <div className="basis-[55%] py-14 bsm:pt-6 bsm:pb-10 px-12 bsm:px-8 space-y-4 bsm:space-y-3">
             <h1 className="bsm:text-2xl bmd:text-3xl text-4xl text-main font-title font-bold">{title}</h1>
             <p className="text-base bmd:text-sm font-inter text-sub">{description}</p>
@@ -38,8 +39,8 @@ const VaultLogin = ({ title, description, image, imageAlt, className = "" }: Vau
             type="password" error={error} disabled={submitting} required={true}
             className="pt-2 max-w-xs bsm:max-w-none !w-auto"
             />
-            <Button wrapperClassName="pt-2" onClick={onLogin} disabled={submitting}
-            className="text-sm font-inter font-medium text-main w-full max-w-xs bsm:max-w-none py-3
+            <Button onClick={onLogin} disabled={submitting}
+            className="mt-2 text-sm font-inter font-medium text-main w-full max-w-xs bsm:max-w-none py-3
             bg-accent-light hover:bg-accent-medium disabled:bg-accent-extra-light disabled:text-main/50
             transition-colors"
             >Access Vault</Button>
