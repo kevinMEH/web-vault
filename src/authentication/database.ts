@@ -12,7 +12,7 @@ const {
     localInvalidAdminIssuingDate,
     localResetAdminNonce,
 } = await import("./database/local");
-import {
+const {
     redisAddOutdatedToken,
     redisIsOutdatedToken,
     redisSetVaultPassword,
@@ -25,7 +25,7 @@ import {
     redisDeleteAdmin,
     redisInvalidAdminIssuingDate,
     redisResetAdminNonce,
-} from "./database/redis";
+} = await import("./database/redis");
 import { HashedPassword, hashPassword } from "./password";
 
 import { metaLog } from "../logger";

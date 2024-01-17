@@ -1,5 +1,5 @@
 import Redis from "ioredis";
-import { USING_REDIS } from "../../env";
+import { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS } from "../../env";
 import { unixTime } from "../../helper";
 import { HashedPassword } from "../password";
 
@@ -19,6 +19,10 @@ const vaultPasswordPrefix = "webvault:vaultauth:password:";
 const vaultNoncePrefix = "webvault:vaultauth:nonce:";
 const adminPasswordPrefix = "webvault:adminauth:password:";
 const adminNoncePrefix = "webvault:adminauth:nonce:";
+
+if(USING_REDIS) {
+    await redisSetAdminPassword(DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH as HashedPassword);
+}
 
 /**
  * Checks if the token is outdated (meaning that the user has requested
