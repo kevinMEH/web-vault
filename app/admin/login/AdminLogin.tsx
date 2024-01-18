@@ -1,12 +1,12 @@
 "use client"
 import Image, { StaticImageData } from "next/image";
 import { useEffect, useState } from "react";
-import Button from "../components/Button";
-import TextField from "../components/TextField";
-import { post } from "../src/requests";
+import Button from "../../../components/Button";
+import TextField from "../../../components/TextField";
+import { post } from "../../../src/requests";
 
-import type { Expect, Data } from "../app/api/admin/login/route"
-import { getAdminToken, setAdminToken } from "../src/storage";
+import type { Expect, Data } from "../../api/admin/login/route"
+import { getAdminToken, setAdminToken } from "../../../src/storage";
 import { useRouter } from "next/navigation";
 
 type AdminLoginParameters = {

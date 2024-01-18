@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import VaultLogin from "../../frames/VaultLogin";
+import VaultLogin from "./VaultLogin";
 
 import Logo from "../../public/logos/logo-text.svg";
 import Banner from "../../images/banner.jpeg";

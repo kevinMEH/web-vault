@@ -7,9 +7,9 @@ import Resizable from "../../components/Resizable";
 import ExplorerItem from "../../components/ExplorerItem";
 
 
-import Header from "../../frames/Header";
-import TileView from "../../frames/Managers/TileView";
-import Details from "../../frames/Details";
+import Header from "./Header";
+import TileView from "./Managers/TileView";
+import Details from "./Details";
 
 let testFolder: Directory;
 let testFolder2: Directory;

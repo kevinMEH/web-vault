@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Logo from "../public/logos/logo-text.svg";
 
-import SearchSVG from "../components/SVGS/SearchSVG";
+import SearchSVG from "../../components/SVGS/SearchSVG";
 
 type HeaderParameters = {
     vaultName: string;

@@ -2,8 +2,8 @@
 
 import Image, { StaticImageData } from "next/image";
 import { useState } from "react";
-import Button from "../components/Button";
-import TextField from "../components/TextField";
+import Button from "../../components/Button";
+import TextField from "../../components/TextField";
 
 type VaultLoginParameters = {
     title: string;
