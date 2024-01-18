@@ -1,68 +1,92 @@
 import { metaLog } from "./logger";
 import { adminAccess } from "./admin_auth";
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 
-/**
- * Helper type to force undefined check on body, null check on body, and affirm
- * necessary property existance in body.
- */
-export interface SafeBodyRequest extends NextApiRequest {
-    body: Record<string, unknown> | null | undefined
+export type ErrorResponse = { error: string }
+export type NonAuthResponse<Data> = NextResponse<Data> & { __type: "NonAuthResponse" };
+export type AuthResponse<Data> = NextResponse<Data> & { __type: "AuthResponse" };
+
+export function Answer<Data>(status: number, data: Data) {
+    return NextResponse.json<Data>(data, { status }) as NonAuthResponse<Data>;
 }
 
 /**
- * Helper type to force API handlers to force send a non authenticated response.
+ * Gets the body of a request as a JSON object
+ * 
+ * @param request 
+ * @returns 
  */
-export type NonAuthResponse = { __type: "NonAuthReturned" };
-/**
- * Helper type to force API handlers to force send a non authenticated response.
- */
-export type AuthResponse = { __type: "AuthResponse" }
-
-
-/**
- * Replaces the NextApiResponse class to force a respond in the form of .send()
- * .json() to be sent.
- */
-export interface ForceSendResponse<Data = any> extends NextApiResponse { // eslint-disable-line
-    send: (body: Data) => NonAuthResponse;
-    json: (body: Data) => NonAuthResponse;
-    status: (statusCode: number) => ForceSendResponse<Data>;
-    redirect(url: string): ForceSendResponse<Data>;
-    redirect(status: number, url: string): ForceSendResponse<Data>;
-}
-
-export async function withAdminAuthentication(
-    request: SafeBodyRequest,
-    logic: (body: Record<string, unknown>) => Promise<NonAuthResponse>,
-    unauthorized: () => NonAuthResponse,
-    serverError: (error: Error) => NonAuthResponse
-): Promise<AuthResponse> {
+async function _getBody(request: NextRequest): Promise<Record<string, unknown> | null> {
     try {
-        if(typeof request.body === "object" && request.body !== null) {
-            const { adminToken } = request.body;
-            if(typeof adminToken === "string" && await adminAccess(adminToken)) {
-                return logic(request.body) as unknown as Promise<AuthResponse>;
-            }
+        const body = await request.json() as unknown;
+        if(typeof body === "object") {
+            return body as Record<string, unknown> | null;
+        } else {
+            return null;
         }
-        return Promise.resolve(unauthorized()) as unknown as Promise<AuthResponse>;
+    } catch(_) {
+        return null;
+    }
+}
+
+export async function WithBody<Data>(
+    request: NextRequest,
+    logic: (body: Record<string, unknown>) => Promise<NonAuthResponse<Data | ErrorResponse>>
+): Promise<NonAuthResponse<Data | ErrorResponse>> {
+    const body = await _getBody(request);
+    try {
+        if(body === null) {
+            return Answer<ErrorResponse>(400, {
+                error: badParameters("Expected JSON body.")
+            });
+        }
+        return logic(body);
     } catch(error) {
-        return Promise.resolve(serverError(error as Error)) as unknown as Promise<AuthResponse>;
+        metaLog("requests", "ERROR", `Unexpected error "${(error as Error).message}" has occurred in ${request.url} with request body ${JSON.stringify(body)}.`);
+        return Answer<ErrorResponse>(500, {
+            error: "Some kind of server error has occurred. Please notify admins."
+        });
+    }
+}
+
+/**
+ * Data should always be a union with ErrorResponse as one of its members.
+ * 
+ * @param request 
+ * @param logic 
+ * @returns 
+ */
+export async function WithAdminAuthentication<Data>(
+    request: NextRequest,
+    logic: (body: Record<string, unknown>) => Promise<NonAuthResponse<Data | ErrorResponse>>
+): Promise<AuthResponse<Data | ErrorResponse>> {
+    const body = await _getBody(request);
+    try {
+        if(body === null) {
+            return Answer<ErrorResponse>(400, {
+                error: badParameters("Expected JSON body.")
+            }) as unknown as AuthResponse<ErrorResponse>;
+        }
+        const adminToken = body.adminToken;
+        if(typeof adminToken === "string") {
+            if(await adminAccess(adminToken)) {
+                return logic(body) as unknown as Promise<AuthResponse<Data | ErrorResponse>>;
+            }
+            return Answer<ErrorResponse>(401, {
+                error: badParameters("Unauthorized admin request. Provided adminToken is invalid.")
+            }) as unknown as AuthResponse<ErrorResponse>;
+        }
+        return Answer<ErrorResponse>(401, {
+            error: badParameters("Unauthorized admin request. Please provide a valid adminToken string attribute in the request body.")
+        }) as unknown as AuthResponse<ErrorResponse>;
+    } catch(error) {
+        metaLog("requests", "ERROR", `Unexpected error "${(error as Error).message}" has occurred in ${request.url} with request body ${JSON.stringify(body)}.`);
+        return Answer<ErrorResponse>(500, {
+            error: "Some kind of server error has occurred. Please notify admins."
+        }) as unknown as AuthResponse<ErrorResponse>;
     }
 }
 
 export function badParameters(expect: string) {
     return `Bad parameters. ${expect}`;
-}
-
-export function unauthorizedAdmin() {
-    return "Unauthorized admin request. Please provide an adminToken string attribute in the request body.";
-}
-
-export function serverError() {
-    return "Some kind of server error has occured. Please notify admins.";
-}
-
-export function logServerError(error: Error, fileName: string, request: SafeBodyRequest) {
-    metaLog("requests", "ERROR", `Unexpected error "${error.message}" has occured in ${fileName} with request body ${JSON.stringify(request.body)}.`);
 }

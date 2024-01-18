@@ -1,12 +1,20 @@
+import type { Metadata } from "next";
 import Image from "next/image";
-import AdminLogin from "../../frames/AdminLogin";
-import Logo from "../../public/logos/logo-text.svg";
-import Banner from "../../images/banner.jpeg";
-import StandardHead from "../../components/StandardHead";
+import AdminLogin from "../../../frames/AdminLogin";
+import Logo from "../../../public/logos/logo-text.svg";
+import Banner from "../../../images/banner.jpeg";
+
+export const metadata: Metadata = {
+    title: "Vault Management",
+    description: "Admin panel for Web Vault management",
+    robots: {
+        index: false,
+        follow: false
+    }
+}
 
 const Admin = () => {
     return <>
-        <StandardHead title="Vault Management" description="Admin panel for Web Vault management" noIndex={true} />
         <Image src={Logo} alt="Logo with text" height={24} className="fixed left-10 top-5 bsm:left-0 bsm:right-0 bsm:mx-auto" />
         <main className="px-8 bg-light-gray min-h-screen flex items-center justify-center">
             <AdminLogin

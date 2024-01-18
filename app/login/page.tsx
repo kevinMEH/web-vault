@@ -1,12 +1,20 @@
 import Image from "next/image";
-import VaultLogin from "../frames/VaultLogin";
-import Logo from "../public/logos/logo-text.svg";
-import Banner from "../images/banner.jpeg";
-import StandardHead from "../components/StandardHead";
+
+import VaultLogin from "../../frames/VaultLogin";
+
+import Logo from "../../public/logos/logo-text.svg";
+import Banner from "../../images/banner.jpeg";
+import { Metadata } from "next";
+
+
+export const metadata: Metadata = {
+    title: "Vault Login",
+    description: "Login to your Web Vault instance"
+}
 
 const Login = () => {
     return <>
-        <StandardHead title="Vault Login" description="Login to your Web Vault instance" />
+        {/* <StandardHead title="Vault Login" description="Login to your Web Vault instance" /> */}
         <Image src={Logo} alt="Logo with text" height={24} className="fixed left-10 bsm:left-0 bsm:right-0 bsm:mx-auto top-5" />
         <main className="bsm:px-6 px-8 bg-light-gray min-h-screen flex items-center justify-center">
             <VaultLogin title="Welcome to Kevin's Vaults"

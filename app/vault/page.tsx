@@ -1,17 +1,15 @@
-import Head from "next/head";
 import { useEffect, useState } from "react";
 
-import { File, Directory } from "../src/vfs";
-import { sortByName } from "../src/helper";
+import { File, Directory } from "../../src/vfs";
+import { sortByName } from "../../src/helper";
 
-import Resizable from "../components/Resizable";
-import ExplorerItem from "../components/ExplorerItem";
+import Resizable from "../../components/Resizable";
+import ExplorerItem from "../../components/ExplorerItem";
 
 
-import Header from "../frames/Header";
-import TileView from "../frames/Managers/TileView";
-import Details from "../frames/Details";
-import StandardHead from "../components/StandardHead";
+import Header from "../../frames/Header";
+import TileView from "../../frames/Managers/TileView";
+import Details from "../../frames/Details";
 
 let testFolder: Directory;
 let testFolder2: Directory;
@@ -62,7 +60,7 @@ const Vault = () => {
     }, [])
 
     return <>
-        <StandardHead title={vault.name} noIndex={true} />
+        {/* <StandardHead title={vault.name} noIndex={true} /> */}
         <div className="flex flex-col h-full">
             <Header vaultName={vault.name} />
             <main className="flex flex-shrink flex-grow w-full h-full overflow-x-clip overflow-y-auto hide-scrollbar">

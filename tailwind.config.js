@@ -6,6 +6,7 @@ export default {
         "./components/**/*.{jsx,tsx}",
         "./frames/**/*.{jsx,tsx}",
         "./pages/**/*.{jsx,tsx}",
+        './app/**/*.{jsx,tsx}'
     ],
     theme: {
         screens: {
@@ -43,7 +44,7 @@ export default {
             },
             
             // Text
-            "main": "#2A2D33",
+            "main": "#343b42",
             "sub": "#4C4D59",
             "quiet": "#707480"
         },

@@ -1,12 +1,13 @@
+"use client"
 import Image, { StaticImageData } from "next/image";
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import TextField from "../components/TextField";
 import { post } from "../src/requests";
 
-import type { Expect, Data } from "../pages/api/admin/login";
+import type { Expect, Data } from "../app/api/admin/login/route"
 import { getAdminToken, setAdminToken } from "../src/storage";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 type AdminLoginParameters = {
     title: string;
@@ -36,7 +37,7 @@ const AdminLogin = ({ title, description, image, imageAlt, className = "" }: Adm
             return;
         }
         setSubmitting(true);
-        const { token } = await post<Expect, Data>("/api/admin/login", { adminName, password });
+        const token = (await post<Expect, Data>("/api/admin/login", { adminName, password })).token ?? null;
         setSubmitting(false);
         if(token === null) {
             setError("Invalid admin name and password combination.");

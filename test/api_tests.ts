@@ -1,10 +1,9 @@
 // Before running this test, make sure npm run dev is ran
 // The database used for this test depends on the one npm run dev is using.
 
-import { after, describe, it } from "node:test";
+import { after, before, describe, it } from "node:test";
 import assert from "node:assert";
 import axios from "axios"; // eslint-disable-line
-import type { AxiosResponse } from "axios"; // eslint-disable-line
 
 import { cleanup } from "../src/cleanup";
 import { createToken } from "../src/authentication/vault_token";
@@ -29,6 +28,26 @@ function failString(data: object, parameter: string, checkName: string) {
 }
 
 describe("API tests", () => {
+    // Forces NextJS to compile all API routes
+    // If we do not force all compiles beforehand, some modules will be JIT
+    // compiled in the middle of testing, including modules in src which will be
+    // recompiled, making them lose their memory.
+    before(async () => {
+        await Promise.all([
+            axios.post("admin/login"),
+            axios.post("admin/logout"),
+            axios.post("admin/create_vault"),
+            axios.post("admin/delete_vault"),
+            axios.post("admin/get_vaults"),
+            axios.post("admin/change_vault_password"),
+
+            axios.post("vault/login"),
+            axios.post("vault/logout"),
+            axios.post("vault/refresh"),
+            axios.post("vault/trim"),
+        ]);
+    });
+
     describe("Admin API tests", () => {
         it("Tests admin/login", async () => {
             await checkResponse("admin/login", [
@@ -49,7 +68,6 @@ describe("API tests", () => {
                 { randomParameter: null },
                 { randomParameter: "adminName" }
             ], (data, parameter) => {
-                assert(data.token === null, failString(data, parameter, "token null"));
                 assert(data.error?.includes("Bad parameters"), failString(data, parameter, "bad parameters error"));
             });
             
@@ -69,7 +87,6 @@ describe("API tests", () => {
                 { token: undefined },
                 { token: { asdf: "asdf" } },
             ], (data, parameter) => {
-                assert(data.success === false, failString(data, parameter, "success is false"));
                 assert(data.error?.includes("Bad parameters"), failString(data, parameter, "bad parameters error"));
             });
             
@@ -92,14 +109,23 @@ describe("API tests", () => {
         
         it("Tests admin/create_vault.ts, admin/delete_vault, and admin/get_vaults", async () => {
             await checkResponse("admin/create_vault", [
-                undefined, null, "asdf", {},
+                undefined, null, "asdf",
+                `{ #"hello": 123 }`,
+                `{ "hello": !123 }`,
+                `{ "hello": 123> }`,
+                `{ "hello": <123> }`,
+                `<div>{}</div>`,
+            ], (data, parameter) => {
+                assert(data.error === "Bad parameters. Expected JSON body.", failString(data, parameter, "expected JSON body error"));
+            });
+            await checkResponse("admin/create_vault", [
+                {},
                 { vaultName: "new_vault", password: "password" },
                 { vaultName: 123, password: 1231 },
                 { adminToken: 123, vaultName: "new_vault", password: "password" },
                 { adminToken: null, vaultName: "new_vault", password: "password" },
                 { adminToken: "invalid.token.invalid", vaultName: "new_vault", password: "password" },
             ], (data, parameter) => {
-                assert(data.success === false);
                 assert(data.error?.includes("Unauthorized admin request"), failString(data, parameter, "unauthorized admin request error"));
             });
             {
@@ -112,7 +138,6 @@ describe("API tests", () => {
                 const token = await createToken("vault123");
                 assert(token !== null);
                 const data = (await axios.post("admin/create_vault", { adminToken: token, vaultName: "new_vault", password: "password" })).data;
-                assert(data.success === false);
                 assert(data.error?.includes("Unauthorized admin request"));
                 await deleteVaultPassword("vault123");
             }
@@ -122,7 +147,6 @@ describe("API tests", () => {
                 jwt.addClaim("adminName", DEFAULT_ADMIN_NAME);
                 const token = jwt.getToken(JWT_SECRET);
                 const data = (await axios.post("admin/create_vault", { adminToken: token, vaultName: "new_vault", password: "password" })).data;
-                assert(data.success === false);
                 assert(data.error?.includes("Unauthorized admin request"));
             }
 
@@ -136,7 +160,6 @@ describe("API tests", () => {
             {
                 // Cannot create vault when it already exists
                 const data = (await axios.post("admin/create_vault", { adminToken: token, vaultName: "new_vault", password: "password" })).data;
-                assert(data.success === false);
                 assert(data.error?.toLowerCase().includes("exists"));
             }
 
@@ -144,21 +167,27 @@ describe("API tests", () => {
             
 
 
-            {
-                await checkResponse("admin/get_vaults", [
-                    undefined, null, "asdf", {},
-                    { adminToken: "asdfasdf" },
-                    { adminToken: "asdfasdf.asdfa.ab" },
-                    { adminToken: null },
-                ], (data, parameter) => {
-                    assert(data.vaults === null, failString(data, parameter, "vaults is null"));
-                    assert(data.error?.includes("Unauthorized admin request"), failString(data, parameter, "unauthorized admin request error"));
-                })
-            }
+            await checkResponse("admin/get_vaults", [
+                undefined, null, "asdf",
+                `{ #"hello": 123 }`,
+                `{ "hello": !123 }`,
+                `{ "hello": 123> }`,
+                `{ "hello": <123> }`,
+                `<div>{}</div>`,
+            ], (data, parameter) => {
+                assert(data.error === "Bad parameters. Expected JSON body.", failString(data, parameter, "expected JSON body error"));
+            });
+            await checkResponse("admin/get_vaults", [
+                {},
+                { adminToken: "asdfasdf" },
+                { adminToken: "asdfasdf.asdfa.ab" },
+                { adminToken: null },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Unauthorized admin request"), failString(data, parameter, "unauthorized admin request error"));
+            });
             {
                 const data = (await axios.post("admin/get_vaults", { adminToken: token })).data;
                 assert(data.vaults !== null);
-                console.log(data.vaults);
                 assert(data.vaults.some((name: string) => name === "new_vault"));
                 assert(data.error === undefined);
             }
@@ -168,7 +197,17 @@ describe("API tests", () => {
             
 
             await checkResponse("admin/delete_vault", [
-                undefined, null, "asdf", {},
+                undefined, null, "asdf",
+                `{ #"hello": 123 }`,
+                `{ "hello": !123 }`,
+                `{ "hello": 123> }`,
+                `{ "hello": <123> }`,
+                `<div>{}</div>`,
+            ], (data, parameter) => {
+                assert(data.error === "Bad parameters. Expected JSON body.", failString(data, parameter, "expected JSON body error"));
+            });
+            await checkResponse("admin/delete_vault", [
+                {},
                 { vaultName: "nonexist" },
                 { vaultName: "new_vault" },
                 { adminToken: "asdjfajsdfja", vaultName: "new_vault" },
@@ -193,7 +232,7 @@ describe("API tests", () => {
         });
     });
     
-    it("Tests api/login", () => {
+    it("Tests api/vault/login", () => {
         // TODO: Implement vault tests. Requires vault creation API to work first
     });
     
