@@ -12,7 +12,6 @@ type TextFieldParameters = {
     error?: boolean | string;
 
     disabled?: boolean;
-    required?: boolean;
     readOnly?: boolean;
     copyButton?: boolean;
     
@@ -28,7 +27,7 @@ type TextFieldParameters = {
  */
 const TextField = ({
     name, labelText, placeholder, type, value, setValue, id, error = false,
-    disabled = false, required = false, readOnly = false, copyButton = false, className = ""
+    disabled = false, readOnly = false, copyButton = false, className = ""
 }: TextFieldParameters) => {
     const [lastError, setLastError] = useState("" as boolean | string);
     const [newError, setNewError] = useState(true);
@@ -53,7 +52,6 @@ const TextField = ({
         
                     inputMode={ type === "email" ? "email" : "text" }
                     disabled={disabled}
-                    required={required}
                     readOnly={readOnly}
                     
                     className={`px-5 py-3 bsm:py-2.5 w-full rounded-md text-sm peer cursor-text
