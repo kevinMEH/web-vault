@@ -1,5 +1,5 @@
 import "./globals.css";
-import { inter, pathway, noto_sans_mono } from "../styles/font";
+import { inter, pathway, noto_sans_mono } from "./font";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,8 +15,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" className="text-main font-inter min-h-full overflow-x-clip hide-scrollbar">
-            <body className={`bg-light-gray h-screen ${inter.variable} ${pathway.variable} ${noto_sans_mono.variable}`}>{children}</body>
+        <html lang="en" className={`text-main ${inter.variable} ${pathway.variable} ${noto_sans_mono.variable} min-h-full overflow-x-clip hide-scrollbar`}>
+            <body className={`bg-light-gray h-screen font-inter`}>{children}</body>
         </html>
     );
 }
