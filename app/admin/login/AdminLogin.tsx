@@ -5,8 +5,9 @@ import Button from "../../../components/Button";
 import TextField from "../../../components/TextField";
 import { post } from "../../../src/requests";
 
-import type { Expect, Data } from "../../api/admin/login/route"
-import { getAdminToken, setAdminToken } from "../../../src/storage";
+import type { Expect as LoginExpect, Data as LoginData } from "../../api/admin/login/route";
+import type { Expect as AdminAccessExpect, Data as AdminAccessData } from "../../api/admin/admin_access/route";
+import { getAdminToken, removeAdminToken, setAdminToken, } from "../../../src/storage";
 import { useRouter } from "next/navigation";
 
 type AdminLoginParameters = {
@@ -26,9 +27,17 @@ const AdminLogin = ({ title, description, image, imageAlt, className = "" }: Adm
     const router = useRouter();
     
     useEffect(() => {
-        if(getAdminToken() !== null) {
-            router.push("/admin/dashboard")
-        }
+        (async () => {
+            const adminToken = getAdminToken();
+            if(adminToken !== null) {
+                const validToken = (await post<AdminAccessExpect, AdminAccessData>("/api/admin/admin_access", { adminToken })).access === true;
+                if(validToken) {
+                    router.push("/admin/dashboard");
+                } else {
+                    removeAdminToken();
+                }
+            }
+        })();
     }, [router]);
     
     async function onLogin() {
@@ -37,7 +46,7 @@ const AdminLogin = ({ title, description, image, imageAlt, className = "" }: Adm
             return;
         }
         setSubmitting(true);
-        const token = (await post<Expect, Data>("/api/admin/login", { adminName, password })).token ?? null;
+        const token = (await post<LoginExpect, LoginData>("/api/admin/login", { adminName, password })).token ?? null;
         setSubmitting(false);
         if(token === null) {
             setError("Invalid admin name and password combination.");
