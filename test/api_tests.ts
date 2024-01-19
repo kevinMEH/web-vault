@@ -160,7 +160,7 @@ describe("API tests", () => {
             {
                 // Cannot create vault when it already exists
                 const data = (await axios.post("admin/create_vault", { adminToken: token, vaultName: "new_vault", password: "password" })).data;
-                assert(data.error?.toLowerCase().includes("exists"));
+                assert(data.failureReason?.toLowerCase().includes("exists"));
             }
 
             

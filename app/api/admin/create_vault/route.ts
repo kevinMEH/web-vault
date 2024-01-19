@@ -10,17 +10,17 @@ export type Expect = {
 
 export type Data = {
     success: boolean,
-    error?: string
+    failureReason?: string
 } | ErrorResponse;
 
 export function POST(request: NextRequest): Promise<AuthResponse<Data>> {
-    return WithAdminAuthentication(request, async body => {
+    return WithAdminAuthentication<Data>(request, async body => {
         const { vaultName, password } = body;
         if(typeof vaultName === "string" && typeof password === "string") {
             const result = await createNewVault(vaultName, password);
             return Answer(200, {
                 success: result === null,
-                error: result?.message
+                failureReason: result?.message
             })
         }
         return Answer(400, {
