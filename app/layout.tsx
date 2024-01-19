@@ -3,6 +3,7 @@ import { inter, pathway, noto_sans_mono } from "../styles/font";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
+    title: "Web Vault",
     icons: {
         icon: [ "/favicon.ico" ]
     }
