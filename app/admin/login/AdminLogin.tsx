@@ -64,12 +64,12 @@ const AdminLogin = ({ title, description, image, imageAlt, className = "" }: Adm
                 { error !== null && <p className="text-sm font-inter text-error-light pt-3">{error}</p> }
                 <TextField name="Admin Name" labelText="Admin Name" id="admin-field"
                     placeholder="Admin name" value={adminName} setValue={setAdminName}
-                    type="text" error={error !== null} disabled={submitting} required={true}
+                    type="text" error={error !== null} disabled={submitting}
                     className={"!mt-1 max-w-xs !w-auto " + (error === null ? "pt-5" : "pt-3")}
                 />
                 <TextField name="Password" labelText="Password" id="password-field"
                     placeholder="Password" value={password} setValue={setPassword}
-                    type="password" error={error !== null} disabled={submitting} required={true}
+                    type="password" error={error !== null} disabled={submitting}
                     className="pt-5 max-w-xs !w-auto"
                 />
                 <Button onClick={onLogin} disabled={adminName === "" || password === "" || submitting}

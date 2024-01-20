@@ -33,12 +33,12 @@ const VaultLogin = ({ title, description, image, imageAlt, className = "" }: Vau
             <p className="text-base bmd:text-sm font-inter text-sub">{description}</p>
             <TextField name="Vault Name" labelText="Vault Name" id="vault-field"
             placeholder="Vault Name" value={vaultName} setValue={setVaultName}
-            type="text" error={error} disabled={submitting} required={true}
+            type="text" error={error} disabled={submitting}
             className="pt-3.5 max-w-xs bsm:max-w-none !w-auto"
             />
             <TextField name="Password" labelText="Password" id="password-field"
             placeholder="Password" value={password} setValue={setPassword}
-            type="password" error={error} disabled={submitting} required={true}
+            type="password" error={error} disabled={submitting}
             className="pt-2 max-w-xs bsm:max-w-none !w-auto"
             />
             <Button onClick={onLogin} disabled={submitting}
