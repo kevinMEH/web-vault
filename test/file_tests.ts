@@ -3,9 +3,15 @@ import assert from "assert";
 import fs from "fs/promises";
 import path from "path";
 
+import config from "../config";
 
-if(process.env.REDIS) console.log("Using Redis");
-else console.log("Using in memory database");
+
+if(process.env.REDIS) {
+    config.REDIS = true;
+    console.log("Using Redis");
+} else {
+    console.log("Using in memory database");
+}
 const { cleanup } = await import("../src/cleanup");
 
 

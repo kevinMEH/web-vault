@@ -3,14 +3,20 @@ import assert from "assert";
 import fs from "fs/promises";
 import path from "path";
 
-
-process.env.JWT_SECRET = "4B6576696E20697320636F6F6C";
-process.env.DOMAIN = "Kevin";
-process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
+import config from "../config";
 
 
-if(process.env.REDIS) console.log("Using Redis");
-else console.log("Using in memory database");
+config.JWT_SECRET = "4B6576696E20697320636F6F6C";
+config.DOMAIN = "Kevin";
+config.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
+
+
+if(process.env.REDIS) {
+    config.REDIS = true;
+    console.log("Using Redis");
+} else {
+    console.log("Using in memory database");
+}
 const { cleanup } = await import("../src/cleanup");
 
 const { verifyVaultPassword } = await import("../src/authentication/database");

@@ -1,14 +1,20 @@
 import { after, describe, it } from "node:test";
 import assert from "assert";
 
-
-process.env.JWT_SECRET = "4B6576696E20697320636F6F6C";
-process.env.DOMAIN = "Kevin";
-process.env.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
+import config from "../config";
 
 
-if(process.env.REDIS) console.log("Using Redis");
-else console.log("Using in memory database");
+config.JWT_SECRET = "4B6576696E20697320636F6F6C";
+config.DOMAIN = "Kevin";
+config.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
+
+
+if(process.env.REDIS) {
+    config.REDIS = true;
+    console.log("Using Redis");
+} else {
+    console.log("Using in memory database");
+}
 const { cleanup } = await import("../src/cleanup");
 
 import JWT, { unixTime } from "jwt-km";
@@ -109,17 +115,17 @@ describe("Authentication tests", () => {
 
             const token = await createToken("main_vault");
             assert(token !== null);
-            const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string) as [Header, Payload];
+            const [_header, payload] = JWT.unwrap(token, config.JWT_SECRET as string) as [Header, Payload];
             assert(payload.access?.length === 1);
             assert(payload.access[0].vault === "main_vault");
-            const token2 = new JWT(process.env.DOMAIN as string, payload.exp, payload.iat)
+            const token2 = new JWT(config.DOMAIN as string, payload.exp, payload.iat)
                 .addClaim("type", "vault")
                 .addClaim("random", payload.random)
                 .addClaim("access", [{
                     vault: "main_vault",
                     issuedAt: payload.access[0].issuedAt,
                     expiration: payload.access[0].expiration
-                }]).getToken(process.env.JWT_SECRET as string);
+                }]).getToken(config.JWT_SECRET as string);
             assert(token === token2);
             assert(await getUnwrappedToken(token2) !== null);
 
@@ -146,7 +152,7 @@ describe("Authentication tests", () => {
 
             const token = await createToken("log_me_out");
             assert(token !== null);
-            const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string) as [Header, Payload];
+            const [_header, payload] = JWT.unwrap(token, config.JWT_SECRET as string) as [Header, Payload];
             await _addOutdatedToken(token, payload.exp as number);
             assert(await getUnwrappedToken(token) === null);
 
@@ -163,7 +169,7 @@ describe("Authentication tests", () => {
             const newToken = await addNewVaultToToken(token, "new_vault");
             assert(newToken !== null);
             assert(await getUnwrappedToken(token) === null);
-            const [_header, payload] = JWT.unwrap(newToken, process.env.JWT_SECRET as string) as [Header, Payload];
+            const [_header, payload] = JWT.unwrap(newToken, config.JWT_SECRET as string) as [Header, Payload];
             assert(payload.access.some((access: VaultAccess) => access.vault === "old_vault"));
             assert(payload.access.some((access: VaultAccess) => access.vault === "new_vault"));
             
@@ -180,7 +186,7 @@ describe("Authentication tests", () => {
             const newToken = await removeVaultFromToken(token, "remove_me");
             assert(newToken !== null);
             assert(await getUnwrappedToken(token) === null);
-            const [_header, payload] = JWT.unwrap(newToken, process.env.JWT_SECRET as string) as [Header, Payload];
+            const [_header, payload] = JWT.unwrap(newToken, config.JWT_SECRET as string) as [Header, Payload];
             assert(payload.access.length === 0);
 
             await deleteVaultPassword("remove_me");
@@ -192,14 +198,14 @@ describe("Authentication tests", () => {
             const token = await createToken("unique_name");
             assert(token !== null);
             assert(await getUnwrappedToken(token) !== null);
-            const [_header, payload] = JWT.unwrap(token, process.env.JWT_SECRET as string) as [Header, Payload];
+            const [_header, payload] = JWT.unwrap(token, config.JWT_SECRET as string) as [Header, Payload];
 
             await new Promise(resolve => setTimeout(resolve, 2000)); // eslint-disable-line
             const newToken = await _refreshVaultExpiration(token, "unique_name");
 
             assert(newToken !== null);
             assert(await getUnwrappedToken(token) === null);
-            const [_newHeader, newPayload] = JWT.unwrap(newToken, process.env.JWT_SECRET as string) as [Header, Payload];
+            const [_newHeader, newPayload] = JWT.unwrap(newToken, config.JWT_SECRET as string) as [Header, Payload];
             assert(newPayload.exp > payload.exp);
             assert(newPayload.iat > payload.iat);
             
