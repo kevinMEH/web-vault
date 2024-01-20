@@ -8,7 +8,7 @@ import { unixTime } from "../../helper"
 import { metaLog } from "../../logger";
 import { addInterval } from "../../cleanup";
 
-import { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL, DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH } from "../../env";
+const { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL, DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH } = await import("../../env");
 
 type TokenPair = {
     token: string,
@@ -89,6 +89,7 @@ const adminCredentialsMap: Map<string, [string, number]> = new Map();
 adminCredentialsMap.set(DEFAULT_ADMIN_NAME, [ DEFAULT_ADMIN_PASSWORD_HASH, unixTime() ]);
 
 const adminCredentialsFile = path.join(process.cwd(), "database", "admin_credentials.csv");
+
 
 
 if(PRODUCTION && !USING_REDIS) {

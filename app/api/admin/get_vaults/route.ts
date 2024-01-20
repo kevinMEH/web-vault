@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-const { vaultMap } = await import("../../../../src/controller");
+import { vaultMap } from "../../../../src/controller";
 import { Answer, AuthResponse, ErrorResponse, WithAdminAuthentication } from "../../../../src/request_helpers";
 
 export type Expect = {

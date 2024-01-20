@@ -1,4 +1,4 @@
-const {
+import {
     localAddOutdatedToken,
     localIsOutdatedToken,
     localSetVaultPassword,
@@ -11,8 +11,8 @@ const {
     localDeleteAdmin,
     localInvalidAdminIssuingDate,
     localResetAdminNonce,
-} = await import("./database/local");
-const {
+} from "./database/local";
+import {
     redisAddOutdatedToken,
     redisIsOutdatedToken,
     redisSetVaultPassword,
@@ -25,11 +25,9 @@ const {
     redisDeleteAdmin,
     redisInvalidAdminIssuingDate,
     redisResetAdminNonce,
-} = await import("./database/redis");
+} from "./database/redis";
 import { HashedPassword, hashPassword } from "./password";
-
 import { metaLog } from "../logger";
-
 import { USING_REDIS, PASSWORD_SALT, ITERATION_COUNT } from "../env";
 
 const isOutdatedToken = USING_REDIS ? redisIsOutdatedToken : (token: string) => Promise.resolve(localIsOutdatedToken(token));

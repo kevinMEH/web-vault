@@ -1,5 +1,5 @@
 import Redis from "ioredis";
-import { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS } from "../../env";
+const { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS } = await import("../../env");
 import { unixTime } from "../../helper";
 import { HashedPassword } from "../password";
 

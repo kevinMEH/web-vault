@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { metaLog, vaultLog } from "./logger";
-const { getVaultFromPath, getDirectoryAt, splitParentChild, getAt, getVaultVFS } = await import("./controller");
+import { getVaultFromPath, getDirectoryAt, splitParentChild, getAt, getVaultVFS } from "./controller";
 import type { ValidatedPath, VaultPath } from "./controller";
 import { File, Directory } from "./vfs";
 

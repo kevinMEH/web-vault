@@ -1,4 +1,4 @@
-const { close } = await import("./authentication/database/redis");
+import { close } from "./authentication/database/redis";
 import { metaLog } from "./logger";
 
 const intervals: Array<[string, Function, number, boolean]> = [];

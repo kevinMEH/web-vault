@@ -9,7 +9,7 @@ import { File, Directory, FlatDirectory } from "./vfs";
 import { metaLog } from "./logger";
 import CustomError from "./custom_error";
 
-import { VFS_STORE_DIRECTORY, VFS_BACKUP_INTERVAL, PRODUCTION } from "./env";
+const { VFS_STORE_DIRECTORY, VFS_BACKUP_INTERVAL, PRODUCTION } = await import("./env");
 import { addInterval } from "./cleanup";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
