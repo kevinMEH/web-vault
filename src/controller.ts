@@ -5,7 +5,8 @@
 
 import { File, Directory } from "./vfs";
 
-import { vaultMap } from "./authentication/database";
+import { storeVFS, vaultMap } from "./authentication/database";
+import { PRODUCTION, TESTING } from "./env";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
 export type VaultPath = string & { __type: "VaultPath" };
@@ -24,10 +25,17 @@ const validPathRegex = /(?!^(\.)+($|\/))^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )(\/(?!(\.
 
 
 
+/**
+ * Due to NextJS being a piece of garbage and constantly recompiling everything,
+ * changes in the VFS will be lost unless immediately stored.
+ */
+const after = !TESTING && !PRODUCTION ? storeVFS : () => {};
+
 
 function newVaultVFS(vault: string) {
     const vaultVFS = new Directory(vault, []);
     vaultMap.set(vault, vaultVFS);
+    after();
 }
 
 /**
@@ -38,7 +46,9 @@ function newVaultVFS(vault: string) {
  * @returns 
  */
 function deleteVaultVFS(vault: string): boolean {
-    return vaultMap.delete(vault);
+    const result = vaultMap.delete(vault);
+    after();
+    return result;
 }
 
 /**
