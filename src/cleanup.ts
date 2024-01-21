@@ -1,11 +1,16 @@
 import { close } from "./authentication/database/redis";
+import { PRODUCTION } from "./env";
 import { metaLog } from "./logger";
 
 const intervals: Array<[string, Function, number, boolean]> = [];
 
 function addInterval(intervalName: string, intervalFunction: Function, interval: number, runBeforeShutdown: boolean) {
-    const identifier = setInterval(intervalFunction, interval); // eslint-disable-line
-    intervals.push([intervalName, intervalFunction, identifier, runBeforeShutdown]);
+    if(PRODUCTION) {
+        const identifier = setInterval(intervalFunction, interval); // eslint-disable-line
+        intervals.push([intervalName, intervalFunction, identifier, runBeforeShutdown]);
+    } else {
+        setInterval(intervalFunction, interval); // eslint-disable-line
+    }
 }
 
 async function runClearIntervals() {
