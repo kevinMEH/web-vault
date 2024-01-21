@@ -8,7 +8,7 @@ import { unixTime } from "../../helper"
 import { metaLog } from "../../logger";
 import { addInterval } from "../../cleanup";
 
-const { PRODUCTION, USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL, DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH } = await import("../../env");
+const { USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL, DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH } = await import("../../env");
 
 type TokenPair = {
     token: string,
@@ -92,7 +92,7 @@ const adminCredentialsFile = path.join(process.cwd(), "database", "admin_credent
 
 
 
-if(PRODUCTION && !USING_REDIS) {
+if(!TESTING && !USING_REDIS) {
     try {
         await fs.access(outdatedTokensFile);
         await loadOutdatedTokensFromFile();

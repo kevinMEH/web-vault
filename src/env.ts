@@ -3,7 +3,9 @@ import config from "../config";
 
 const throwEnvError = (variableName: string, reason?: string) => { throw new Error(`The ${variableName} environmental variable must be specified.` + (reason ? ` ${reason}` : ``)); }
 
-export const PRODUCTION = config.PRODUCTION === true;
+export const TESTING = config.TESTING === true || process.env.TESTING === "true";
+
+export const PRODUCTION = config.PRODUCTION === true && !TESTING;
 
 
 export const DOMAIN = config.DOMAIN ? config.DOMAIN

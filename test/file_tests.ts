@@ -6,6 +6,7 @@ import path from "path";
 import config from "../config";
 
 
+config.TESTING = true;
 if(process.env.REDIS) {
     config.REDIS = true;
     console.log("Using Redis");
