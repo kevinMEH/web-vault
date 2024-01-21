@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { vaultMap } from "../../../../src/controller";
+import { vaultMap } from "../../../../src/authentication/database";
 import { Answer, AuthResponse, ErrorResponse, WithAdminAuthentication } from "../../../../src/request_helpers";
 
 export type Expect = {

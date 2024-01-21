@@ -1,7 +1,10 @@
 import Redis from "ioredis";
-const { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS } = await import("../../env");
 import { unixTime } from "../../helper";
 import { HashedPassword } from "../password";
+import { Directory, FlatDirectory } from "../../vfs";
+import { localVaultMap } from "./local";
+import { addInterval } from "../../cleanup";
+const { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS, VFS_BACKUP_INTERVAL } = await import("../../env");
 
 const throwRedisError = () => { throw new Error("Attempting to use Redis with the REDIS environment variable turned off."); }
 
@@ -130,3 +133,53 @@ export {
 
     close
 };
+
+
+
+
+// VFS Storage
+
+const vfsStoreLocation = "webvault:vfs";
+
+const redisVaultMap: Map<string, Directory> = new Map();
+
+if(USING_REDIS) {
+    const loadVFSResult = await loadVFS();
+    if(loadVFSResult === false) {
+        console.log("No VFS store found on Redis. No VFS were loaded. (Normal if this is the first time running.");
+    }
+    addInterval("VFS backup interval", () => {
+        storeVFS();
+    }, VFS_BACKUP_INTERVAL * 1000, true);
+}
+
+
+async function loadVFS(): Promise<boolean> {
+    const fileString = await redis.get(vfsStoreLocation);
+    if(fileString === null) {
+        return false;
+    }
+    const storeObject: Record<string, FlatDirectory> = Object.assign(Object.create(null), JSON.parse(fileString));
+    for(const vaultName in storeObject) {
+        const flatDirectory = storeObject[vaultName];
+        const vaultDirectory = new Directory(flatDirectory.name, [], flatDirectory.lastModified);
+        vaultDirectory.update(flatDirectory);
+        redisVaultMap.set(vaultName, vaultDirectory);
+    }
+    return true;
+}
+
+
+async function storeVFS() {
+    const storeObject = Object.create(null);
+    for(const [ vaultName, vaultDirectory ] of localVaultMap.entries()) {
+        storeObject[vaultName] = vaultDirectory.flat(true, -1);
+    }
+    const vfsString = JSON.stringify(storeObject);
+    await redis.set(vfsStoreLocation, vfsString);
+}
+
+export {
+    redisVaultMap,
+    storeVFS as redisStoreVFS
+}

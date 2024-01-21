@@ -3,14 +3,9 @@
 // Contains functions for validating paths and associating paths with the
 // respective Files or Directories.
 
-import path from "path";
-import fs from "fs/promises";
-import { File, Directory, FlatDirectory } from "./vfs";
-import { metaLog } from "./logger";
-import CustomError from "./custom_error";
+import { File, Directory } from "./vfs";
 
-const { VFS_STORE_DIRECTORY, VFS_BACKUP_INTERVAL, PRODUCTION } = await import("./env");
-import { addInterval } from "./cleanup";
+import { vaultMap } from "./authentication/database";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
 export type VaultPath = string & { __type: "VaultPath" };
@@ -26,93 +21,9 @@ const validNameRegex = /(?!^(\.)+$)^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )$/
  */
 const validPathRegex = /(?!^(\.)+($|\/))^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )(\/(?!(\.)+($|\/))(?! |-)[a-zA-Z0-9_\-. )]+(?<! ))+$/;
 
-const vfsStoreLocation = path.join(VFS_STORE_DIRECTORY, "vfs.json");
-const vfsTempLocation = path.join(VFS_STORE_DIRECTORY, "vfs.temp.json");
-const vfsOldLocation = path.join(VFS_STORE_DIRECTORY, "vfs.old.json");
 
 
 
-export const vaultMap: Map<string, Directory> = new Map();
-
-if(PRODUCTION) {
-    const loadVFSResult = await loadVFS();
-    if(loadVFSResult !== null && loadVFSResult.code === "ENOENT") {
-        console.log("No VFS store found. No VFS were loaded. (Normal if this is the first time running.)");
-    }
-    addInterval("VFS backup interval", () => {
-        storeVFS();
-    }, VFS_BACKUP_INTERVAL * 1000, true);
-}
-
-
-
-// -------------------
-// -------------------
-// -------------------
-
-
-
-async function loadVFS(): Promise<CustomError | null> {
-    let storeObject: Record<string, FlatDirectory>;
-    try {
-        const fileString = (await fs.readFile(vfsStoreLocation)).toString();
-        storeObject = Object.assign(Object.create(null), JSON.parse(fileString));
-    } catch(error) {
-        const code = (error as NodeJS.ErrnoException).code;
-        const message = (error as Error).message;
-        if(code !== "ENOENT") {
-            metaLog("vfs", "ERROR", `Trying to extract object from VFS store at "${vfsStoreLocation}", but encountered unrecognized error ${message}.`);
-        }
-        return new CustomError(message, code === "ENOENT" ? "WARNING" : "ERROR", code);
-    }
-    for(const vaultName in storeObject) {
-        const flatDirectory = storeObject[vaultName];
-        const vaultDirectory = new Directory(flatDirectory.name, [], flatDirectory.lastModified);
-        vaultDirectory.update(flatDirectory);
-        vaultMap.set(vaultName, vaultDirectory);
-    }
-    return null;
-}
-
-async function storeVFS(): Promise<CustomError[]> {
-    let tempFile: fs.FileHandle;
-    try {
-        tempFile = await fs.open(vfsTempLocation, "w");
-    } catch(error) {
-        const message = (error as Error).message;
-        const code = (error as NodeJS.ErrnoException).code;
-        const reason = `Trying to store VFS into file "${vfsTempLocation}", but encountered unrecognized error ${message}.`;
-        metaLog("vfs", "ERROR", reason);
-        return [ new CustomError(reason, "ERROR", code) ];
-    }
-    
-    const errors: CustomError[] = [];
-    
-    const storeObject = Object.create(null);
-    for(const [vaultName, vaultDirectory] of vaultMap.entries()) {
-        storeObject[vaultName] = vaultDirectory.flat(true, -1);
-    }
-    await tempFile.writeFile(JSON.stringify(storeObject));
-    
-    await fs.rename(vfsStoreLocation, vfsOldLocation).catch(error => {
-        const code = (error as NodeJS.ErrnoException).code;
-        const message = (error as Error).message;
-        const reason = `Trying to rename "${vfsStoreLocation}" into "${vfsOldLocation}", but encountered unrecognized error ${message}.`;
-        if(code !== "ENOENT") {
-            metaLog("vfs", "ERROR", reason);
-        }
-        errors.push(new CustomError(reason, code === "ENOENT" ? "WARNING" : "ERROR", code));
-    });
-    await fs.rename(vfsTempLocation, vfsStoreLocation).catch(error => {
-        const code = (error as NodeJS.ErrnoException).code;
-        const message = (error as Error).message;
-        const reason = `Trying to rename "${vfsTempLocation}" into "${vfsStoreLocation}", but encountered unrecognized error ${message}.`;
-        metaLog("vfs", "ERROR", reason);
-        errors.push(new CustomError(reason, "ERROR", code));
-    });
-    await fs.unlink(vfsOldLocation);
-    return errors;
-}
 
 function newVaultVFS(vault: string) {
     const vaultVFS = new Directory(vault, []);
@@ -264,7 +175,6 @@ function getFileAt(path: ValidatedPath | null): File | null {
 export {
     validNameRegex,
     validPathRegex,
-    storeVFS,
     newVaultVFS,
     deleteVaultVFS,
     vaultVFSExists,

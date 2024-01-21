@@ -11,6 +11,8 @@ import {
     localDeleteAdmin,
     localInvalidAdminIssuingDate,
     localResetAdminNonce,
+    localVaultMap,
+    localStoreVFS
 } from "./database/local";
 import {
     redisAddOutdatedToken,
@@ -25,6 +27,8 @@ import {
     redisDeleteAdmin,
     redisInvalidAdminIssuingDate,
     redisResetAdminNonce,
+    redisVaultMap,
+    redisStoreVFS
 } from "./database/redis";
 import { HashedPassword, hashPassword } from "./password";
 import { metaLog } from "../logger";
@@ -81,6 +85,9 @@ async function deleteAdminPassword(adminName: string) {
     metaLog("authentication", "INFO", `Deleted admin ${adminName} credentials.`)
 }
 
+const vaultMap = USING_REDIS ? redisVaultMap : localVaultMap;
+const storeVFS = USING_REDIS ? redisStoreVFS : localStoreVFS;
+
 export {
     _addOutdatedToken,
     isOutdatedToken,
@@ -95,5 +102,8 @@ export {
     verifyAdminPassword,
     deleteAdminPassword,
     invalidAdminIssuingDate,
-    resetAdminNonce
+    resetAdminNonce,
+    
+    vaultMap,
+    storeVFS
 };

@@ -13,8 +13,12 @@ export const DOMAIN = config.DOMAIN ? config.DOMAIN
 
 
 export const USING_REDIS = config.REDIS === true || process.env.REDIS === "true";
+
+
 export const DATABASE_SAVE_INTERVAL = config.DATABASE_SAVE_INTERVAL || 24 * 60 * 60;
 export const PURGE_INTERVAL = config.PURGE_INTERVAL || 24 * 60 * 60;
+export const VFS_STORE_DIRECTORY = config.VFS_STORE_DIRECTORY || path.join(process.cwd(), "database");
+export const VFS_BACKUP_INTERVAL = config.VFS_BACKUP_INTERVAL || 30 * 60;
 
 
 export const JWT_EXPIRATION = config.JWT_EXPIRATION || 7 * 24 * 60 * 60;
@@ -49,6 +53,4 @@ export const DEFAULT_ADMIN_PASSWORD_HASH = config.DEFAULT_ADMIN_PASSWORD_HASH ? 
 
 
 export const BASE_VAULT_DIRECTORY = config.BASE_VAULT_DIRECTORY || path.join(process.cwd(), "vaults");
-export const VFS_STORE_DIRECTORY = config.VFS_STORE_DIRECTORY || BASE_VAULT_DIRECTORY;
 export const BASE_LOGGING_DIRECTORY = config.LOGGING_DIRECTORY || path.join(process.cwd(), "logs");
-export const VFS_BACKUP_INTERVAL = config.VFS_BACKUP_INTERVAL || 24 * 60 * 60;
