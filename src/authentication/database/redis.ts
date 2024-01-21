@@ -2,7 +2,6 @@ import Redis from "ioredis";
 import { unixTime } from "../../helper";
 import { HashedPassword } from "../password";
 import { Directory, FlatDirectory } from "../../vfs";
-import { localVaultMap } from "./local";
 import { addInterval } from "../../cleanup";
 const { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS, VFS_BACKUP_INTERVAL } = await import("../../env");
 
@@ -172,10 +171,11 @@ async function loadVFS(): Promise<boolean> {
 
 async function storeVFS() {
     const storeObject = Object.create(null);
-    for(const [ vaultName, vaultDirectory ] of localVaultMap.entries()) {
+    for(const [ vaultName, vaultDirectory ] of redisVaultMap.entries()) {
         storeObject[vaultName] = vaultDirectory.flat(true, -1);
     }
     const vfsString = JSON.stringify(storeObject);
+    console.log("VFS STRING: " + vfsString);
     await redis.set(vfsStoreLocation, vfsString);
 }
 
