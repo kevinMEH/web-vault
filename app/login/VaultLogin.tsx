@@ -1,9 +1,15 @@
 "use client"
 
+import { useEffect, useState } from "react";
 import Image, { StaticImageData } from "next/image";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "../../components/Button";
 import TextField from "../../components/TextField";
+
+import { post } from "../../src/requests";
+import { getVaultToken, removeVaultToken, setVaultToken } from "../../src/storage";
+import type { Expect as TrimExpect, Data as TrimData } from "../api/vault/trim/route";
+import type { Expect as LoginExpect, Data as LoginData } from "../api/vault/login/route";
 
 type VaultLoginParameters = {
     title: string;
@@ -17,39 +23,68 @@ const VaultLogin = ({ title, description, image, imageAlt, className = "" }: Vau
     const [vaultName, setVaultName] = useState("");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState(false);
+    const [error, setError] = useState(null as string | null);
     
-    function onLogin() {
-        // Check non empty values and regexes. Set error if necessary
+    const router = useRouter();
+    
+    useEffect(() => {
+        (async () => {
+            const vaultToken = getVaultToken();
+            if(vaultToken !== null) {
+                const trimmed = (await post<TrimExpect, TrimData>("/api/vault/trim", { token: vaultToken })).token ?? null;
+                if(trimmed === null) {
+                    removeVaultToken();
+                } else {
+                    setVaultToken(trimmed);
+                }
+            }
+        })();
+    }, [router]);
+    
+    async function onLogin() {
+        if(vaultName === "" || password === "") {
+            setError("Please enter in the vault name and password.");
+            return;
+        }
+        const existingToken = getVaultToken() ?? undefined;
         setSubmitting(true);
-        // Send a request. Check response, set error if needed.
-        // JWT set in local storage. Redirect to main vault page
+        const newToken = (await post<LoginExpect, LoginData>("/api/vault/login", { vaultName, password, existingToken })).token ?? null;
+        setSubmitting(false);
+        if(newToken === null) {
+            setError("Invalid vault name and password combination.");
+            return;
+        }
+        setVaultToken(newToken);
+        router.push(`/vault/${vaultName}`);
     }
 
-    return <div className={`flex flex-row bsm:flex-col-reverse bg-white border border-gray
-    rounded-3xl bsm:rounded-2xl overflow-clip ` + className}>
-        <div className="basis-[55%] py-14 bsm:pt-6 bsm:pb-10 px-12 bsm:px-8 space-y-4 bsm:space-y-3">
-            <h1 className="bsm:text-2xl bmd:text-3xl text-4xl text-main font-title font-bold">{title}</h1>
-            <p className="text-base bmd:text-sm font-inter text-sub">{description}</p>
-            <TextField name="Vault Name" labelText="Vault Name" id="vault-field"
-            placeholder="Vault Name" value={vaultName} setValue={setVaultName}
-            type="text" error={error} disabled={submitting}
-            className="pt-3.5 max-w-xs bsm:max-w-none !w-auto"
-            />
-            <TextField name="Password" labelText="Password" id="password-field"
-            placeholder="Password" value={password} setValue={setPassword}
-            type="password" error={error} disabled={submitting}
-            className="pt-2 max-w-xs bsm:max-w-none !w-auto"
-            />
-            <Button onClick={onLogin} disabled={submitting}
-            className="mt-2 text-sm font-inter font-medium text-main w-full max-w-xs bsm:max-w-none py-3
-            bg-accent-light hover:bg-accent-medium disabled:bg-accent-extra-light disabled:text-main/50
-            transition-colors"
-            >Access Vault</Button>
+    return <div className={`flex flex-row bg-white border border-gray rounded-3xl overflow-clip ` + className}>
+        <div className="basis-[55%] py-14 px-12 flex items-center">
+            <div className="w-full">
+                <h1 className="text-4xl text-main font-title font-bold">{title}</h1>
+                <p className="text-base font-inter text-sub pt-4">{description}</p>
+                { error !== null && <p className="text-sm font-inter text-error-light pt-3">{error}</p> }
+                <TextField name="Vault Name" labelText="Vault Name" id="vault-field"
+                    placeholder="Vault Name" value={vaultName} setValue={setVaultName}
+                    type="text" error={error !== null} disabled={submitting}
+                    className={"!mt-1 max-w-xs !w-auto " + (error === null ? "pt-5" : "pt-3")}
+                />
+                <TextField name="Password" labelText="Password" id="password-field"
+                    placeholder="Password" value={password} setValue={setPassword}
+                    type="password" error={error !== null} disabled={submitting}
+                    className="pt-5 max-w-xs !w-auto"
+                />
+                <Button onClick={onLogin} disabled={submitting}
+                    className="mt-5 text-sm font-inter font-medium text-main w-full max-w-xs 
+                    rounded-lg py-3 bg-accent-light hover:bg-accent-medium transition-colors
+                    disabled:bg-accent-extra-light disabled:text-main/50"
+                >Access Vault</Button>
+            </div>
         </div>
         <div className="basis-[45%] relative">
             <Image src={image} alt={imageAlt} priority={true}
-            className="w-full h-full bsm:h-40 absolute bsm:static inset-0 bsm:inset-auto object-cover" />
+                className="w-full h-full absolute inset-0 object-cover"
+            />
         </div>
     </div>
 }
