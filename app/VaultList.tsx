@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Button from "../components/Button";
 
 import { post } from "../src/requests";
-import { getVaultToken } from "../src/storage";
+import { getVaultToken, setVaultToken } from "../src/storage";
 import { objectFromBase64 } from "../src/jwt_helper";
 import type { Data, Expect } from "../app/api/vault/trim/route";
 import type { WebVaultPayload } from "../src/authentication/vault_token";
@@ -26,6 +26,7 @@ const VaultList = () => {
             if(trimmedToken === null) {
                 return [];
             }
+            setVaultToken(trimmedToken);
             const payload = objectFromBase64(trimmedToken.split(".")[1]) as WebVaultPayload;
             if(payload.access.length === 0) {
                 return [];
@@ -38,7 +39,7 @@ const VaultList = () => {
             } else {
                 setVaults(vaults);
             }
-        })
+        });
     }, [router]);
 
     return <>{
