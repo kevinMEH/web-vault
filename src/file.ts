@@ -226,7 +226,7 @@ function addFolder(targetPath: ValidatedPath): boolean {
     
     const [ parentPath, name ] = splitParentChild(targetPath);
     const parentDirectory = getDirectoryAt(parentPath);
-    if(parentDirectory === null || parentPath === null || name === null) {
+    if(parentDirectory === null || parentPath === null) {
         vaultLog(targetVault, "NON URGENT", `Making a new directory at "${targetPath}", but the parent directory does not exist.`);
         return false;
     }
@@ -255,7 +255,7 @@ function deleteItem(targetPath: ValidatedPath): boolean {
     const [ parentPath, name ] = splitParentChild(targetPath);
     const parentDirectory = getDirectoryAt(parentPath);
     
-    if(parentDirectory === null || parentPath === null || name === null) {
+    if(parentDirectory === null || parentPath === null) {
         vaultLog(vault, "NON URGENT", `Removing "${targetPath}", but the parent directory does not exist.`);
         return false;
     }
@@ -319,11 +319,11 @@ async function moveItem(originalPath: ValidatedPath, destinationPath: ValidatedP
     const destinationParentDirectory = getDirectoryAt(destinationParentPath);
     const originalParentDirectory = getDirectoryAt(originalParentPath);
     
-    if(originalParentDirectory === null || originalParentPath === null || originalName === null) {
+    if(originalParentDirectory === null || originalParentPath === null) {
         vaultLog(originalVault, "NON URGENT", `Moving "${originalPath}" to "${destinationPath}", but the original path's parent directory does not exist.`);
         return false;
     }
-    if(destinationParentDirectory === null || destinationParentPath === null || destinationName === null) {
+    if(destinationParentDirectory === null || destinationParentPath === null) {
         vaultLog(originalVault, "NON URGENT", `Moving "${originalPath}" to "${destinationPath}", but the destination path's parent directory does not exist.`);
         return false;
     }
@@ -411,7 +411,7 @@ async function copyItem(originalPath: ValidatedPath, destinationPath: ValidatedP
         vaultLog(originalVault, "NON URGENT", `Copying entry at "${originalPath}" to "${destinationPath}", but somehow there is no item at "${originalPath}".`);
         return false;
     }
-    if(destinationParentDirectory === null || destinationParentPath === null || destinationName === null) {
+    if(destinationParentDirectory === null || destinationParentPath === null) {
         vaultLog(originalVault, "NON URGENT", `Copying entry at "${originalPath}" to "${destinationPath}", but somehow the destination parent path does not exist.`);
         return false;
     }

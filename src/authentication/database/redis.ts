@@ -175,7 +175,6 @@ async function storeVFS() {
         storeObject[vaultName] = vaultDirectory.flat(true, -1);
     }
     const vfsString = JSON.stringify(storeObject);
-    console.log("VFS STRING: " + vfsString);
     await redis.set(vfsStoreLocation, vfsString);
 }
 
