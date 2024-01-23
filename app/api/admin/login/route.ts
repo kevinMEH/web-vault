@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { adminLogin } from "../../../../src/admin_auth";
-import { badParameters, ErrorResponse, NonAuthResponse, Answer, WithBody } from "../../../../src/request_helpers";
+import { badParameters, ErrorResponse, NonAuthResponse, Answer, WithBody } from "../../../../src/route_helpers";
 
 export type Expect = {
     adminName: string,

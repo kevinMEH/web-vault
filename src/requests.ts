@@ -1,6 +1,6 @@
 // Frontend only
 import axios from "axios"; // eslint-disable-line
-import type { ErrorResponse } from "./request_helpers";
+import type { ErrorResponse } from "./route_helpers";
 
 axios.defaults.validateStatus = null;
 

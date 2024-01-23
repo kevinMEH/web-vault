@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { adminLogout } from "../../../../src/admin_auth";
-import { ErrorResponse, NonAuthResponse, Answer, WithBody, badParameters } from "../../../../src/request_helpers";
+import { ErrorResponse, NonAuthResponse, Answer, WithBody, badParameters } from "../../../../src/route_helpers";
 
 export type Expect = {
     token: string

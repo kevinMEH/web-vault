@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { Answer, badParameters, ErrorResponse, NonAuthResponse, WithBody } from "../../../../src/request_helpers";
+import { Answer, badParameters, ErrorResponse, NonAuthResponse, WithBody } from "../../../../src/route_helpers";
 import { vaultLogout } from "../../../../src/vault_auth";
 
 export type Expect = {

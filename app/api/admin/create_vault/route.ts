@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { Answer, AuthResponse, badParameters, ErrorResponse, WithAdminAuthentication } from "../../../../src/request_helpers";
+import { Answer, AuthResponse, badParameters, ErrorResponse, WithAdminAuthentication } from "../../../../src/route_helpers";
 import { createNewVault } from "../../../../src/vault";
 
 export type Expect = {
