@@ -353,20 +353,24 @@ describe("File function tests", () => {
         assertDeletedFiles.push(["2nd copy: Copying folders across vaults", testVaultOne + "/" + copiedRealFile]);
     });
     
-    it("Checks copying file to file replaces file", async () => {
-        assert(await copyItem(packagePath, testVaultTwo + "/some folder/copied package" as ValidatedPath) === true);
-        const replacedRealFile = (getAt(testVaultTwo + "/some folder/copied package" as ValidatedPath) as File).realFile;
-        assert(await copyItem(licensePath, testVaultTwo + "/some folder/copied package" as ValidatedPath) === true);
-        const oldEntry = getAt(licensePath);
-        const copiedEntry = getAt(testVaultTwo + "/some folder/copied package" as ValidatedPath);
-        assert(oldEntry !== null);
-        assert(copiedEntry !== null);
-        assert(oldEntry.isDirectory === copiedEntry.isDirectory);
-        assert(oldEntry.getByteSize() === copiedEntry.getByteSize());
-        assert(replacedRealFile !== (copiedEntry as File).realFile);
-        // Make sure that the replaced file's real file will be deleted
-        assertDeletedFiles.push(["Copying file to file replaces file", testVaultTwo + "/" + replacedRealFile]);
+    it("Checks copying file to file fails", async () => {
+        const destinationPath = testVaultTwo + "/some folder/copied package" as ValidatedPath;
+        assert(await copyItem(packagePath, destinationPath) === true);
+        const originalEntry = getAt(destinationPath) as File | null;
+        assert(originalEntry !== null);
+        assert(!originalEntry.isDirectory);
+        const originalRealFile = (getAt(destinationPath) as File).realFile;
+
+        assert(await copyItem(licensePath, destinationPath) === false);
+        const attemptedCopyOldEntry = getAt(licensePath);
+        const attemptedCopyNewEntry = getAt(destinationPath);
+        assert(attemptedCopyOldEntry !== null);
+        assert(attemptedCopyNewEntry !== null);
+        assert(attemptedCopyNewEntry === originalEntry);
+        assert(originalRealFile === (attemptedCopyNewEntry as File).realFile);
+
         assert(deleteItem(testVaultTwo + "/some folder/copied package" as ValidatedPath) === true);
+        assertDeletedFiles.push(["\"Copying file to file fails\" cleanup", testVaultTwo + "/" + originalRealFile]);
     });
     
     it("Checks copying restrictions", async () => {
