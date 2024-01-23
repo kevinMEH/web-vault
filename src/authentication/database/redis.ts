@@ -3,7 +3,7 @@ import { unixTime } from "../../helper";
 import { HashedPassword } from "../password";
 import { Directory, FlatDirectory } from "../../vfs";
 import { addInterval } from "../../cleanup";
-const { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS, VFS_BACKUP_INTERVAL } = await import("../../env");
+const { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS, VFS_BACKUP_INTERVAL, TESTING } = await import("../../env");
 
 const throwRedisError = () => { throw new Error("Attempting to use Redis with the REDIS environment variable turned off."); }
 
@@ -142,7 +142,7 @@ const vfsStoreLocation = "webvault:vfs";
 
 const redisVaultMap: Map<string, Directory> = new Map();
 
-if(USING_REDIS) {
+if(USING_REDIS && !TESTING) {
     const loadVFSResult = await loadVFS();
     if(loadVFSResult === false) {
         console.log("No VFS store found on Redis. No VFS were loaded. (Normal if this is the first time running.");
