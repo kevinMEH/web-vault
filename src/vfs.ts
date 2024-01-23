@@ -82,8 +82,8 @@ class File {
      * @param includeRealFile 
      * @returns Object representation of this File
      */
-    flat(includeRealFile: true): FlatFile;
     flat(includeRealFile: false): SimpleFlatFile;
+    flat(includeRealFile: true): FlatFile;
     flat(includeRealFile: true | false): FlatFile | SimpleFlatFile {
         if(includeRealFile) {
             return {
@@ -249,11 +249,13 @@ class Directory {
      * 
      * Pass in a super large number, or just -1 to copy the entire tree.
      * 
+     * TODO: Add maximum number of entries to return to prevent DOS
+     * 
      * @param depth
      * @returns 
      */
-    flat(includeRealFile: true, depth: number): FlatDirectory;
     flat(includeRealFile: false, depth: number): SimpleFlatDirectory;
+    flat(includeRealFile: true, depth: number): FlatDirectory;
     flat(includeRealFile: true | false, depth: number): FlatDirectory | SimpleFlatDirectory {
         if(depth == 0) {
             return {
@@ -292,8 +294,8 @@ class Directory {
      * @param depth 
      * @returns 
      */
-    stringify(includeRealFile: true, depth: number): FlatDirectoryString;
     stringify(includeRealFile: false, depth: number): FlatSimpleDirectoryString;
+    stringify(includeRealFile: true, depth: number): FlatDirectoryString;
     stringify(includeRealFile: true | false, depth: number): FlatDirectoryString | FlatSimpleDirectoryString {
         return JSON.stringify(this.flat(includeRealFile as any, depth)) as FlatDirectoryString | FlatSimpleDirectoryString;
     }
