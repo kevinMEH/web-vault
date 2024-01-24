@@ -4,13 +4,19 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert";
 import axios from "axios"; // eslint-disable-line
+import { post } from "../src/requests";
 
 import { cleanup } from "../src/cleanup";
-import { createToken } from "../src/authentication/vault_token";
+import { createToken, WebVaultPayload } from "../src/authentication/vault_token";
 import { deleteVaultPassword, setVaultPassword } from "../src/authentication/database";
-import JWT, { unixTime } from "jwt-km";
+import JWT, { Header, unixTime } from "jwt-km";
 import { DEFAULT_ADMIN_NAME, DOMAIN, JWT_SECRET } from "../src/env";
 import { adminAccess } from "../src/admin_auth";
+
+import type { Expect as AdminLoginExpect, Data as AdminLoginData } from "../app/api/admin/login/route";
+import type { Expect as CreateVaultExpect, Data as CreateVaultData } from "../app/api/admin/create_vault/route";
+import type { Expect as DeleteVaultExpect, Data as DeleteVaultData } from "../app/api/admin/delete_vault/route";
+import type { Expect as VaultLoginExpect, Data as VaultLoginData } from "../app/api/vault/login/route";
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 axios.defaults.baseURL = "http://172.20.80.1:3000/api"; // Windows localhost IP from WSL
@@ -232,9 +238,106 @@ describe("API tests", () => {
         });
     });
     
-    it("Tests api/vault/login", () => {
-        // TODO: Implement vault tests. Requires vault creation API to work first
+    describe("Vault API tests", async () => {
+        const vaultOne = "vault_api_test_one";
+        const vaultTwo = "vault_api_test_two";
+
+        before(async () => {
+            const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
+            assert(adminToken !== null);
+            const createVaultOneSuccess = (await post<CreateVaultExpect, CreateVaultData>("admin/create_vault", { adminToken, vaultName: vaultOne, password: "password" })).success;
+            assert(createVaultOneSuccess);
+            const createVaultTwoSuccess = (await post<CreateVaultExpect, CreateVaultData>("admin/create_vault", { adminToken, vaultName: vaultTwo, password: vaultTwo })).success;
+            assert(createVaultTwoSuccess);
+        });
+
+        it("Tests vault/login", async () => {
+            await checkResponse("vault/login", [
+                undefined, null, "asdf",
+                `{ #"hello": 123 }`,
+                `{ "hello": !123 }`,
+                `{ "hello": 123> }`,
+                `{ "hello": <123> }`,
+                `<div>{}</div>`,
+            ], (data, parameter) => {
+                assert(data.error === "Bad parameters. Expected JSON body.", failString(data, parameter, "expected JSON body error"));
+            });
+            await checkResponse("vault/login", [
+                undefined,
+                null,
+                `vaultName: ${vaultOne}, password: "password"`,
+                {},
+                { vaultName: vaultOne },
+                { vaultName: 12312 },
+                { vaultName: null },
+                { vaultName: vaultOne, password: 1212 },
+                { vaultName: vaultOne, password: null },
+                { vaultName: vaultOne, password: { password: "password" } },
+                { password: null },
+                { password: 1234 },
+                { password: "password" },
+                { randomParameter: null },
+                { randomParameter: "password" },
+                { randomParameter: "password", vaultName: vaultOne },
+                { randomParameter: "password", password: "password" },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Bad parameters"), failString(data, parameter, "bad parameters error"))
+            });
+            {
+                const vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOne, password: "wrong password" })).token ?? null;
+                assert(vaultToken === null);
+            }
+            {
+                const vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOne, password: "wrong password", existingToken: "invalid.token.forsure" })).token ?? null;
+                assert(vaultToken === null);
+            }
+            
+            {
+                const vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOne, password: "password", existingToken: "invalid.token.forsure" })).token ?? null;
+                assert(vaultToken !== null);
+                assert(JWT.unwrap(vaultToken, JWT_SECRET) !== null, "The secret key used by the server and the test is not the same. Please fix or the next few tests may be ineffective.");
+                const unwrapped = JWT.unwrap(vaultToken, JWT_SECRET);
+                assert(unwrapped !== null);
+                const [ _header, payload ] = unwrapped as [ Header, WebVaultPayload ];
+                assert(payload.access.length === 1);
+                assert(payload.access[0].vault === vaultOne);
+            }
+
+            const oneVaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOne, password: "password" })).token ?? null;
+            assert(oneVaultToken !== null);
+            const oneUnwrapped = JWT.unwrap(oneVaultToken, JWT_SECRET);
+            assert(oneUnwrapped !== null);
+            const [ _header, oneVaultPayload ] = oneUnwrapped as [ Header, WebVaultPayload ];
+            assert(oneVaultPayload.access.length === 1);
+            assert(oneVaultPayload.access[0].vault === vaultOne);
+            
+            const bothVaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultTwo, password: vaultTwo, existingToken: oneVaultToken })).token ?? null;
+            assert(bothVaultToken !== null);
+            const bothUnwrapped = JWT.unwrap(bothVaultToken, JWT_SECRET);
+            assert(bothUnwrapped !== null);
+            const [ __header, bothVaultPayload ] = bothUnwrapped as [ Header, WebVaultPayload ];
+            assert(bothVaultPayload.access.length === 2);
+            assert(bothVaultPayload.access.some(access => access.vault === vaultOne));
+            assert(bothVaultPayload.access.some(access => access.vault === vaultTwo));
+            
+            const stillBothVaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOne, password: "password", existingToken: bothVaultToken })).token ?? null;
+            assert(stillBothVaultToken !== null)
+            const stillBothUnwrapped = JWT.unwrap(stillBothVaultToken, JWT_SECRET);
+            assert(stillBothUnwrapped !== null);
+            const [ ___header, stillBothVaultPayload ] = stillBothUnwrapped as [ Header, WebVaultPayload ];
+            assert(stillBothVaultPayload.access.length === 2);
+            assert(stillBothVaultPayload.access.some(access => access.vault === vaultOne));
+            assert(stillBothVaultPayload.access.some(access => access.vault === vaultTwo));
+        });
+        
+        after(async () => {
+            const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
+            assert(adminToken !== null);
+            await post<DeleteVaultExpect, DeleteVaultData>("admin/delete_vault", { adminToken, vaultName: vaultOne });
+            await post<DeleteVaultExpect, DeleteVaultData>("admin/delete_vault", { adminToken, vaultName: vaultTwo });
+        });
     });
+    
     
     after(async () => {
         await cleanup();
