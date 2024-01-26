@@ -1,5 +1,9 @@
 import fs from "fs/promises";
 import path from "path";
+import type { File as WebFile } from "buffer";
+import { Readable } from "stream";
+import { pipeline } from "stream/promises";
+
 import { metaLog, vaultLog } from "./logger";
 import { getVaultFromPath, getDirectoryAt, splitParentChild, getAt, getVaultVFS } from "./controller";
 import type { ValidatedPath, VaultPath } from "./controller";
@@ -11,6 +15,7 @@ import { shutdown } from "./cleanup";
 
 const deletionTimeout = 5 * 1000;
 const tempFileDirectory = path.join(BASE_VAULT_DIRECTORY, "temp");
+const tempVaultName = "temp" as VaultPath;
 const hexTo12 = Math.pow(16, 12);
 
 function randomFileName(): string {
@@ -26,7 +31,7 @@ function randomFileName(): string {
  * @param vault 
  * @returns 
  */
-async function getTempFile(vault: VaultPath): Promise<string> {
+async function __getTempFile(vault: VaultPath): Promise<string> {
     let errorCount = 0;
     while(true) {
         const tempName = randomFileName();
@@ -94,10 +99,8 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * - The corresponding spot in the VFS is checked to see if the file upload is
  * allowed. (For ex: If there is a folder with the same name there, then it is
  * not allowed to be uploaded.)
- * - The request is parsed using Formidable, which saves the file into a
- * temporary directory.
- * - Once formidable finishes parsing, the following function is called to move
- * the file from the temporary directory into the target vault.
+ * - File is written to random file in temp directory
+ * - __tempToVault is called to move from temp directory to vault
  * - Once moving is finished, the corresponding entry in the VFS is created to
  * include information from the file.
  * 
@@ -119,6 +122,34 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  */
 
 /**
+ * Writes a File (from the web files API) into a temporary file in 
+ * 
+ * @param file 
+ */
+async function addFile(file: WebFile): Promise<boolean> {
+    const tempFileName = await __getTempFile(tempVaultName);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const readable = Readable.from(buffer);
+    // Reserve file to avoid conflicts
+    try {
+        // TODO: TODO: TODO: IMPORTANT: Performance comparison
+        // TODO: Security analysis
+        // TODO: Error handling
+        // TODO: Disk space check
+        // TODO: Other checks
+        // TODO: VERY IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // TODO: VERY IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // TODO: VERY IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        const handle = await fs.open(path.join(tempFileDirectory, tempFileName), "w");
+        await pipeline(readable, handle.createWriteStream());
+    } catch(error) {
+        console.error(error);
+        return false;
+    }
+    return true;
+}
+
+/**
  * Adds a file by moving the uploaded file from the temp path into the vault
  * path, and then adding the VFS entry.
  * 
@@ -132,7 +163,7 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * @param desiredPath 
  * @param tempFileName 
  */
-async function addFile(desiredPath: ValidatedPath, tempFileName: string): Promise<ValidatedPath | boolean> {
+async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): Promise<ValidatedPath | boolean> {
     const targetVault = getVaultFromPath(desiredPath);
     const directories = desiredPath.split("/");
 
@@ -172,7 +203,7 @@ async function addFile(desiredPath: ValidatedPath, tempFileName: string): Promis
     
     // Moving from temp to new
     const tempFilePath = path.join(tempFileDirectory, tempFileName);
-    const newFileName = await getTempFile(targetVault);
+    const newFileName = await __getTempFile(targetVault);
     const newFilePath = path.join(BASE_VAULT_DIRECTORY, targetVault, newFileName);
     try {
         await fs.rename(tempFilePath, newFilePath);
@@ -360,7 +391,7 @@ async function moveItem(originalPath: ValidatedPath, destinationPath: ValidatedP
 
         for(const file of files) {
             const realFilePath = path.join(BASE_VAULT_DIRECTORY, originalVault, file.realFile);
-            const newFileName = await getTempFile(destinationVault)
+            const newFileName = await __getTempFile(destinationVault)
             const newFilePath = path.join(BASE_VAULT_DIRECTORY, destinationVault, newFileName);
             const promise = fs.rename(realFilePath, newFilePath).then(() => {
                 file.realFile = newFileName;
@@ -428,7 +459,7 @@ async function copyItem(originalPath: ValidatedPath, destinationPath: ValidatedP
     
     for(const copiedFile of copiedFiles) {
         const realFilePath = path.join(BASE_VAULT_DIRECTORY, originalVault, copiedFile.realFile);
-        const copiedFileName = await getTempFile(destinationVault);
+        const copiedFileName = await __getTempFile(destinationVault);
         const copiedFilePath = path.join(BASE_VAULT_DIRECTORY, destinationVault, copiedFileName);
         const promise = fs.cp(realFilePath, copiedFilePath).then(() => {
             copiedFile.realFile = copiedFileName;
@@ -452,7 +483,8 @@ async function copyItem(originalPath: ValidatedPath, destinationPath: ValidatedP
 }
 
 export {
-    getTempFile,
+    __getTempFile,
+    __tempToVault,
     addFile,
     addFolder,
     deleteItem,

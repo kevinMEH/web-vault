@@ -22,7 +22,7 @@ import type { Stats } from "fs";
 
 const { createNewVault, deleteVault } = await import("../src/vault");
 const { getAt, getDirectoryAt, validate } = await import("../src/controller");
-const { getTempFile, addFile, addFolder, copyItem, moveItem, deleteItem } = await import("../src/file");
+const { __getTempFile, __tempToVault, addFolder, copyItem, moveItem, deleteItem } = await import("../src/file");
 const { BASE_VAULT_DIRECTORY } = await import("../src/env");
 
 describe("File function tests", () => {
@@ -69,11 +69,11 @@ describe("File function tests", () => {
     */
 
     before(async () => {
-        gitignoreTemp = await getTempFile(tempVault);
-        licenseTemp = await getTempFile(tempVault);
-        tsconfigTemp = await getTempFile(tempVault);
-        packageTemp = await getTempFile(tempVault);
-        packageLockTemp = await getTempFile(tempVault);
+        gitignoreTemp = await __getTempFile(tempVault);
+        licenseTemp = await __getTempFile(tempVault);
+        tsconfigTemp = await __getTempFile(tempVault);
+        packageTemp = await __getTempFile(tempVault);
+        packageLockTemp = await __getTempFile(tempVault);
     
         assert(await createNewVault(testVaultOne, "randompassword") === null);
         assert(await createNewVault(testVaultTwo, "randompassword") === null);
@@ -114,11 +114,11 @@ describe("File function tests", () => {
     });
 
     it("Tests adding files", async () => {
-        assert(await addFile(gitignorePath, gitignoreTemp) === true);
-        assert(await addFile(licensePath, licenseTemp) === true);
-        assert(await addFile(tsconfigPath, tsconfigTemp) === true);
-        assert(await addFile(packagePath, packageTemp) === true);
-        assert(await addFile(packageLockPath, packageLockTemp) === true);
+        assert(await __tempToVault(gitignorePath, gitignoreTemp) === true);
+        assert(await __tempToVault(licensePath, licenseTemp) === true);
+        assert(await __tempToVault(tsconfigPath, tsconfigTemp) === true);
+        assert(await __tempToVault(packagePath, packageTemp) === true);
+        assert(await __tempToVault(packageLockPath, packageLockTemp) === true);
     });
     
     it("Checks that the file structure is correct", async () => {
