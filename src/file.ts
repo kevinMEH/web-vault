@@ -1,8 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
-import type { File as WebFile } from "buffer";
-import { Readable } from "stream";
 import { pipeline } from "stream/promises";
+import { File as WebFile } from "buffer";
 
 import { metaLog, vaultLog } from "./logger";
 import { getVaultFromPath, getDirectoryAt, splitParentChild, getAt, getVaultVFS } from "./controller";
@@ -107,8 +106,8 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * Notes:
  * 
  * How is file size going to be read?
- * Using the Content-Length header, which is generally considered safe to use as
- * an estimation of the actual file size.
+ * Using the file.size property, which is considered safe to use as an
+ * estimation of the actual byte size of the file.
  * 
  * What if during the file upload time, a new file / directory has been created
  * with the same name?
@@ -122,31 +121,32 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  */
 
 /**
- * Writes a File (from the web files API) into a temporary file in 
+ * Writes a File (from the web files API) into a temporary file in the temp
+ * vault directory.
  * 
  * @param file 
  */
-async function addFile(file: WebFile): Promise<boolean> {
+async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<ValidatedPath | boolean> {
+    // Reserve temp file
     const tempFileName = await __getTempFile(tempVaultName);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const readable = Readable.from(buffer);
-    // Reserve file to avoid conflicts
+    const tempFilePath = path.join(tempFileDirectory, tempFileName);
     try {
         // TODO: TODO: TODO: IMPORTANT: Performance comparison
-        // TODO: Security analysis
-        // TODO: Error handling
-        // TODO: Disk space check
-        // TODO: Other checks
-        // TODO: VERY IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // TODO: VERY IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // TODO: VERY IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        const handle = await fs.open(path.join(tempFileDirectory, tempFileName), "w");
-        await pipeline(readable, handle.createWriteStream());
+        // TODO: Disk space check ( See TODO.md )
+        const handle = await fs.open(tempFilePath, "w");
+        await pipeline(file.stream(), handle.createWriteStream());
+        return __tempToVault(desiredPath, tempFileName);
     } catch(error) {
-        console.error(error);
+        metaLog("file system", "ERROR", `Trying to add file at "${tempFilePath}", but encountered unexpected error ${(error as Error).message} instead.`);
+        await fs.unlink(tempFilePath).catch(error => {
+            if((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                metaLog("file system", "ERROR", `Trying to cleanup file at "${tempFilePath}" after encountering error, but encountered unexpected error ${(error as Error).message} instead.`);
+            } else {
+                metaLog("file system", "WARNING", `Trying to cleanup file at "${tempFilePath}" after encountering error, but the temp file does not exist.`);
+            }
+        });
         return false;
     }
-    return true;
 }
 
 /**
