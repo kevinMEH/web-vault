@@ -179,6 +179,47 @@ export async function WithDoublePathAuthentication<Data>(
     }
 }
 
+async function _getFormData(request: NextRequest): Promise<FormData | null> {
+    try {
+        return request.formData();
+    } catch(error) {
+        return null;
+    }
+}
+
+export async function WithFormAuthentication<Data>(
+    request: NextRequest,
+    logic: (formData: FormData, path: string) => Promise<NonAuthResponse<Data>>
+): Promise<AuthResponse<Data | ErrorResponse>> {
+    const formData = await _getFormData(request);
+    if(formData === null) {
+        return Answer<ErrorResponse>(400, {
+            error: badParameters("Expected FormData body.")
+        }) as unknown as AuthResponse<ErrorResponse>;
+    }
+    try {
+        const vaultToken = formData.get("vaultToken");
+        const path = formData.get("path");
+        if(typeof vaultToken === "string" && typeof path === "string") {
+            const vaultName = path.substring(0, path.indexOf("/")) || path;
+            if(await vaultAccessible(vaultName, vaultToken)) {
+                return logic(formData, path) as unknown as Promise<AuthResponse<Data>>;
+            }
+            return Answer<ErrorResponse>(401, {
+                error: badParameters("Unauthorized request. Provided vaultToken does not have access to path.")
+            }) as unknown as AuthResponse<ErrorResponse>;
+        }
+        return Answer<ErrorResponse>(401, {
+            error: badParameters("Unauthorized request. Expected body with valid vaultToken and path string attributes.")
+        }) as unknown as AuthResponse<ErrorResponse>;
+    } catch(error) {
+        metaLog("requests", "ERROR", `Unexpected error "${(error as Error).message}" has occurred in ${request.url} with request body ${JSON.stringify([...formData.entries()])}.`)
+        return Answer<ErrorResponse>(500, {
+            error: badParameters("Some kind of server error has occurred. Please notify admins.")
+        }) as unknown as AuthResponse<ErrorResponse>;
+    }
+}
+
 export function badParameters(expect: string) {
     return `Bad parameters. ${expect}`;
 }
