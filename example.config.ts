@@ -2,20 +2,17 @@
 
 const ENV: ENV = {
 
-
-
-
     // Set to true if using Web Vault as an application. If you do not know what
     // this means or what this does, set it to true. DO NOT play around with this
     // setting.
     PRODUCTION: true
 
 
-
     // Set to true if using Redis. Set to false or undefined if using in memory
     // database.
     // Ex: true, false
     ,REDIS: undefined
+
 
 
     // -------------------------------------------------
@@ -109,10 +106,10 @@ const ENV: ENV = {
     ,DEFAULT_ADMIN_PASSWORD_HASH: undefined
 
 
+
     // VFS Backup Interval in seconds. By default, every 30 minutes.
     // Ex: 10 * 60
     ,VFS_BACKUP_INTERVAL: undefined
-
 
     // Where to store vaults. By default, in the ./vaults folder.
     // Ex: "./vaults"
@@ -124,26 +121,42 @@ const ENV: ENV = {
 
 
 
+    // Maximum depth of VFS allowed to be sent to the client. By default, 5
+    // Ex: 2, 3, 4, 99
+    ,MAX_VFS_DEPTH: undefined
+    
+    // Default depth of VFS sent to the client. By default, 3
+    // Ex: 1, 2, 3, 4
+    ,DEFAULT_VFS_DEPTH: undefined
+
 }
 
 type ENV = {
     PRODUCTION: boolean,
-    DOMAIN?: string,
+
     REDIS?: boolean,
+
     DATABASE_SAVE_INTERVAL?: number,
     PURGE_INTERVAL?: number,
+    VFS_STORE_DIRECTORY?: string,
+
+    DOMAIN?: string,
     JWT_EXPIRATION?: number,
     ADMIN_JWT_EXPIRATION?: number,
     ALLOW_REFRESH?: boolean,
     JWT_SECRET?: string,
     PASSWORD_SALT?: string,
     ITERATION_COUNT?: number,
+
     DEFAULT_ADMIN_NAME?: string,
     DEFAULT_ADMIN_PASSWORD_HASH?: string,
+
     BASE_VAULT_DIRECTORY?: string,
     LOGGING_DIRECTORY?: string,
-    VFS_STORE_DIRECTORY?: string,
-    VFS_BACKUP_INTERVAL?: number
+    VFS_BACKUP_INTERVAL?: number,
+    
+    MAX_VFS_DEPTH?: number,
+    DEFAULT_VFS_DEPTH?: number
 }
 
 export default ENV;
