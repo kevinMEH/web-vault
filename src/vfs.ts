@@ -79,6 +79,7 @@ class File {
     update(flatFile: SimpleFile): void {
         this.byteSize = flatFile.byteSize;
         this.lastModified = new Date(flatFile.lastModified);
+        this.realFile = flatFile.realFile;
     }
 }
 
@@ -234,7 +235,7 @@ class Directory {
             depth--;
             const flatContents = [];
             for(const item of this.contents) {
-                flatContents.push(item.flat(includeRealFile as any, depth));
+                flatContents.push(item.flat(includeRealFile, depth));
             }
             return {
                 name: this.name,
@@ -261,7 +262,7 @@ class Directory {
      * @returns 
      */
     stringify(includeRealFile: boolean, depth: number): string {
-        return JSON.stringify(this.flat(includeRealFile as any, depth));
+        return JSON.stringify(this.flat(includeRealFile, depth));
     }
 
     /**
@@ -305,7 +306,7 @@ class Directory {
             const maybeCurrent = this.getAny(item.name);
             if(maybeCurrent !== null && maybeCurrent.isDirectory === item.isDirectory) {
                 // Update existing, and push to new contents
-                maybeCurrent.update(item as any);
+                maybeCurrent.update(item as never);
                 newContents.push(maybeCurrent);
             } else {
                 // Does not currently exist, or is not of the same type: attach later
