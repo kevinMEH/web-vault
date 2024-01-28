@@ -1,7 +1,7 @@
 // api/file/vfs
 
 import { NextRequest } from "next/server";
-import { SimpleFlatDirectory } from "../../../../src/vfs";
+import { SimpleDirectory } from "../../../../src/vfs";
 import { getDirectoryAt, validate } from "../../../../src/controller";
 import { Answer, AuthResponse, badParameters, ErrorResponse, WithSinglePathAuthentication } from "../../../../src/route_helpers";
 import { MAX_VFS_DEPTH, DEFAULT_VFS_DEPTH } from "../../../../src/env";
@@ -13,7 +13,7 @@ export type Expect = {
 }
 
 export type Data = {
-    directory: SimpleFlatDirectory | undefined
+    directory: SimpleDirectory | undefined
 } | ErrorResponse;
 
 export function POST(request: NextRequest): Promise<AuthResponse<Data>> {

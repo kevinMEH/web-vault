@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 import { unixTime } from "../../helper";
 import { HashedPassword } from "../password";
-import { Directory, FlatDirectory } from "../../vfs";
+import { Directory, SimpleDirectory } from "../../vfs";
 import { addInterval } from "../../cleanup";
 const { DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, USING_REDIS, VFS_BACKUP_INTERVAL, TESTING } = await import("../../env");
 
@@ -158,7 +158,7 @@ async function loadVFS(): Promise<boolean> {
     if(fileString === null) {
         return false;
     }
-    const storeObject: Record<string, FlatDirectory> = Object.assign(Object.create(null), JSON.parse(fileString));
+    const storeObject: Record<string, SimpleDirectory> = Object.assign(Object.create(null), JSON.parse(fileString));
     for(const vaultName in storeObject) {
         const flatDirectory = storeObject[vaultName];
         const vaultDirectory = new Directory(flatDirectory.name, [], flatDirectory.lastModified);

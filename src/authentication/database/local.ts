@@ -8,7 +8,7 @@ import { unixTime } from "../../helper"
 import { metaLog } from "../../logger";
 import { addInterval } from "../../cleanup";
 import CustomError from "../../custom_error";
-import { Directory, FlatDirectory } from "../../vfs";
+import { Directory, SimpleDirectory } from "../../vfs";
 
 const { USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL, DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, TESTING, VFS_BACKUP_INTERVAL, VFS_STORE_DIRECTORY } = await import("../../env");
 
@@ -670,7 +670,7 @@ if(!TESTING && !USING_REDIS) {
 
 
 async function loadVFS(): Promise<CustomError | null> {
-    let storeObject: Record<string, FlatDirectory>;
+    let storeObject: Record<string, SimpleDirectory>;
     try {
         const fileString = (await fs.readFile(vfsStoreLocation)).toString();
         storeObject = Object.assign(Object.create(null), JSON.parse(fileString));

@@ -1,38 +1,18 @@
-export type FlatFile = {
+// Simplified File which can be stringified and parsed
+export type SimpleFile = {
     name: string;
     byteSize: number;
     lastModified: string;
     realFile: string;
     isDirectory: boolean;
 } & { __type: "FlatFile" };
-
-export type FlatDirectory = {
+// Simplified Directory which can be stringified and parsed
+export type SimpleDirectory = {
     name: string;
     lastModified: string;
     isDirectory: boolean;
-    contents: (FlatFile | FlatDirectory)[];
+    contents: (SimpleFile | SimpleDirectory)[];
 } & { __type: "FlatDirectory" };
-
-export type FlatDirectoryString = string & { __type: "FlatDirectoryString" };
-
-// Simplified FlatFile with an empty string for sending to the client
-export type SimpleFlatFile = {
-    name: string;
-    byteSize: number;
-    lastModified: string;
-    realFile: "";
-    isDirectory: boolean;
-} & { __type: "SimpleFlatFile" };
-
-// FlatDirectory containing simplified FlatFiles for sending to the client
-export type SimpleFlatDirectory = {
-    name: string;
-    lastModified: string;
-    isDirectory: boolean;
-    contents: (SimpleFlatFile | SimpleFlatDirectory)[];
-} & { __type: "SimpleFlatDirectory" };
-
-export type FlatSimpleDirectoryString = string & { __type: "FlatSimpleDirectoryString" };
 
 // Files will be laid out in a flat structure in the root vault directory
 // The VFS will represent the actual directory subdirectory structure.
@@ -82,33 +62,21 @@ class File {
      * @param includeRealFile 
      * @returns Object representation of this File
      */
-    flat(includeRealFile: false): SimpleFlatFile;
-    flat(includeRealFile: true): FlatFile;
-    flat(includeRealFile: true | false): FlatFile | SimpleFlatFile {
-        if(includeRealFile) {
-            return {
-                name: this.name,
-                byteSize: this.byteSize,
-                lastModified: this.lastModified.toJSON(),
-                realFile: this.realFile,
-                isDirectory: false
-            } as FlatFile;
-        } else {
-            return {
-                name: this.name,
-                byteSize: this.byteSize,
-                lastModified: this.lastModified.toJSON(),
-                realFile: "",
-                isDirectory: false
-            } as SimpleFlatFile;
-        }
+    flat(includeRealFile: boolean): SimpleFile {
+        return {
+            name: this.name,
+            byteSize: this.byteSize,
+            lastModified: this.lastModified.toJSON(),
+            realFile: includeRealFile ? this.realFile : "",
+            isDirectory: false
+        } as SimpleFile;
     }
     
     clone(modified: boolean): File {
         return new File(this.name, this.byteSize, this.realFile, modified ? undefined : this.lastModified.toJSON());
     }
     
-    update(flatFile: FlatFile): void {
+    update(flatFile: SimpleFile): void {
         this.byteSize = flatFile.byteSize;
         this.lastModified = new Date(flatFile.lastModified);
     }
@@ -254,16 +222,14 @@ class Directory {
      * @param depth
      * @returns 
      */
-    flat(includeRealFile: false, depth: number): SimpleFlatDirectory;
-    flat(includeRealFile: true, depth: number): FlatDirectory;
-    flat(includeRealFile: true | false, depth: number): FlatDirectory | SimpleFlatDirectory {
+    flat(includeRealFile: boolean, depth: number): SimpleDirectory {
         if(depth == 0) {
             return {
                 name: this.name,
                 lastModified: this.lastModified.toJSON(),
                 isDirectory: true,
-                contents: []
-            } as unknown as FlatDirectory | SimpleFlatDirectory;
+                contents: [] as (SimpleFile | SimpleDirectory)[]
+            } as SimpleDirectory;
         } else {
             depth--;
             const flatContents = [];
@@ -275,7 +241,7 @@ class Directory {
                 lastModified: this.lastModified.toJSON(),
                 isDirectory: true,
                 contents: flatContents
-            } as FlatDirectory | SimpleFlatDirectory;
+            } as SimpleDirectory;
         }
     }
     
@@ -294,10 +260,8 @@ class Directory {
      * @param depth 
      * @returns 
      */
-    stringify(includeRealFile: false, depth: number): FlatSimpleDirectoryString;
-    stringify(includeRealFile: true, depth: number): FlatDirectoryString;
-    stringify(includeRealFile: true | false, depth: number): FlatDirectoryString | FlatSimpleDirectoryString {
-        return JSON.stringify(this.flat(includeRealFile as any, depth)) as FlatDirectoryString | FlatSimpleDirectoryString;
+    stringify(includeRealFile: boolean, depth: number): string {
+        return JSON.stringify(this.flat(includeRealFile as any, depth));
     }
 
     /**
@@ -311,15 +275,15 @@ class Directory {
      * 
      * @param flatItem 
      */
-    private attach(flatItem: FlatFile | FlatDirectory): void {
+    private attach(flatItem: SimpleFile | SimpleDirectory): void {
         if(flatItem.isDirectory) {
             // Create new directory, and then update itself.
             const newDirectory = new Directory(flatItem.name, []);
-            newDirectory.update(flatItem as FlatDirectory);
+            newDirectory.update(flatItem as SimpleDirectory);
             this.addEntry(newDirectory, false);
         } else {
             // Create new file from flatFile
-            const newFile = new File(flatItem.name, (flatItem as FlatFile).byteSize, (flatItem as FlatFile).realFile, flatItem.lastModified);
+            const newFile = new File(flatItem.name, (flatItem as SimpleFile).byteSize, (flatItem as SimpleFile).realFile, flatItem.lastModified);
             this.addEntry(newFile, false);
         }
     }
@@ -332,11 +296,11 @@ class Directory {
      * 
      * @param flatDirectory - Flattened Directory object
      */
-    update(flatDirectory: FlatDirectory): void {
+    update(flatDirectory: SimpleDirectory): void {
         this.lastModified = new Date(flatDirectory.lastModified);
 
         const newContents: (File | Directory)[] = [];
-        const toAttach: (FlatFile | FlatDirectory)[] = [];
+        const toAttach: (SimpleFile | SimpleDirectory)[] = [];
         for(const item of flatDirectory.contents) {
             const maybeCurrent = this.getAny(item.name);
             if(maybeCurrent !== null && maybeCurrent.isDirectory === item.isDirectory) {
