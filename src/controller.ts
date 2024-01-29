@@ -14,11 +14,13 @@ export type VaultPath = string & { __type: "VaultPath" };
 /**
  * Allowed characters: Alpha numerical, "_", "-", ".", " "
  * Names consisting only of dots and spaces not allowed.
+ * Only matches a single entry, most often the vault's name.
  */
 const validNameRegex = /(?!^(\.)+$)^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )$/
 /**
  * Allowed characters: Alpha numerical, "_", "-", ".", " "
  * Names consisting only of dots and spaces not allowed.
+ * There must be at least one entry after the vault name.
  */
 const validPathRegex = /(?!^(\.)+($|\/))^(?! |-)[a-zA-Z0-9_\-. ]+(?<! )(\/(?!(\.)+($|\/))(?! |-)[a-zA-Z0-9_\-. )]+(?<! ))+$/;
 
@@ -116,6 +118,9 @@ function splitParentChild(filePath: ValidatedPath | VaultPath): [ValidatedPath |
  * The file path should be of this form:
  * vault/folder/folder/file
  * 
+ * There must be at least one entry after the vault name.
+ * Ex: "vault/file" or "vault/folder", but not "vault"
+ * 
  * The validate function checks that the path is valid and if the vault exists.
  * 
  * Returns the resolved path or null if the path is bad.
@@ -123,7 +128,7 @@ function splitParentChild(filePath: ValidatedPath | VaultPath): [ValidatedPath |
  * @param filePath 
  * @returns ValidatedPath | null
  */
-function validate(filePath: string): ValidatedPath | null {
+function validatePath(filePath: string): ValidatedPath | null {
     if(filePath.charAt(filePath.length - 1) === "/") {
         // If for whatever reason ends in a /, remove it
         filePath = filePath.substring(0, filePath.length - 1);
@@ -191,7 +196,7 @@ export {
     getVaultFromPath,
     getParentPath,
     splitParentChild,
-    validate,
+    validatePath,
     getVaultVFS,
     getAt,
     getDirectoryAt,

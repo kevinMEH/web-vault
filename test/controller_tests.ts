@@ -24,7 +24,7 @@ if(process.env.REDIS) {
 const { cleanup } = await import("../src/cleanup");
 
 const { File, Directory } = await import("../src/vfs");
-const { newVaultVFS, vaultVFSExists, validate, getAt, getDirectoryAt, getFileAt } = await import("../src/controller");
+const { newVaultVFS, vaultVFSExists, validatePath, getAt, getDirectoryAt, getFileAt } = await import("../src/controller");
 const { createNewVault, deleteVault } = await import("../src/vault");
 
 describe("VFS controller tests", () => {
@@ -59,68 +59,68 @@ describe("VFS controller tests", () => {
     });
 
     it("Tests the validate function", () => {
-        assert(validate("vault/.gitignore") !== null);
-        assert(validate("vault/folder1") !== null);
-        assert(validate("anothervault/folder/another folder/yet another folder/package-lock.json") !== null);
+        assert(validatePath("vault/.gitignore") !== null);
+        assert(validatePath("vault/folder1") !== null);
+        assert(validatePath("anothervault/folder/another folder/yet another folder/package-lock.json") !== null);
 
 
         // Most of the test below is to make sure the function doesn't break
-        assert(null === validate("."));
-        assert(null === validate(".."));
-        assert(null === validate("......."));
-        assert(null === validate(". "));
-        assert(null === validate(" ."));
-        assert(null === validate(" . "));
-        assert(null === validate("  ."));
+        assert(null === validatePath("."));
+        assert(null === validatePath(".."));
+        assert(null === validatePath("......."));
+        assert(null === validatePath(". "));
+        assert(null === validatePath(" ."));
+        assert(null === validatePath(" . "));
+        assert(null === validatePath("  ."));
 
-        assert(null === validate("./asdf"));
-        assert(null === validate("vault/."));
-        assert(null === validate("vault/./folder1"));
-        assert(null === validate("asdf/../asdf"));
+        assert(null === validatePath("./asdf"));
+        assert(null === validatePath("vault/."));
+        assert(null === validatePath("vault/./folder1"));
+        assert(null === validatePath("asdf/../asdf"));
 
-        assert(null === validate(""));
-        assert(null === validate("   "));
-        assert(null === validate(" asdf"));
-        assert(null === validate("asdf "));
-        assert(null === validate(" asdf "));
-        assert(null === validate(". asdf. "));
-        assert(null === validate(".asdf. "));
+        assert(null === validatePath(""));
+        assert(null === validatePath("   "));
+        assert(null === validatePath(" asdf"));
+        assert(null === validatePath("asdf "));
+        assert(null === validatePath(" asdf "));
+        assert(null === validatePath(". asdf. "));
+        assert(null === validatePath(".asdf. "));
         
-        assert(null === validate(" /asdf"));
-        assert(null === validate("asdf/ asdf"));
-        assert(null === validate("asdf/asdf "));
-        assert(null === validate("asdf /asdf"));
-        assert(null === validate("asdf / asdf"));
+        assert(null === validatePath(" /asdf"));
+        assert(null === validatePath("asdf/ asdf"));
+        assert(null === validatePath("asdf/asdf "));
+        assert(null === validatePath("asdf /asdf"));
+        assert(null === validatePath("asdf / asdf"));
 
 
-        assert(null === validate("\tasdf"));
-        assert(null === validate("asdf\n"));
+        assert(null === validatePath("\tasdf"));
+        assert(null === validatePath("asdf\n"));
 
-        assert(null === validate("asdf/\tasdf"));
-        assert(null === validate("asdf\n/asdf"));
-        assert(null === validate("asdf/asdf\n"));
-
-
-        assert(null === validate("asdf/"));
-        assert(null === validate("/asdf"));
-        assert(null === validate("/"));
-        assert(null === validate("asdf/asdf/"));
-        assert(null === validate("/asdf/"));
-        assert(null === validate("_._/.asdf/"));
-        assert(null === validate("asdf//asdf"));
-        assert(null === validate("asdf//"));
+        assert(null === validatePath("asdf/\tasdf"));
+        assert(null === validatePath("asdf\n/asdf"));
+        assert(null === validatePath("asdf/asdf\n"));
 
 
-        assert(null === validate("-rf"));
-        assert(null === validate("- -rf"));
-        assert(null === validate("--rf"));
+        assert(null === validatePath("asdf/"));
+        assert(null === validatePath("/asdf"));
+        assert(null === validatePath("/"));
+        assert(null === validatePath("asdf/asdf/"));
+        assert(null === validatePath("/asdf/"));
+        assert(null === validatePath("_._/.asdf/"));
+        assert(null === validatePath("asdf//asdf"));
+        assert(null === validatePath("asdf//"));
 
-        assert(null === validate("asdf/-rf"));
-        assert(null === validate("-rf/asdf"));
-        assert(null === validate("asdf/- -rf"));
-        assert(null === validate("- -rf/asdf"));
-        assert(null === validate("asdf/--rf"));
-        assert(null === validate("--rf/asdf"));
+
+        assert(null === validatePath("-rf"));
+        assert(null === validatePath("- -rf"));
+        assert(null === validatePath("--rf"));
+
+        assert(null === validatePath("asdf/-rf"));
+        assert(null === validatePath("-rf/asdf"));
+        assert(null === validatePath("asdf/- -rf"));
+        assert(null === validatePath("- -rf/asdf"));
+        assert(null === validatePath("asdf/--rf"));
+        assert(null === validatePath("--rf/asdf"));
     });
 
     it("Tests if VFS successfully initialized for test vaults", () => {
@@ -144,39 +144,39 @@ describe("VFS controller tests", () => {
         assert(getDirectoryAt(vPath)?.getFile(".gitignore"));
         assert(getAt(vPath) !== null);
 
-        vPath = validate("vault/.gitignore");
+        vPath = validatePath("vault/.gitignore");
         assert(getFileAt(vPath));
         assert(getDirectoryAt(vPath) === null);
 
-        vPath = validate("vault/folder1");
+        vPath = validatePath("vault/folder1");
         assert(getDirectoryAt(vPath));
         assert(getFileAt(vPath) === null);
 
-        vPath = validate("vault/folder1/package.json");
+        vPath = validatePath("vault/folder1/package.json");
         assert(getFileAt(vPath));
         assert(getDirectoryAt(vPath) === null);
 
-        vPath = validate("vault/folder1/folder2");
+        vPath = validatePath("vault/folder1/folder2");
         assert(getDirectoryAt(vPath));
         assert(getFileAt(vPath) === null);
 
-        vPath = validate("vault/folder1/folder2/LICENSE");
+        vPath = validatePath("vault/folder1/folder2/LICENSE");
         assert(getFileAt(vPath));
         assert(getDirectoryAt(vPath) === null);
 
-        vPath = validate("vault/folder1.1");
+        vPath = validatePath("vault/folder1.1");
         assert(getDirectoryAt(vPath));
         assert(getFileAt(vPath) === null);
 
-        vPath = validate("vault/folder1.1/tsconfig.json");
+        vPath = validatePath("vault/folder1.1/tsconfig.json");
         assert(getFileAt(vPath));
         assert(getDirectoryAt(vPath) === null);
 
-        vPath = validate("vault/nonexistant");
+        vPath = validatePath("vault/nonexistant");
         assert(getFileAt(vPath) === null);
         assert(getDirectoryAt(vPath) === null);
 
-        vPath = validate("vault/also/nonexistant");
+        vPath = validatePath("vault/also/nonexistant");
         assert(getFileAt(vPath) === null);
         assert(getDirectoryAt(vPath) === null);
         
@@ -188,19 +188,19 @@ describe("VFS controller tests", () => {
         assert(getDirectoryAt(vPath)?.getAny("nonexistant") === null);
         assert(getAt(vPath) !== null);
         
-        vPath = validate("anothervault/folder");
+        vPath = validatePath("anothervault/folder");
         assert(getDirectoryAt(vPath));
         assert(getFileAt(vPath) === null);
 
-        vPath = validate("anothervault/folder/another folder");
+        vPath = validatePath("anothervault/folder/another folder");
         assert(getDirectoryAt(vPath));
         assert(getFileAt(vPath) === null);
 
-        vPath = validate("anothervault/folder/another folder/yet another folder");
+        vPath = validatePath("anothervault/folder/another folder/yet another folder");
         assert(getDirectoryAt(vPath));
         assert(getFileAt(vPath) === null);
 
-        vPath = validate("anothervault/folder/another folder/yet another folder/package-lock.json");
+        vPath = validatePath("anothervault/folder/another folder/yet another folder/package-lock.json");
         assert(getFileAt(vPath));
         assert(getDirectoryAt(vPath) === null);
         
@@ -210,7 +210,7 @@ describe("VFS controller tests", () => {
         assert(getAt(vPath) === null);
         assert(getDirectoryAt(vPath) === null);
         
-        vPath = validate("nonexistant/folder1");
+        vPath = validatePath("nonexistant/folder1");
         assert(getDirectoryAt(vPath) === null);
         assert(getFileAt(vPath) === null);
     });

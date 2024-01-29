@@ -21,7 +21,7 @@ import type { File, Directory } from "../src/vfs";
 import type { Stats } from "fs";
 
 const { createNewVault, deleteVault } = await import("../src/vault");
-const { getAt, getDirectoryAt, validate } = await import("../src/controller");
+const { getAt, getDirectoryAt, validatePath } = await import("../src/controller");
 const { __getTempFile, __tempToVault, addFolder, copyItem, moveItem, deleteItem } = await import("../src/file");
 const { BASE_VAULT_DIRECTORY } = await import("../src/env");
 
@@ -92,23 +92,23 @@ describe("File function tests", () => {
         
         let verifyPath: ValidatedPath | null;
 
-        verifyPath = validate(testVaultOne + "/folder1/.gitignore");
+        verifyPath = validatePath(testVaultOne + "/folder1/.gitignore");
         assert(verifyPath !== null);
         gitignorePath = verifyPath;
 
-        verifyPath = validate(testVaultOne + "/somefile.txt");
+        verifyPath = validatePath(testVaultOne + "/somefile.txt");
         assert(verifyPath !== null);
         licensePath = verifyPath;
 
-        verifyPath = validate(testVaultOne + "/folder2/another folder/file.json");
+        verifyPath = validatePath(testVaultOne + "/folder2/another folder/file.json");
         assert(verifyPath !== null);
         tsconfigPath = verifyPath;
 
-        verifyPath = validate(testVaultTwo + "/package");
+        verifyPath = validatePath(testVaultTwo + "/package");
         assert(verifyPath !== null);
         packagePath = verifyPath;
 
-        verifyPath = validate(testVaultTwo + "/some folder/package-lock");
+        verifyPath = validatePath(testVaultTwo + "/some folder/package-lock");
         assert(verifyPath !== null);
         packageLockPath = verifyPath;
     });
@@ -154,17 +154,17 @@ describe("File function tests", () => {
         assert(entry.isDirectory);
         assert((entry as Directory).contents.length === 3);
 
-        entry = getAt(validate(testVaultOne + "/folder1"));
+        entry = getAt(validatePath(testVaultOne + "/folder1"));
         assert(entry !== null);
         assert(entry.isDirectory);
         assert((entry as Directory).contents.length === 1);
 
-        entry = getAt(validate(testVaultOne + "/folder2"));
+        entry = getAt(validatePath(testVaultOne + "/folder2"));
         assert(entry !== null);
         assert(entry.isDirectory);
         assert((entry as Directory).contents.length === 1);
 
-        entry = getAt(validate(testVaultOne + "/folder2/another folder"));
+        entry = getAt(validatePath(testVaultOne + "/folder2/another folder"));
         assert(entry !== null);
         assert(entry.isDirectory);
         assert((entry as Directory).contents.length === 1);
@@ -192,26 +192,26 @@ describe("File function tests", () => {
         assert(entry.isDirectory);
         assert((entry as Directory).contents.length === 2);
 
-        entry = getAt(validate(testVaultTwo + "/some folder"));
+        entry = getAt(validatePath(testVaultTwo + "/some folder"));
         assert(entry !== null);
         assert(entry.isDirectory);
         assert((entry as Directory).contents.length === 1);
         
         
         
-        entry = getAt(validate(testVaultOne + "/nonexistant"));
+        entry = getAt(validatePath(testVaultOne + "/nonexistant"));
         assert(entry === null);
 
-        entry = getAt(validate(testVaultOne + "/nonexistant/nonexistant also"));
+        entry = getAt(validatePath(testVaultOne + "/nonexistant/nonexistant also"));
         assert(entry === null);
 
-        entry = getAt(validate(testVaultOne + "/asdf.asdf"));
+        entry = getAt(validatePath(testVaultOne + "/asdf.asdf"));
         assert(entry === null);
 
-        entry = getAt(validate(testVaultTwo + "/.an2n1 12312__--as."));
+        entry = getAt(validatePath(testVaultTwo + "/.an2n1 12312__--as."));
         assert(entry === null);
 
-        entry = getAt(validate(testVaultTwo + "/??!@?!#<>"));
+        entry = getAt(validatePath(testVaultTwo + "/??!@?!#<>"));
         assert(entry === null);
         
         assert((await fs.readdir(path.join(BASE_VAULT_DIRECTORY, testVaultOne))).length === 3);
@@ -221,7 +221,7 @@ describe("File function tests", () => {
     });
     
     it("Checks folder creation and deletion", () => {
-        const verifiedPath = validate(testVaultOne + "/new folder");
+        const verifiedPath = validatePath(testVaultOne + "/new folder");
         assert(verifiedPath !== null);
         addFolder(verifiedPath);
         
