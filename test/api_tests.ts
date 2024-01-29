@@ -236,6 +236,12 @@ describe("API tests", () => {
                 assert(data.error === undefined);
             }
         });
+        
+        after(async () => {
+            const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
+            assert(adminToken !== null);
+            await post<DeleteVaultExpect, DeleteVaultData>("admin/delete_vault", { adminToken, vaultName: "new_vault" });
+        });
     });
     
     describe("Vault API tests", async () => {
