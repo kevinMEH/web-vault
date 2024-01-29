@@ -4,7 +4,8 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert";
 import axios from "axios"; // eslint-disable-line
-import { post } from "../src/requests";
+import fs from "fs/promises";
+import { Blob } from "buffer";
 
 import { cleanup } from "../src/cleanup";
 import { createToken, WebVaultPayload } from "../src/authentication/vault_token";
@@ -12,11 +13,16 @@ import { deleteVaultPassword, setVaultPassword } from "../src/authentication/dat
 import JWT, { Header, unixTime } from "jwt-km";
 import { DEFAULT_ADMIN_NAME, DOMAIN, JWT_SECRET } from "../src/env";
 import { adminAccess } from "../src/admin_auth";
+import { Directory } from "../src/vfs";
+
+import { post } from "../src/requests";
 
 import type { Expect as AdminLoginExpect, Data as AdminLoginData } from "../app/api/admin/login/route";
 import type { Expect as CreateVaultExpect, Data as CreateVaultData } from "../app/api/admin/create_vault/route";
 import type { Expect as DeleteVaultExpect, Data as DeleteVaultData } from "../app/api/admin/delete_vault/route";
 import type { Expect as VaultLoginExpect, Data as VaultLoginData } from "../app/api/vault/login/route";
+import type { Expect as VFSExpect, Data as VFSData } from "../app/api/file/vfs/route";
+import type { Data as AddFileData } from "../app/api/file/add_file/route";
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 axios.defaults.baseURL = "http://172.20.80.1:3000/api"; // Windows localhost IP from WSL
@@ -51,6 +57,13 @@ describe("API tests", () => {
             axios.post("vault/logout"),
             axios.post("vault/refresh"),
             axios.post("vault/trim"),
+
+            axios.post("file/add_file"),
+            axios.post("file/add_folder"),
+            axios.post("file/copy"),
+            axios.post("file/move"),
+            axios.post("file/remove"),
+            axios.post("file/vfs"),
         ]);
     });
 
@@ -344,6 +357,158 @@ describe("API tests", () => {
         });
     });
     
+    async function fileBlob(path: string) {
+        return new Blob([ await fs.readFile(path) ]);
+    }
+    
+    describe("File API tests", () => {
+        const vaultOneName = "file_api_test_one";
+        const vaultTwoName = "file_api_test_two";
+
+        before(async () => {
+            const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
+            assert(adminToken !== null);
+            const createVaultOneSuccess = (await post<CreateVaultExpect, CreateVaultData>("admin/create_vault", { adminToken, vaultName: vaultOneName, password: "password" })).success;
+            assert(createVaultOneSuccess);
+            const createVaultTwoSuccess = (await post<CreateVaultExpect, CreateVaultData>("admin/create_vault", { adminToken, vaultName: vaultTwoName, password: vaultTwoName })).success;
+            assert(createVaultTwoSuccess);
+        });
+        
+        it("Tests api/file/add_file (assumes api/file/vfs working) (for cleanup, assumes api/file/remove", async () => {
+            const vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+            assert(vaultToken !== null);
+
+            const vaultOne = new Directory(vaultOneName, []);
+            {
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+            }
+            assert(vaultOne.contents.length as number === 0);
+            
+            await checkResponse("file/add_file", [
+                {},
+                { adminToken: "asdf.asdf.asdf" },
+                { adminToken: "asdf.asdf.asdf", path: vaultOneName + "/LICENSE" },
+                { adminToken: "asdf.asdf.asdf", path: vaultOneName + "/LICENSE", file: {} }, // Can't stringify Blobs
+                { adminToken: "asdf.asdf.asdf", path: vaultOneName + "/LICENSE", file: "asfdasf" }, // Can't stringify Blobs
+                { path: vaultOneName + "/LICENSE", file: "asfdasf" }, // Can't stringify Blobs
+                { file: "asfdasf" }, // Can't stringify Blobs
+            ], (data, parameter) => {
+                assert(data.error?.includes("Expected FormData body."), failString(data, parameter, "expected FormData body error"));
+            });
+            await checkResponse("file/add_file", [
+                // For some reason, axios by default encodes data as FormData,
+                // even with undefined and null.
+                undefined,
+                "asdf", 
+                `{ #"hello": 123 }`,
+                `{ "hello": !123 }`,
+                `{ "hello": 123> }`,
+                `{ "hello": <123> }`,
+                `<div>{}</div>`,
+                await (async () => {
+                    const formData = new FormData();
+                    return formData;
+                })(),
+                await (async () => {
+                    const formData = new FormData();
+                    formData.append("file", await fileBlob("./LICENSE"));
+                    return formData;
+                })(),
+                await (async () => {
+                    const formData = new FormData();
+                    formData.append("vaultToken", "asdfsasdf.adsfasdfa.sdfsasdf");
+                    return formData;
+                })(),
+                await (async () => {
+                    const formData = new FormData();
+                    formData.append("vaultToken", "asdfsasdf.adsfasdfa.sdfsasdf");
+                    formData.append("path", vaultOneName + "/LICENSE");
+                    formData.append("file", await fileBlob("./LICENSE"));
+                    return formData;
+                })(),
+                await (async () => {
+                    const formData = new FormData();
+                    const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
+                    assert(adminToken !== null);
+                    formData.append("adminToken", adminToken);
+                    formData.append("path", vaultOneName + "/LICENSE");
+                    formData.append("file", await fileBlob("./LICENSE"));
+                    return formData;
+                })(),
+                await (async () => {
+                    const formData = new FormData();
+                    const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
+                    assert(adminToken !== null);
+                    formData.append("vaultToken", adminToken);
+                    formData.append("path", vaultOneName + "/LICENSE");
+                    formData.append("file", await fileBlob("./LICENSE"));
+                    return formData;
+                })(),
+                await (async () => {
+                    const formData = new FormData();
+                    const vaultOneToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+                    assert(vaultOneToken !== null);
+                    formData.append("vaultToken", vaultOneToken);
+                    formData.append("path", vaultTwoName + "/LICENSE");
+                    formData.append("file", await fileBlob("./LICENSE"));
+                    return formData;
+                })(),
+            ], (data, parameter) => {
+                assert(data.error?.includes("Unauthorized request."), failString(data, parameter, "expected Unauthorized request error"));
+            });
+            {
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName + "//invalidpath");
+                formData.append("file", await fileBlob("./LICENSE"));
+                const data = (await axios.post("file/add_file", formData)).data;
+                assert(data.error.includes("The provided path is not valid."));
+            }
+            {
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName);
+                formData.append("file", await fileBlob("./LICENSE"));
+                const data = (await axios.post("file/add_file", formData)).data;
+                assert(data.error.includes("The provided path is not valid."));
+            }
+
+            const formData = new FormData();
+            formData.append("vaultToken", vaultToken);
+            formData.append("path", vaultOneName + "/LICENSE");
+            formData.append("file", await fileBlob("./LICENSE"));
+            const data = (await axios.post("file/add_file", formData)).data;
+            assert(data.error === undefined);
+            assert(data.success === true);
+            assert(data.displacedPath === undefined);
+            
+            {
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+            }
+            assert(vaultOne.contents.length as number === 1);
+            assert(vaultOne.contents[0].name === "LICENSE");
+            assert(vaultOne.contents[0].isDirectory === false);
+            const stats = await fs.stat("./LICENSE");
+            assert(vaultOne.contents[0].getByteSize() === stats.size);
+            
+            {
+                const removeData = (await axios.post("file/remove", { vaultToken, path: vaultOneName + "/LICENSE" })).data;
+                assert(removeData.error === undefined);
+                assert(removeData.success === true);
+            }
+        });
+        
+        after(async () => {
+            const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
+            assert(adminToken !== null);
+            await post<DeleteVaultExpect, DeleteVaultData>("admin/delete_vault", { adminToken, vaultName: vaultOneName });
+            await post<DeleteVaultExpect, DeleteVaultData>("admin/delete_vault", { adminToken, vaultName: vaultTwoName });
+        });
+    })
     
     after(async () => {
         await cleanup();
