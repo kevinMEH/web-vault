@@ -139,6 +139,24 @@ function validatePath(filePath: string): ValidatedPath | null {
     return filePath as ValidatedPath;
 }
 
+/**
+ * Almost identical to validatePath, but there no longer needs to be at least
+ * one entry after the vault name.
+ * 
+ * @param path 
+ * @returns 
+ */
+function validateDestination(path: string): ValidatedPath | VaultPath | null {
+    if(false === validPathRegex.test(path) && false === validNameRegex.test(path)) {
+        return null;
+    }
+    const vault = getVaultFromPath(path as ValidatedPath | VaultPath);
+    if(!vaultVFSExists(vault)) {
+        return null;
+    }
+    return path as ValidatedPath | VaultPath;
+}
+
 function getVaultVFS(vault: string): Directory | null {
     const maybeDirectory = vaultMap.get(vault);
     if(maybeDirectory !== undefined) return maybeDirectory;
@@ -193,6 +211,7 @@ export {
     getParentPath,
     splitParentChild,
     validatePath,
+    validateDestination,
     getVaultVFS,
     getAt,
     getDirectoryAt,
