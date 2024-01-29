@@ -7,15 +7,25 @@ import { metaLog, vaultLog } from "./logger";
 import { getVaultFromPath, getDirectoryAt, splitParentChild, getAt, getVaultVFS } from "./controller";
 import type { ValidatedPath, VaultPath } from "./controller";
 import { File, Directory } from "./vfs";
-
-import { BASE_VAULT_DIRECTORY } from "./env";
-
+import { storeVFS } from "./authentication/database";
 import { shutdown } from "./cleanup";
+
+import { BASE_VAULT_DIRECTORY, TESTING, PRODUCTION } from "./env";
+
 
 const deletionTimeout = 5 * 1000;
 const tempFileDirectory = path.join(BASE_VAULT_DIRECTORY, "temp");
 const tempVaultName = "temp" as VaultPath;
 const hexTo12 = Math.pow(16, 12);
+
+
+
+/**
+ * Due to NextJS being a piece of garbage and constantly recompiling everything,
+ * changes in the VFS will be lost unless immediately stored.
+ */
+const after = !TESTING && !PRODUCTION ? storeVFS : () => {};
+
 
 function randomFileName(): string {
     return Math.floor(Math.random() * hexTo12).toString(16).padStart(12, "0");
@@ -79,13 +89,13 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
     // Keeps iterating until you find either a preexisting directory, or nothing
     for(let i = 1; i < 10; i++) {
         displacedDirectory = parentDirectory.getAny(`displaced (${i})`);
-    if(displacedDirectory === null) {
+        if(displacedDirectory === null) {
             displacedDirectory = new Directory(`displaced (${i})`, []);
-        parentDirectory.addEntry(displacedDirectory, true);
+            parentDirectory.addEntry(displacedDirectory, true);
             return displacedDirectory;
         } else if(displacedDirectory.isDirectory) {
-    return displacedDirectory as Directory;
-}
+            return displacedDirectory as Directory;
+        }
     }
     // All displaced directories 9 and below are taken. Abort operation.
     return null;
@@ -95,9 +105,6 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * Adding files: What happens:
  * 
  * - User sends in a form request, with the file attached.
- * - The corresponding spot in the VFS is checked to see if the file upload is
- * allowed. (For ex: If there is a folder with the same name there, then it is
- * not allowed to be uploaded.)
  * - File is written to random file in temp directory
  * - __tempToVault is called to move from temp directory to vault
  * - Once moving is finished, the corresponding entry in the VFS is created to
@@ -121,12 +128,21 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  */
 
 /**
- * Writes a File (from the web files API) into a temporary file in the temp
- * vault directory.
+ * Adds a file into the desired vault and creates a VFS entry for the file.
+ * The desiredPath must be a full path; ie: vault/folder/desired_file_name
  * 
  * @param file 
  */
 async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<ValidatedPath | boolean> {
+    // Initial checks
+    const targetVault = getVaultFromPath(desiredPath);
+    const directories = desiredPath.split("/");
+    if(directories.length === 1) {
+        vaultLog(targetVault, "WARNING", `Attempting to add a file with path "${desiredPath}", thereby replacing the vault path.`);
+        return false;
+    }
+
+    // Adding File to temp
     // Reserve temp file
     const tempFileName = await __getTempFile(tempVaultName);
     const tempFilePath = path.join(tempFileDirectory, tempFileName);
@@ -135,7 +151,6 @@ async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<Valid
         // TODO: Disk space check ( See TODO.md )
         const handle = await fs.open(tempFilePath, "w");
         await pipeline(file.stream(), handle.createWriteStream());
-        return __tempToVault(desiredPath, tempFileName);
     } catch(error) {
         metaLog("file system", "ERROR", `Trying to add file at "${tempFilePath}", but encountered unexpected error ${(error as Error).message} instead.`);
         await fs.unlink(tempFilePath).catch(error => {
@@ -147,11 +162,13 @@ async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<Valid
         });
         return false;
     }
+    // Moving to vault
+    return __tempToVault(desiredPath, tempFileName);
 }
 
 /**
- * Adds a file by moving the uploaded file from the temp path into the vault
- * path, and then adding the VFS entry.
+ * Adds a file from the temp vault into the desired vault and then creates the
+ * VFS entry.
  * 
  * Upper level directories will be recursively created if they do not exist. If
  * there exists an upper level directory that is actually a file, the file will
@@ -164,6 +181,7 @@ async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<Valid
  * @param tempFileName 
  */
 async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): Promise<ValidatedPath | boolean> {
+    const tempFilePath = path.join(tempFileDirectory, tempFileName);
     const targetVault = getVaultFromPath(desiredPath);
     const directories = desiredPath.split("/");
 
@@ -174,7 +192,10 @@ async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): 
     // if this happens to be the case delete the temp file.
     if(last === null) {
         vaultLog(targetVault, "WARNING", `Attempting to add a file at path "${desiredPath}" with temp file ${tempFileName}, but the vault no longer exists.`);
-        await fs.unlink(path.join(tempFileDirectory, tempFileName));
+        await fs.unlink(tempFilePath).catch(error => {
+            const message = (error as Error).message;
+            vaultLog(targetVault, "ERROR", `Attempting to remove temp file "${tempFilePath}", but encountered unexpected error ${message}.`);
+        });
         return false;
     }
     // Go up the paths, creating directories if they don't exist.
@@ -202,7 +223,6 @@ async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): 
     }
     
     // Moving from temp to new
-    const tempFilePath = path.join(tempFileDirectory, tempFileName);
     const newFileName = await __getTempFile(targetVault);
     const newFilePath = path.join(BASE_VAULT_DIRECTORY, targetVault, newFileName);
     try {
@@ -210,7 +230,7 @@ async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): 
     } catch(error) {
         const message = (error as Error).message;
         vaultLog(targetVault, "ERROR", `Attempting to add a file at path "${desiredPath}" by renaming temp file "${tempFilePath}" to "${newFilePath}", but encountered unexpected error ${message}. Deleting file...`);
-        await fs.rm(tempFilePath).catch(error => {
+        await fs.unlink(tempFilePath).catch(error => {
             const message = (error as Error).message;
             vaultLog(targetVault, "ERROR", `Attempting to remove temp file "${tempFilePath}", but encountered unexpected error ${message}.`);
         });
@@ -234,22 +254,22 @@ async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): 
     let existingFile = last.getAny(fileName);
     if(existingFile !== null) {
         displaced = true;
-    for(let i = 1; i < 10; i++) {
+        for(let i = 1; i < 10; i++) {
             fileName = `${fileNameBase} (${i})${fileNameExtension}`;
-        existingFile = last.getAny(fileName);
-        if(existingFile === null) {
-            break;
+            existingFile = last.getAny(fileName);
+            if(existingFile === null) {
+                break;
+            }
         }
-    }
-    // If after file (9) still conflicts, then choose random name.
-    while(existingFile !== null) {
-        fileName = `${fileNameBase} (${randomFileName()})${fileNameExtension}`
-        existingFile = last.getAny(fileName);
+        // If after file (9) still conflicts, then choose random name.
+        while(existingFile !== null) {
+            fileName = `${fileNameBase} (${randomFileName()})${fileNameExtension}`
+            existingFile = last.getAny(fileName);
         }
     }
     const newFileEntry = stats !== null
-    ? new File(fileName, stats.size, newFileName, stats.mtime)
-    : new File(fileName, 0, newFileName);
+        ? new File(fileName, stats.size, newFileName, stats.mtime)
+        : new File(fileName, 0, newFileName);
     last.addEntry(newFileEntry, true);
     if(displaced) {
         return finalPath + "/" + fileName as ValidatedPath;
@@ -330,9 +350,9 @@ function deleteItem(targetPath: ValidatedPath): boolean {
 
 /**
  * Paths should be complete file paths. (Including destination name)
- *
- * The desination must not exist.
  * 
+ * The desination must not exist.
+ *
  * @param originalPath 
  * @param destinationPath 
  * @returns
@@ -372,7 +392,7 @@ async function moveItem(originalPath: ValidatedPath, destinationPath: ValidatedP
 
     if(destinationItem !== null) {
         vaultLog(originalVault, "NON URGENT", `Moving "${originalPath}" to "${destinationPath}", but there is already an existing entry at destination.`)
-            return false;
+        return false;
     }
 
     // Add original to destination, and remove original from parent.
@@ -384,8 +404,8 @@ async function moveItem(originalPath: ValidatedPath, destinationPath: ValidatedP
     // If moving to a different vault, we must move the real files.
     if(originalVault !== destinationVault) {
         const files = originalItem.isDirectory
-        ? (originalItem as Directory).getAllSubfiles()
-        : [ originalItem as File ];
+            ? (originalItem as Directory).getAllSubfiles()
+            : [ originalItem as File ];
         
         const operations = [];
 
@@ -401,11 +421,11 @@ async function moveItem(originalPath: ValidatedPath, destinationPath: ValidatedP
                 vaultLog(destinationVault, "ERROR", message);
             });
             operations.push(promise);
-            }
+        }
 
         await Promise.all(operations);
     }
-    
+       
     vaultLog(originalVault, "INFO", `Moved "${originalPath}" to "${destinationPath}".`);
     if(originalVault !== destinationVault) {
         vaultLog(destinationVault, "INFO", `Moved "${originalPath}" to "${destinationPath}".`);
@@ -414,7 +434,7 @@ async function moveItem(originalPath: ValidatedPath, destinationPath: ValidatedP
 }
 
 /**
- * Paths should be complete file paths. 
+ * Paths should be complete file paths.
  * 
  * Destination must not exist.
  * 
@@ -438,12 +458,12 @@ async function copyItem(originalPath: ValidatedPath, destinationPath: ValidatedP
         vaultLog(originalVault, "NON URGENT", `Copying entry at "${originalPath}" to "${destinationPath}", but somehow the destination parent path does not exist.`);
         return false;
     }
-
+    
     const destinationItem = destinationParentDirectory.getAny(destinationName);
 
     if(destinationItem !== null) {
         vaultLog(originalVault, "NON URGENT", `Copying entry at "${originalPath}" to "${destinationPath}", but there is an existing entry at destination.`);
-            return false;
+        return false;
     }
 
     const copiedItem = originalItem.clone(true);
@@ -452,8 +472,8 @@ async function copyItem(originalPath: ValidatedPath, destinationPath: ValidatedP
     
     // File system modification
     const copiedFiles = copiedItem.isDirectory
-    ? (copiedItem as Directory).getAllSubfiles()
-    : [ copiedItem as File ];
+        ? (copiedItem as Directory).getAllSubfiles()
+        : [ copiedItem as File ];
     
     const operations = [];
     
@@ -471,7 +491,7 @@ async function copyItem(originalPath: ValidatedPath, destinationPath: ValidatedP
             }
         });
         operations.push(promise);
-        }
+    }
     
     await Promise.all(operations);
 
