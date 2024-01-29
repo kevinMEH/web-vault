@@ -1,4 +1,4 @@
-// api/file/delete
+// api/file/remove
 
 import { NextRequest } from "next/server";
 import { validatePath } from "../../../../src/controller";
