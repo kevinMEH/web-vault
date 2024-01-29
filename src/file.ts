@@ -134,14 +134,6 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * @param file 
  */
 async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<ValidatedPath | boolean> {
-    // Initial checks
-    const targetVault = getVaultFromPath(desiredPath);
-    const directories = desiredPath.split("/");
-    if(directories.length === 1) {
-        vaultLog(targetVault, "WARNING", `Attempting to add a file with path "${desiredPath}", thereby replacing the vault path.`);
-        return false;
-    }
-
     // Adding File to temp
     // Reserve temp file
     const tempFileName = await __getTempFile(tempVaultName);
