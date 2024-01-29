@@ -129,10 +129,6 @@ function splitParentChild(filePath: ValidatedPath | VaultPath): [ValidatedPath |
  * @returns ValidatedPath | null
  */
 function validatePath(filePath: string): ValidatedPath | null {
-    if(filePath.charAt(filePath.length - 1) === "/") {
-        // If for whatever reason ends in a /, remove it
-        filePath = filePath.substring(0, filePath.length - 1);
-    }
     if(false === validPathRegex.test(filePath)) {
         return null;
     }
