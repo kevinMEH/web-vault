@@ -263,6 +263,7 @@ async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): 
         ? new File(fileName, stats.size, newFileName, stats.mtime)
         : new File(fileName, 0, newFileName);
     last.addEntry(newFileEntry, true);
+    after();
     if(displaced) {
         return finalPath + "/" + fileName as ValidatedPath;
     }
@@ -291,6 +292,7 @@ function addFolder(targetPath: ValidatedPath): boolean {
     parentDirectory.addEntry(new Directory(name, []), true);
     
     vaultLog(targetVault, "INFO", `Created new directory "${targetPath}".`);
+    after();
     return true;
 }
 
@@ -337,6 +339,7 @@ function deleteItem(targetPath: ValidatedPath): boolean {
     }
     
     vaultLog(vault, "INFO", `Removed ${targetPath} from VFS.`);
+    after();
     return true;
 }
 
@@ -422,6 +425,7 @@ async function moveItem(originalPath: ValidatedPath, destinationPath: ValidatedP
     if(originalVault !== destinationVault) {
         vaultLog(destinationVault, "INFO", `Moved "${originalPath}" to "${destinationPath}".`);
     }
+    after();
     return true;
 }
 
@@ -491,6 +495,7 @@ async function copyItem(originalPath: ValidatedPath, destinationPath: ValidatedP
     if(originalVault !== destinationVault) {
         vaultLog(destinationVault, "INFO", `Copied "${originalPath}" to "${destinationPath}".`);
     }
+    after();
     return true;
 }
 
