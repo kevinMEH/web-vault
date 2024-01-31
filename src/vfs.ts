@@ -129,6 +129,27 @@ class Directory {
         }
         return null;
     }
+
+    /**
+     * Gets an entry using a path, traversing subdirectories.
+     * Do not include the current directory's name in the path.
+     * For ex: Good: "subfolder/file", Bad: "this.name/subfolder/file"
+     * 
+     * @param path 
+     * @returns 
+     */
+    getPath(path: string): File | Directory | null {
+        let last: File | Directory | null = this;
+        const items = path.split("/");
+        for(let i = 0; i < items.length; i++) {
+            if(last !== null && last.isDirectory) {
+                last = (last as Directory).getAny(items[i]);
+            } else {
+                return null;
+            }
+        }
+        return last;
+    }
     
     getAllSubfiles(): File[] {
         const realFiles = [];
