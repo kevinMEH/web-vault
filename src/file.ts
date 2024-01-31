@@ -118,7 +118,7 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * 
  * What if during the file upload time, a new file / directory has been created
  * with the same name?
- * The file name will be appended with random numbers, and the new path will be
+ * The file name will be appended with numbers, and the new path will be
  * returned from the function.
  * 
  * What if files are super big, and another file is uploaded with same name?
@@ -131,9 +131,27 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * Adds a file into the desired vault and creates a VFS entry for the file.
  * The desiredPath must be a full path; ie: vault/folder/desired_file_name
  * 
+ * The parent directory should exist and path should not be occupied.
+ * 
  * @param file 
  */
 async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<ValidatedPath | boolean> {
+    const targetVault = getVaultFromPath(desiredPath);
+    // Checks if the parent directory exists and path is not occupied. However,
+    // if this condition is violated after this initial check the file upload
+    // will still succeed.
+    const [ parentPath, name ] = splitParentChild(desiredPath);
+    const parentDirectory = getDirectoryAt(parentPath);
+    if(parentDirectory === null || parentPath === null) {
+        vaultLog(targetVault, "NON URGENT", `Attempting to add a file at "${desiredPath}", but the parent directory does not exist.`);
+        return false;
+    }
+    const maybeExists = parentDirectory.getAny(name);
+    if(maybeExists !== null) {
+        vaultLog(targetVault, "NON URGENT", `Attempting to add a file at "${desiredPath}", but there is already an item there.`);
+        return false;
+    }
+
     // Adding File to temp
     // Reserve temp file
     const tempFileName = await __getTempFile(tempVaultName);
@@ -273,6 +291,8 @@ async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): 
 /**
  * Makes a new folder in the VFS. Non-recursive: Only one folder can be created
  * 
+ * The parent directory should exist and path should not be occupied.
+ * 
  * @param targetPath 
  */
 function addFolder(targetPath: ValidatedPath): boolean {
@@ -346,7 +366,8 @@ function deleteItem(targetPath: ValidatedPath): boolean {
 /**
  * Paths should be complete file paths. (Including destination name)
  * 
- * The desination must not exist.
+ * The destination's parent directory should exist and the destination path
+ * should not be occupied.
  *
  * @param originalPath 
  * @param destinationPath 
@@ -432,7 +453,8 @@ async function moveItem(originalPath: ValidatedPath, destinationPath: ValidatedP
 /**
  * Paths should be complete file paths.
  * 
- * Destination must not exist.
+ * The destination's parent directory should exist and the destination path
+ * should not be occupied.
  * 
  * @param originalPath 
  * @param destinationPath 
