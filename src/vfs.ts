@@ -91,7 +91,7 @@ class Directory {
     contents: (File | Directory)[];
 
     isDirectory = true;
-    isOpen = false; // For displaying directory
+    isOpen = false; // For displaying directory on frontend
     
     constructor(name: string, contents: (File | Directory)[], lastModified?: string | Date) {
         this.name = name;
