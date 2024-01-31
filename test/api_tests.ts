@@ -23,6 +23,7 @@ import type { Expect as DeleteVaultExpect, Data as DeleteVaultData } from "../ap
 import type { Expect as VaultLoginExpect, Data as VaultLoginData } from "../app/api/vault/login/route";
 import type { Expect as VFSExpect, Data as VFSData } from "../app/api/file/vfs/route";
 import type { Data as AddFileData } from "../app/api/file/add_file/route";
+import type { Expect as AddFolderExpect, Data as AddFolderData } from "../app/api/file/add_folder/route";
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 axios.defaults.baseURL = "http://172.20.80.1:3000/api"; // Windows localhost IP from WSL
@@ -459,6 +460,7 @@ describe("API tests", () => {
                 assert(data.error?.includes("Unauthorized request."), failString(data, parameter, "expected Unauthorized request error"));
             });
             {
+                // Cannot add file to invalid path
                 const formData = new FormData();
                 formData.append("vaultToken", vaultToken);
                 formData.append("path", vaultOneName + "//invalidpath");
@@ -467,6 +469,7 @@ describe("API tests", () => {
                 assert(data.error.includes("The provided path is not valid."));
             }
             {
+                // Must be at least one entry after vault name
                 const formData = new FormData();
                 formData.append("vaultToken", vaultToken);
                 formData.append("path", vaultOneName);
@@ -475,6 +478,8 @@ describe("API tests", () => {
                 assert(data.error.includes("The provided path is not valid."));
             }
 
+            {
+                // Add file
             const formData = new FormData();
             formData.append("vaultToken", vaultToken);
             formData.append("path", vaultOneName + "/LICENSE");
@@ -483,19 +488,43 @@ describe("API tests", () => {
             assert(data.error === undefined);
             assert(data.success === true);
             assert(data.displacedPath === undefined);
-            
+            }
             {
+                // Update VFS and check
                 const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
                 assert(vfs !== undefined);
                 vaultOne.update(vfs);
-            }
             assert(vaultOne.contents.length as number === 1);
             assert(vaultOne.contents[0].name === "LICENSE");
             assert(vaultOne.contents[0].isDirectory === false);
             const stats = await fs.stat("./LICENSE");
             assert(vaultOne.contents[0].getByteSize() === stats.size);
+            }
+            {
+                // Can't add file to already existing location
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName + "/LICENSE");
+                formData.append("file", await fileBlob("./.gitignore"));
+                const data = (await axios.post("file/add_file", formData)).data;
+                assert(data.error === undefined);
+                assert(data.success === false);
+                assert(data.displacedPath === undefined);
+            }
+            {
+                // Can't add file to destination without an existing parent directory
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName + "/nonexistant/LICENSE");
+                formData.append("file", await fileBlob("./.gitignore"));
+                const data = (await axios.post("file/add_file", formData)).data;
+                assert(data.error === undefined);
+                assert(data.success === false);
+                assert(data.displacedPath === undefined);
+            }
             
             {
+                // Cleanup
                 const removeData = (await axios.post("file/remove", { vaultToken, path: vaultOneName + "/LICENSE" })).data;
                 assert(removeData.error === undefined);
                 assert(removeData.success === true);
@@ -521,7 +550,7 @@ describe("API tests", () => {
                 { path: { path: vaultOneName + "/folder1", vaultToken: "asdfa.sdfasdfa.asdf" }, vaultToken: "asfda.asdfasdf.asdfa" },
                 { path: vaultOneName + "/folder1", vaultToken: 123412 },
             ], (data, parameter) => {
-                assert(data.error?.includes("Expected body with valid vaultToken and path string attributes."), failString(data, parameter, "expected body with valid vaultTokena and path attributes error"));
+                assert(data.error?.includes("Expected body with valid vaultToken and path string attributes."), failString(data, parameter, "expected body with valid vaultToken and path attributes error"));
             });
             await checkResponse("file/add_folder", [
                 { path: vaultOneName + "/folder1", vaultToken: "asdfa.asdfa.asdf" },
@@ -560,25 +589,259 @@ describe("API tests", () => {
                 const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
                 assert(vfs !== undefined);
                 vaultOne.update(vfs);
+                assert(vaultOne.contents.length === 0);
             }
-            assert(vaultOne.contents.length === 0);
             
-            const success = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName + "/folder1" })).data.success;
-            assert(success === true);
-
             {
+                // Tests add_folder
+                const success = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName + "/folder1" })).data.success;
+                assert(success === true);
                 const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
                 assert(vfs !== undefined);
                 vaultOne.update(vfs);
+                assert(vaultOne.contents.length as number === 1);
+                assert(vaultOne.contents[0].isDirectory === true);
+                assert(vaultOne.contents[0].name === "folder1");
             }
-            assert(vaultOne.contents.length as number === 1);
-            assert(vaultOne.contents[0].isDirectory);
-            assert(vaultOne.contents[0].name === "folder1");
             
             {
+                // Adds another folder to folder
+                const success = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName + "/folder1/folder2" })).data.success;
+                assert(success === true);
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder1", depth: 999 })).directory;
+                assert(vfs !== undefined);
+                const folder1 = vaultOne.getDirectory("folder1");
+                assert(folder1 !== null);
+                folder1.update(vfs);
+                assert(folder1.contents.length === 1);
+                assert(folder1.contents[0].isDirectory === true);
+                assert(folder1.contents[0].name === "folder2");
+            }
+            
+            {
+                // Cleanup
                 const removed = (await axios.post("file/remove", { vaultToken, path: vaultOneName + "/folder1" })).data;
                 assert(removed.error === undefined);
                 assert(removed.success === true);
+            }
+        });
+
+        it("Tests api/file/vfs (assumes api/file/add_* and api/file/remove working)", async () => {
+            await checkResponse("file/vfs", [
+                undefined, null, "asdf",
+                `{ "hello": <123> }`,
+            ], (data, parameter) => {
+                assert(data.error === "Bad parameters. Expected JSON body.", failString(data, parameter, "expected JSON body error"));
+            });
+            await checkResponse("file/vfs", [
+                { },
+                { path: vaultOneName },
+                { path: 12341 },
+                { path: 12341, vaultToken: "asfda.asdfasdf.asdfa" },
+                { path: { path: vaultOneName, vaultToken: "asdfa.sdfasdfa.asdf" }, vaultToken: "asfda.asdfasdf.asdfa" },
+                { path: vaultOneName, vaultToken: 123412 },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Expected body with valid vaultToken and path string attributes."), failString(data, parameter, "expected body with valid vaultToken and path attributes error"));
+            });
+            await checkResponse("file/vfs", [
+                { path: vaultOneName, vaultToken: "asdfa.asdfa.asdf" },
+                { path: vaultOneName, vaultToken: await (async () => {
+                    const token = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultTwoName, password: vaultTwoName })).token ?? null;
+                    assert(token !== null);
+                    return token;
+                })() },
+                { path: "nonexistant", vaultToken: await (async () => {
+                    const token = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+                    assert(token !== null);
+                    return token;
+                })() },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Provided vaultToken does not have access to path"), failString(data, parameter, "vaultToken does not have access to path"));
+            });
+
+            const vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+            assert(vaultToken !== null);
+            {
+                const error = (await axios.post("file/vfs", { vaultToken, path: vaultOneName + "//bad path" })).data.error;
+                assert(error?.includes("The provided path is not a valid destination."));
+            }
+            {
+                // Nonexistant folder gives undefined VFS
+                const result = (await axios.post("file/vfs", { vaultToken, path: vaultOneName + "/nonexistant"})).data;
+                assert(result.error === undefined);
+                assert(result.directory === undefined);
+            }
+
+            const vaultOne = new Directory(vaultOneName, []);
+            {
+                const vfs = (await axios.post("file/vfs", { vaultToken, path: vaultOneName })).data.directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+            assert(vaultOne.contents.length === 0);
+            }
+            
+            /*
+            Adds test files and folders
+            vaultOne/
+                LICENSE
+                folder/
+                    .gitignore
+                    subfolder/
+            */
+            {
+                // Adds vaultOne/LICENSE file
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName + "/LICENSE");
+                formData.append("file", await fileBlob("./LICENSE"));
+                const success = (await post<FormData, AddFileData>("file/add_file", formData)).success;
+            assert(success === true);
+            }
+            {
+                // Adds vaultOne/folder
+                const success = (await post<AddFolderExpect, AddFolderData>("file/add_folder", { vaultToken, path: vaultOneName + "/folder" })).success;
+                assert(success === true);
+            }
+            {
+                // Adds vaultOne/folder/.gitignore
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName + "/folder/.gitignore");
+                formData.append("file", await fileBlob("./.gitignore"));
+                const success = (await post<FormData, AddFileData>("file/add_file", formData)).success;
+                assert(success === true);
+            }
+            {
+                // Adds vaultOne/folder/subfolder
+                const success = (await post<AddFolderExpect, AddFolderData>("file/add_folder", { vaultToken, path: vaultOneName + "/folder/subfolder" })).success;
+                assert(success === true);
+            }
+
+            {
+                /*
+                vaultOne/
+                    LICENSE
+                    folder/
+                        .gitignore
+                        subfolder/
+                */
+                // Updates vfs from root and checks structure.
+                // Note: If error encountered, ensure MAX_VFS_DEPTH is deep enough to update all at once
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 99 })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+                assert(vaultOne.contents.length as number === 2);
+                {
+                    const entry = vaultOne.getPath("LICENSE");
+                    assert(entry !== null)
+                    assert(entry.isDirectory === false);
+                    assert(entry.name === "LICENSE");
+                }
+                {
+                    const entry = vaultOne.getPath("folder");
+                    assert(entry !== null)
+                    assert(entry.isDirectory === true);
+                    assert(entry.name === "folder");
+                    assert((entry as Directory).contents.length === 2);
+                }
+                {
+                    const entry = vaultOne.getPath("folder/.gitignore");
+                    assert(entry !== null)
+                    assert(entry.isDirectory === false);
+                    assert(entry.name === ".gitignore");
+                }
+                {
+                    const entry = vaultOne.getPath("folder/subfolder");
+                    assert(entry !== null)
+                    assert(entry.isDirectory === true);
+                    assert(entry.name === "subfolder");
+                    assert((entry as Directory).contents.length === 0);
+                }
+            }
+            
+            {
+                const removed = (await axios.post("file/remove", { vaultToken, path: vaultOneName + "/folder/subfolder" })).data;
+                assert(removed.error === undefined);
+                assert(removed.success === true);
+            }
+
+            {
+                /*
+                vaultOne/
+                    LICENSE
+                    folder/
+                        .gitignore
+                */
+                // Retrieves VFS from subdirectory folder this time
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder", depth: 99 })).directory;
+                assert(vfs !== undefined);
+                const folder = vaultOne.getDirectory("folder");
+                assert(folder !== null);
+                folder.update(vfs);
+                assert(vaultOne.contents.length as number === 2);
+                {
+                    const entry = vaultOne.getPath("LICENSE");
+                    assert(entry !== null)
+                    assert(entry.isDirectory === false);
+                    assert(entry.name === "LICENSE");
+                }
+                {
+                    const entry = vaultOne.getPath("folder");
+                    assert(entry !== null)
+                    assert(entry.isDirectory === true);
+                    assert(entry.name === "folder");
+                    assert((entry as Directory).contents.length === 1);
+                }
+                {
+                    const entry = vaultOne.getPath("folder/.gitignore");
+                    assert(entry !== null)
+                    assert(entry.isDirectory === false);
+                    assert(entry.name === ".gitignore");
+                }
+                {
+                    const entry = vaultOne.getPath("folder/subfolder");
+                    assert(entry === null)
+                }
+            }
+            
+            {
+                const removed = (await axios.post("file/remove", { vaultToken, path: vaultOneName + "/folder" })).data;
+                assert(removed.error === undefined);
+                assert(removed.success === true);
+            }
+            
+            {
+                /*
+                vaultOne/
+                    LICENSE
+                */
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+            assert(vaultOne.contents.length as number === 1);
+                {
+                    const entry = vaultOne.getPath("LICENSE");
+                    assert(entry !== null)
+                    assert(entry.isDirectory === false);
+                    assert(entry.name === "LICENSE");
+                }
+                {
+                    const entry = vaultOne.getPath("folder");
+                    assert(entry === null)
+                }
+            }
+            
+            {
+                const removed = (await axios.post("file/remove", { vaultToken, path: vaultOneName + "/LICENSE" })).data;
+                assert(removed.error === undefined);
+                assert(removed.success === true);
+            }
+            
+            {
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+                assert(vaultOne.contents.length as number === 0);
             }
         });
 
@@ -588,7 +851,7 @@ describe("API tests", () => {
             await post<DeleteVaultExpect, DeleteVaultData>("admin/delete_vault", { adminToken, vaultName: vaultOneName });
             await post<DeleteVaultExpect, DeleteVaultData>("admin/delete_vault", { adminToken, vaultName: vaultTwoName });
         });
-    })
+    });
     
     after(async () => {
         await cleanup();
