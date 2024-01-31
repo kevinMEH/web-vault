@@ -181,7 +181,7 @@ export async function WithDoublePathAuthentication<Data>(
 
 async function _getFormData(request: NextRequest): Promise<FormData | null> {
     try {
-        return request.formData();
+        return await request.formData();
     } catch(error) {
         return null;
     }
