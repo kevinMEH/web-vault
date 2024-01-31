@@ -502,6 +502,86 @@ describe("API tests", () => {
             }
         });
         
+        it("Tests api/file/add_folder (assumes api/file/vfs working)", async () => {
+            await checkResponse("file/add_folder", [
+                undefined, null, "asdf",
+                `{ #"hello": 123 }`,
+                `{ "hello": !123 }`,
+                `{ "hello": 123> }`,
+                `{ "hello": <123> }`,
+                `<div>{}</div>`,
+            ], (data, parameter) => {
+                assert(data.error === "Bad parameters. Expected JSON body.", failString(data, parameter, "expected JSON body error"));
+            });
+            await checkResponse("file/add_folder", [
+                { },
+                { path: vaultOneName + "/folder1" },
+                { path: 12341 },
+                { path: 12341, vaultToken: "asfda.asdfasdf.asdfa" },
+                { path: { path: vaultOneName + "/folder1", vaultToken: "asdfa.sdfasdfa.asdf" }, vaultToken: "asfda.asdfasdf.asdfa" },
+                { path: vaultOneName + "/folder1", vaultToken: 123412 },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Expected body with valid vaultToken and path string attributes."), failString(data, parameter, "expected body with valid vaultTokena and path attributes error"));
+            });
+            await checkResponse("file/add_folder", [
+                { path: vaultOneName + "/folder1", vaultToken: "asdfa.asdfa.asdf" },
+                { path: vaultOneName + "/folder1", vaultToken: await (async () => {
+                    const token = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultTwoName, password: vaultTwoName })).token ?? null;
+                    assert(token !== null);
+                    return token;
+                })() },
+                { path: "nonexistant" + "/folder1", vaultToken: await (async () => {
+                    const token = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+                    assert(token !== null);
+                    return token;
+                })() },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Provided vaultToken does not have access to path"), failString(data, parameter, "vaultToken does not have access to path"));
+            });
+            const vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+            assert(vaultToken !== null);
+            {
+                const error = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName + "/folder1//bad path" })).data.error;
+                assert(error?.includes("The provided path is not valid."));
+            }
+            {
+                // Expects at least one entry after vault name
+                const error = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName })).data.error;
+                assert(error?.includes("The provided path is not valid."));
+            }
+            {
+                // Nested directory creation disallowed
+                const success = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName + "/folder1/folder2" })).data.success;
+                assert(success === false);
+            }
+            
+            const vaultOne = new Directory(vaultOneName, []);
+            {
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+            }
+            assert(vaultOne.contents.length === 0);
+            
+            const success = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName + "/folder1" })).data.success;
+            assert(success === true);
+
+            {
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+            }
+            assert(vaultOne.contents.length as number === 1);
+            assert(vaultOne.contents[0].isDirectory);
+            assert(vaultOne.contents[0].name === "folder1");
+            
+            {
+                const removed = (await axios.post("file/remove", { vaultToken, path: vaultOneName + "/folder1" })).data;
+                assert(removed.error === undefined);
+                assert(removed.success === true);
+            }
+        });
+
         after(async () => {
             const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
             assert(adminToken !== null);
