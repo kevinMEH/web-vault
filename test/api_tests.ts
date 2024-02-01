@@ -13,7 +13,7 @@ import { deleteVaultPassword, setVaultPassword } from "../src/authentication/dat
 import JWT, { Header, unixTime } from "jwt-km";
 import { DEFAULT_ADMIN_NAME, DOMAIN, JWT_SECRET } from "../src/env";
 import { adminAccess } from "../src/admin_auth";
-import { Directory } from "../src/vfs";
+import { Directory, File } from "../src/vfs";
 
 import { post } from "../src/requests";
 
@@ -24,6 +24,8 @@ import type { Expect as VaultLoginExpect, Data as VaultLoginData } from "../app/
 import type { Expect as VFSExpect, Data as VFSData } from "../app/api/file/vfs/route";
 import type { Data as AddFileData } from "../app/api/file/add_file/route";
 import type { Expect as AddFolderExpect, Data as AddFolderData } from "../app/api/file/add_folder/route";
+import type { Expect as MoveExpect, Data as MoveData } from "../app/api/file/move/route";
+import type { Expect as RemoveExpect, Data as RemoveData } from "../app/api/file/remove/route";
 
 axios.defaults.baseURL = "http://localhost:3000/api";
 axios.defaults.baseURL = "http://172.20.80.1:3000/api"; // Windows localhost IP from WSL
@@ -480,25 +482,25 @@ describe("API tests", () => {
 
             {
                 // Add file
-            const formData = new FormData();
-            formData.append("vaultToken", vaultToken);
-            formData.append("path", vaultOneName + "/LICENSE");
-            formData.append("file", await fileBlob("./LICENSE"));
-            const data = (await axios.post("file/add_file", formData)).data;
-            assert(data.error === undefined);
-            assert(data.success === true);
-            assert(data.displacedPath === undefined);
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName + "/LICENSE");
+                formData.append("file", await fileBlob("./LICENSE"));
+                const data = (await axios.post("file/add_file", formData)).data;
+                assert(data.error === undefined);
+                assert(data.success === true);
+                assert(data.displacedPath === undefined);
             }
             {
                 // Update VFS and check
                 const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
                 assert(vfs !== undefined);
                 vaultOne.update(vfs);
-            assert(vaultOne.contents.length as number === 1);
-            assert(vaultOne.contents[0].name === "LICENSE");
-            assert(vaultOne.contents[0].isDirectory === false);
-            const stats = await fs.stat("./LICENSE");
-            assert(vaultOne.contents[0].getByteSize() === stats.size);
+                assert(vaultOne.contents.length as number === 1);
+                assert(vaultOne.contents[0].name === "LICENSE");
+                assert(vaultOne.contents[0].isDirectory === false);
+                const stats = await fs.stat("./LICENSE");
+                assert(vaultOne.contents[0].getByteSize() === stats.size);
             }
             {
                 // Can't add file to already existing location
@@ -522,7 +524,7 @@ describe("API tests", () => {
                 assert(data.success === false);
                 assert(data.displacedPath === undefined);
             }
-            
+
             {
                 // Cleanup
                 const removeData = (await axios.post("file/remove", { vaultToken, path: vaultOneName + "/LICENSE" })).data;
@@ -677,7 +679,7 @@ describe("API tests", () => {
                 const vfs = (await axios.post("file/vfs", { vaultToken, path: vaultOneName })).data.directory;
                 assert(vfs !== undefined);
                 vaultOne.update(vfs);
-            assert(vaultOne.contents.length === 0);
+                assert(vaultOne.contents.length === 0);
             }
             
             /*
@@ -695,7 +697,7 @@ describe("API tests", () => {
                 formData.append("path", vaultOneName + "/LICENSE");
                 formData.append("file", await fileBlob("./LICENSE"));
                 const success = (await post<FormData, AddFileData>("file/add_file", formData)).success;
-            assert(success === true);
+                assert(success === true);
             }
             {
                 // Adds vaultOne/folder
@@ -716,7 +718,7 @@ describe("API tests", () => {
                 const success = (await post<AddFolderExpect, AddFolderData>("file/add_folder", { vaultToken, path: vaultOneName + "/folder/subfolder" })).success;
                 assert(success === true);
             }
-
+            
             {
                 /*
                 vaultOne/
@@ -818,7 +820,7 @@ describe("API tests", () => {
                 const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
                 assert(vfs !== undefined);
                 vaultOne.update(vfs);
-            assert(vaultOne.contents.length as number === 1);
+                assert(vaultOne.contents.length as number === 1);
                 {
                     const entry = vaultOne.getPath("LICENSE");
                     assert(entry !== null)
@@ -844,7 +846,356 @@ describe("API tests", () => {
                 assert(vaultOne.contents.length as number === 0);
             }
         });
+        
+        it("Tests api/file/move", async () => {
+            await checkResponse("file/move", [
+                undefined, null, "asdf",
+                `{ "hello":: 123 }`,
+            ], (data, parameter) => {
+                assert(data.error === "Bad parameters. Expected JSON body.", failString(data, parameter, "expected JSON body error"));
+            });
+            await checkResponse("file/move", [
+                { },
+                { path: vaultOneName },
+                { sourcePath: vaultOneName, destinationPath: vaultOneName + "/destination" },
+                { sourcePath: vaultOneName + "/source", destinationPath: vaultOneName + "/destination" },
+                { path: 12341 },
+                { path: 12341, destinationPath: vaultOneName + "/destination" },
+                { sourcePath: 12312, destinationPath: vaultOneName + "/destination" },
+                { sourcePath: 12312, destinationPath: { sourcePath: vaultOneName, destinationPath: vaultOneName + "/destination" } },
+                { path: 12341, vaultToken: "asfda.asdfasdf.asdfa" },
+                { sourcePath: 12341, destinationPath: vaultOneName + "/destination", vaultToken: "asfda.asdfasdf.asdfa" },
+                { sourcePath: vaultOneName + "/source", destinationPath: vaultOneName + "/destination", vaultToken: 123412 },
+                { vaultToken: await (async () => {
+                    const vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+                    assert(vaultToken !== null);
+                })(), sourcePath: 12321, destinationPath: vaultOneName + "/destination" },
+                { vaultToken: await (async () => {
+                    const vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+                    assert(vaultToken !== null);
+                })(), sourcePath: vaultOneName + "/source", destinationPath: {} },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Expected body with valid vaultToken, sourcePath, and destinationPath string attributes."), failString(data, parameter, "expected body with valid vaultToken, sourcePath, and destinationPath string attributes"));
+            });
+            await checkResponse("file/move", [
+                { vaultToken: "asdfa.asdfasdfas.asdfaf", sourcePath: vaultOneName + "/source", destinationPath: vaultOneName + "/destination" },
+                { vaultToken: await (async () => {
+                    const token = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+                    assert(token !== null);
+                    return token;
+                })(), sourcePath: vaultTwoName + "/source", destinationPath: vaultOneName + "/destination" },
+                { vaultToken: await (async () => {
+                    const token = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+                    assert(token !== null);
+                    return token;
+                })(), sourcePath: vaultOneName + "/source", destinationPath: vaultTwoName + "/destination" },
+                { vaultToken: await (async () => {
+                    const token = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+                    assert(token !== null);
+                    return token;
+                })(), sourcePath: vaultTwoName + "/source", destinationPath: vaultTwoName + "/destination" },
+            ], (data, parameter) => {
+                assert(data.error?.includes("Provided vaultToken does not have access to"), failString(data, parameter, "vaultToken does not have access to paths"));
+            });
+            
+            let vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultOneName, password: "password" })).token ?? null;
+            assert(vaultToken !== null);
+            {
+                const error = (await axios.post("file/move", { vaultToken, sourcePath: vaultOneName + "//bad path", destinationPath: vaultOneName + "/destination" })).data.error;
+                assert(error?.includes("The provided sourcePath and/or destinationPath is not valid."));
+            }
+            {
+                const error = (await axios.post("file/move", { vaultToken, sourcePath: vaultOneName + "/good path", destinationPath: vaultOneName + "//destination" })).data.error;
+                assert(error?.includes("The provided sourcePath and/or destinationPath is not valid."));
+            }
+            
+            /*
+            Adds test files and folders
+            vaultOne/
+                LICENSE
+                another folder/
+                folder/
+                    .gitignore
+                    subfolder/
+            */
+            {
+                // Adds vaultOne/LICENSE file
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName + "/LICENSE");
+                formData.append("file", await fileBlob("./LICENSE"));
+                const success = (await post<FormData, AddFileData>("file/add_file", formData)).success;
+                assert(success === true);
+            }
+            {
+                // Adds vaultOne/another folder
+                const success = (await post<AddFolderExpect, AddFolderData>("file/add_folder", { vaultToken, path: vaultOneName + "/another folder" })).success;
+                assert(success === true);
+            }
+            {
+                // Adds vaultOne/folder
+                const success = (await post<AddFolderExpect, AddFolderData>("file/add_folder", { vaultToken, path: vaultOneName + "/folder" })).success;
+                assert(success === true);
+            }
+            {
+                // Adds vaultOne/folder/.gitignore
+                const formData = new FormData();
+                formData.append("vaultToken", vaultToken);
+                formData.append("path", vaultOneName + "/folder/.gitignore");
+                formData.append("file", await fileBlob("./.gitignore"));
+                const success = (await post<FormData, AddFileData>("file/add_file", formData)).success;
+                assert(success === true);
+            }
+            {
+                // Adds vaultOne/folder/subfolder
+                const success = (await post<AddFolderExpect, AddFolderData>("file/add_folder", { vaultToken, path: vaultOneName + "/folder/subfolder" })).success;
+                assert(success === true);
+            }
+            
+            // Below: Tests single vault operations (sourcePath and destinationPath same vault)
 
+            const vaultOne = new Directory(vaultOneName, []);
+            {
+                /*
+                vaultOne/
+                    LICENSE
+                    another folder/
+                    folder/
+                        .gitignore
+                        subfolder/
+                */
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+                assert(vaultOne.contents.length === 3);
+                assert(vaultOne.getPath("folder/subfolder"))
+            }
+
+            {
+                // Move LICENSE to license (renames it)
+                const success = (await post<MoveExpect, MoveData>("file/move", { vaultToken, sourcePath: vaultOneName + "/LICENSE", destinationPath: vaultOneName + "/license" })).success;
+                assert(success === true);
+            }
+
+            {
+                /*
+                vaultOne/
+                    license
+                    another folder/
+                    folder/
+                        .gitignore
+                        subfolder/
+                */
+                const oldFile = vaultOne.getFile("LICENSE");
+                assert(oldFile !== null);
+
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+                assert(vaultOne.contents.length === 3);
+                const file = vaultOne.getFile("license");
+                assert(file !== null);
+                assert(file.isDirectory === false);
+                assert(file.name === "license");
+                assert(file.byteSize === oldFile.byteSize);
+            }
+            
+            {
+                // Moves license to another folder and renames to LICENSE
+                const success = (await post<MoveExpect, MoveData>("file/move", { vaultToken, sourcePath: vaultOneName + "/license", destinationPath: vaultOneName + "/another folder/LICENSE" })).success;
+                assert(success === true);
+            }
+            
+            {
+                /*
+                vaultOne/
+                    another folder/
+                        LICENSE
+                    folder/
+                        .gitignore
+                        subfolder/
+                */
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+                assert(vaultOne.contents.length as number === 2);
+                {
+                    const file = vaultOne.getFile("license");
+                    assert(file === null);
+                }
+                {
+                    const file = vaultOne.getFile("LICENSE");
+                    assert(file === null);
+                }
+                {
+                    const file = vaultOne.getPath("another folder/LICENSE");
+                    assert(file !== null);
+                    assert(file.name === "LICENSE");
+                    assert(file.isDirectory === false);
+                }
+            }
+            
+            {
+                // Can't move folder to a path inside of itself
+                const success = (await post<MoveExpect, MoveData>("file/move", { vaultToken, sourcePath: vaultOneName + "/folder", destinationPath: vaultOneName + "/folder/subfolder" })).success;
+                assert(success === false);
+            }
+
+            {
+                /*
+                vaultOne/
+                    another folder/
+                        LICENSE
+                    folder/
+                        .gitignore
+                        subfolder/
+                */
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+                assert(vaultOne.contents.length as number === 2);
+                {
+                    const file = vaultOne.getPath("another folder/LICENSE");
+                    assert(file !== null);
+                    assert(file.name === "LICENSE");
+                    assert(file.isDirectory === false);
+                }
+                {
+                    const directory = vaultOne.getDirectory("folder");
+                    assert(directory !== null);
+                    assert(directory.isDirectory === true);
+                    assert((directory as Directory).contents.length === 2);
+                    assert(directory.getFile(".gitignore") !== null);
+                    assert(directory.getDirectory("subfolder") !== null);
+                }
+            }
+            
+            {
+                const success = (await post<MoveExpect, MoveData>("file/move", { vaultToken, sourcePath: vaultOneName + "/another folder", destinationPath: vaultOneName + "/folder/subfolder/another folder" })).success;
+                assert(success === true);
+            }
+            
+            {
+                /*
+                vaultOne/
+                    folder/
+                        .gitignore
+                        subfolder/
+                            another folder/
+                                LICENSE
+                */
+                {
+                    const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                    assert(vfs !== undefined);
+                    vaultOne.update(vfs);
+                }
+                {
+                    const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder/subfolder" })).directory;
+                    assert(vfs !== undefined);
+                    const subfolder = vaultOne.getPath("folder/subfolder");
+                    assert(subfolder !== null);
+                    assert(subfolder.isDirectory === true);
+                    (subfolder as Directory).update(vfs);
+                }
+                assert(vaultOne.contents.length as number === 1);
+                const file = vaultOne.getPath("folder/subfolder/another folder/LICENSE");
+                assert(file !== null);
+                assert(file.isDirectory === false);
+                assert(file.name === "LICENSE");
+            }
+            
+            {
+                // Can't move to another vault if vaultToken has no access to other vault
+                const data = (await axios.post("file/move", { vaultToken, sourcePath: vaultOneName + "/folder/.gitignore", destinationPath: vaultTwoName + "/.gitignore" })).data;
+                assert(data.error?.includes("Unauthorized request."));
+                assert(data.success === undefined);
+            }
+            
+            vaultToken = (await post<VaultLoginExpect, VaultLoginData>("vault/login", { vaultName: vaultTwoName, password: vaultTwoName, existingToken: vaultToken })).token ?? null;
+            assert(vaultToken !== null);
+
+            {
+                // Moving file to another vault
+                const success = (await post<MoveExpect, MoveData>("file/move", { vaultToken, sourcePath: vaultOneName + "/folder/.gitignore", destinationPath: vaultTwoName + "/.gitignore" })).success;
+                assert(success === true);
+            }
+            
+            const vaultTwo = new Directory(vaultTwoName, []);
+            {
+                /*
+                vaultTwo/
+                    .gitignore
+                */
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultTwoName, depth: 99 })).directory;
+                assert(vfs !== undefined);
+                vaultTwo.update(vfs);
+                assert(vaultTwo.contents.length as number === 1);
+                const file = vaultTwo.getFile(".gitignore");
+                assert(file !== null);
+                assert(file.name === ".gitignore");
+                assert(file.isDirectory === false);
+                
+                const oldFile = vaultOne.getPath("folder/.gitignore");
+                assert(oldFile !== null);
+                assert(oldFile.isDirectory === false);
+                assert(file.byteSize === (oldFile as File).byteSize);
+            }
+            {
+                /*
+                vaultOne/
+                    folder/
+                        subfolder/
+                            another folder/
+                                LICENSE
+                */
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 99 })).directory;
+                assert(vfs !== undefined);
+                vaultOne.update(vfs);
+                assert(vaultOne.contents.length as number === 1);
+                const folder = vaultOne.getDirectory("folder");
+                assert(folder !== null);
+                assert(folder.contents.length === 1);
+                assert(folder.contents[0].name === "subfolder");
+                assert(folder.contents[0].isDirectory === true);
+            }
+            
+            {
+                // Moving folder to another vault
+                const success = (await post<MoveExpect, MoveData>("file/move", { vaultToken, sourcePath: vaultOneName + "/folder", destinationPath: vaultTwoName + "/moved_folder" })).success;
+                assert(success === true);
+            }
+
+            {
+                /*
+                vaultTwo/
+                    .gitignore
+                    moved_folder/
+                        subfolder/
+                            another folder/
+                                LICENSE
+                */
+                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultTwoName, depth: 99 })).directory ?? null;
+                assert(vfs !== null);
+                vaultTwo.update(vfs);
+                assert(vaultTwo.contents.length as number === 2);
+                const folder = vaultTwo.getDirectory("moved_folder");
+                assert(folder !== null);
+                assert(folder.name === "moved_folder");
+                assert(folder.isDirectory === true);
+                assert((folder as Directory).contents.length === 1);
+                const file = (folder as Directory).getPath("subfolder/another folder/LICENSE");
+                assert(file !== null);
+                assert(file.name === "LICENSE");
+                assert(file.isDirectory === false);
+            }
+            
+            {
+                // Cleanup
+                assert((await post<RemoveExpect, RemoveData>("file/remove", { vaultToken, path: vaultTwoName + "/.gitignore" })).success === true);
+                assert((await post<RemoveExpect, RemoveData>("file/remove", { vaultToken, path: vaultTwoName + "/moved_folder" })).success === true);
+            }
+        });
+        
         after(async () => {
             const adminToken = (await post<AdminLoginExpect, AdminLoginData>("admin/login", { adminName: "admin", password: "password" })).token ?? null;
             assert(adminToken !== null);
