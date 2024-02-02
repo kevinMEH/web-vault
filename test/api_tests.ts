@@ -383,9 +383,9 @@ describe("API tests", () => {
 
             const vaultOne = new Directory(vaultOneName, []);
             {
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
             }
             assert(vaultOne.contents.length as number === 0);
             
@@ -493,9 +493,9 @@ describe("API tests", () => {
             }
             {
                 // Update VFS and check
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 1);
                 assert(vaultOne.contents[0].name === "LICENSE");
                 assert(vaultOne.contents[0].isDirectory === false);
@@ -588,9 +588,9 @@ describe("API tests", () => {
             
             const vaultOne = new Directory(vaultOneName, []);
             {
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length === 0);
             }
             
@@ -598,9 +598,9 @@ describe("API tests", () => {
                 // Tests add_folder
                 const success = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName + "/folder1" })).data.success;
                 assert(success === true);
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 999 }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 1);
                 assert(vaultOne.contents[0].isDirectory === true);
                 assert(vaultOne.contents[0].name === "folder1");
@@ -610,11 +610,11 @@ describe("API tests", () => {
                 // Adds another folder to folder
                 const success = (await axios.post("file/add_folder", { vaultToken, path: vaultOneName + "/folder1/folder2" })).data.success;
                 assert(success === true);
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder1", depth: 999 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder1", depth: 999 }));
                 assert(vfs !== undefined);
                 const folder1 = vaultOne.getDirectory("folder1");
                 assert(folder1 !== null);
-                folder1.update(vfs);
+                folder1.update(vfs, depth);
                 assert(folder1.contents.length === 1);
                 assert(folder1.contents[0].isDirectory === true);
                 assert(folder1.contents[0].name === "folder2");
@@ -676,9 +676,9 @@ describe("API tests", () => {
 
             const vaultOne = new Directory(vaultOneName, []);
             {
-                const vfs = (await axios.post("file/vfs", { vaultToken, path: vaultOneName })).data.directory;
+                const { vfs, depth } = (await axios.post("file/vfs", { vaultToken, path: vaultOneName })).data;
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length === 0);
             }
             
@@ -729,9 +729,9 @@ describe("API tests", () => {
                 */
                 // Updates vfs from root and checks structure.
                 // Note: If error encountered, ensure MAX_VFS_DEPTH is deep enough to update all at once
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 99 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 99 }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 2);
                 {
                     const entry = vaultOne.getPath("LICENSE");
@@ -775,11 +775,11 @@ describe("API tests", () => {
                         .gitignore
                 */
                 // Retrieves VFS from subdirectory folder this time
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder", depth: 99 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder", depth: 99 }));
                 assert(vfs !== undefined);
                 const folder = vaultOne.getDirectory("folder");
                 assert(folder !== null);
-                folder.update(vfs);
+                folder.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 2);
                 {
                     const entry = vaultOne.getPath("LICENSE");
@@ -817,9 +817,9 @@ describe("API tests", () => {
                 vaultOne/
                     LICENSE
                 */
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 1);
                 {
                     const entry = vaultOne.getPath("LICENSE");
@@ -840,9 +840,9 @@ describe("API tests", () => {
             }
             
             {
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 0);
             }
         });
@@ -964,9 +964,9 @@ describe("API tests", () => {
                         .gitignore
                         subfolder/
                 */
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length === 3);
                 assert(vaultOne.getPath("folder/subfolder"))
             }
@@ -989,9 +989,9 @@ describe("API tests", () => {
                 const oldFile = vaultOne.getFile("LICENSE");
                 assert(oldFile !== null);
 
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length === 3);
                 const file = vaultOne.getFile("license");
                 assert(file !== null);
@@ -1015,9 +1015,9 @@ describe("API tests", () => {
                         .gitignore
                         subfolder/
                 */
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 2);
                 {
                     const file = vaultOne.getFile("license");
@@ -1050,9 +1050,9 @@ describe("API tests", () => {
                         .gitignore
                         subfolder/
                 */
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 2);
                 {
                     const file = vaultOne.getPath("another folder/LICENSE");
@@ -1085,17 +1085,17 @@ describe("API tests", () => {
                                 LICENSE
                 */
                 {
-                    const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName })).directory;
+                    const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
                     assert(vfs !== undefined);
-                    vaultOne.update(vfs);
+                    vaultOne.update(vfs, depth);
                 }
                 {
-                    const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder/subfolder" })).directory;
+                    const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder/subfolder" }));
                     assert(vfs !== undefined);
                     const subfolder = vaultOne.getPath("folder/subfolder");
                     assert(subfolder !== null);
                     assert(subfolder.isDirectory === true);
-                    (subfolder as Directory).update(vfs);
+                    (subfolder as Directory).update(vfs, depth);
                 }
                 assert(vaultOne.contents.length as number === 1);
                 const file = vaultOne.getPath("folder/subfolder/another folder/LICENSE");
@@ -1126,9 +1126,9 @@ describe("API tests", () => {
                 vaultTwo/
                     .gitignore
                 */
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultTwoName, depth: 99 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultTwoName, depth: 99 }));
                 assert(vfs !== undefined);
-                vaultTwo.update(vfs);
+                vaultTwo.update(vfs, depth);
                 assert(vaultTwo.contents.length as number === 1);
                 const file = vaultTwo.getFile(".gitignore");
                 assert(file !== null);
@@ -1148,9 +1148,9 @@ describe("API tests", () => {
                             another folder/
                                 LICENSE
                 */
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 99 })).directory;
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 99 }));
                 assert(vfs !== undefined);
-                vaultOne.update(vfs);
+                vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 1);
                 const folder = vaultOne.getDirectory("folder");
                 assert(folder !== null);
@@ -1174,9 +1174,9 @@ describe("API tests", () => {
                             another folder/
                                 LICENSE
                 */
-                const vfs = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultTwoName, depth: 99 })).directory ?? null;
-                assert(vfs !== null);
-                vaultTwo.update(vfs);
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultTwoName, depth: 99 }));
+                assert(vfs !== undefined);
+                vaultTwo.update(vfs, depth);
                 assert(vaultTwo.contents.length as number === 2);
                 const folder = vaultTwo.getDirectory("moved_folder");
                 assert(folder !== null);

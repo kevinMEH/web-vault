@@ -297,11 +297,11 @@ class Directory {
      * 
      * @param flatItem 
      */
-    private attach(flatItem: SimpleFile | SimpleDirectory): void {
+    private attach(flatItem: SimpleFile | SimpleDirectory, depth: number): void {
         if(flatItem.isDirectory) {
             // Create new directory, and then update itself.
             const newDirectory = new Directory(flatItem.name, []);
-            newDirectory.update(flatItem as SimpleDirectory);
+            newDirectory.update(flatItem as SimpleDirectory, depth - 1);
             this.addEntry(newDirectory, false);
         } else {
             // Create new file from flatFile
@@ -316,18 +316,22 @@ class Directory {
      * This is used for client side updating of virtual file system, and turning
      * flattened file system back into Files and Directories.
      * 
+     * If depth is equal to zero, contents will not be updated.
+     * 
      * @param flatDirectory - Flattened Directory object
      */
-    update(flatDirectory: SimpleDirectory): void {
+    update(flatDirectory: SimpleDirectory, depth: number): void {
         this.lastModified = new Date(flatDirectory.lastModified);
-
+        if(depth === 0) {
+            return;
+        }
         const newContents: (File | Directory)[] = [];
         const toAttach: (SimpleFile | SimpleDirectory)[] = [];
         for(const item of flatDirectory.contents) {
             const maybeCurrent = this.getAny(item.name);
             if(maybeCurrent !== null && maybeCurrent.isDirectory === item.isDirectory) {
                 // Update existing, and push to new contents
-                maybeCurrent.update(item as never);
+                maybeCurrent.update(item as never, depth - 1);
                 newContents.push(maybeCurrent);
             } else {
                 // Does not currently exist, or is not of the same type: attach later
@@ -338,7 +342,7 @@ class Directory {
         this.contents = newContents;
         for(const item of toAttach) {
             // Attach all new items to current directory
-            this.attach(item);
+            this.attach(item, depth);
         }
     }
 }

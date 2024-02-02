@@ -13,7 +13,11 @@ export type Expect = {
 }
 
 export type Data = {
-    directory: SimpleDirectory | undefined
+    vfs: SimpleDirectory,
+    depth: number
+} | {
+    vfs: undefined,
+    depth: number
 } | ErrorResponse;
 
 
@@ -33,7 +37,8 @@ export function POST(request: NextRequest): Promise<AuthResponse<Data>> {
         }
         const depth = userDepth < 0 ? DEFAULT_VFS_DEPTH : Math.min(userDepth, MAX_VFS_DEPTH);
         return Promise.resolve(Answer(200, {
-            directory: getDirectoryAt(validDestination)?.flat(false, depth)
+            vfs: getDirectoryAt(validDestination)?.flat(false, depth),
+            depth
         }));
     });
 }

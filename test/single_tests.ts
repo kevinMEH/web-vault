@@ -346,7 +346,7 @@ describe("Single Tests", () => {
             const fullFlatRoot = root.flat(true, 10);
             
             const root2 = new Directory("root", []);
-            root2.update(fullFlatRoot);
+            root2.update(fullFlatRoot, 10);
             
             assert(root2.getDirectory("project") !== null);
             assert(root2.getDirectory("other_parent") !== null);
@@ -380,7 +380,7 @@ describe("Single Tests", () => {
             const parsedRoot = JSON.parse(stringifiedRoot);
             
             const root2 = new Directory("root", []);
-            root2.update(parsedRoot);
+            root2.update(parsedRoot, 10);
             
             assert(root2.getDirectory("project") !== null);
             assert(root2.getDirectory("other_parent") !== null);
@@ -418,7 +418,7 @@ describe("Single Tests", () => {
             const parsedRoot = JSON.parse(stringifiedRoot);
             
             const root2 = new Directory("root", []);
-            root2.update(parsedRoot);
+            root2.update(parsedRoot, 10);
     
             assert(root2.getDirectory("project")?.getFile("hello.txt")?.realFile === "");
             assert(root2.getDirectory("project")?.getFile("world.png")?.realFile === "");
@@ -440,12 +440,12 @@ describe("Single Tests", () => {
             const root = new Directory("root", [directory, otherParent]);
             
             const rootDepth0 = new Directory("root", []);
-            rootDepth0.update(root.flat(true, 0));
+            rootDepth0.update(root.flat(true, 0), 0);
             assert(root.contents.length === 2);
             assert(rootDepth0.contents.length === 0);
             
             const rootDepth1 = new Directory("root", []);
-            rootDepth1.update(root.flat(true, 1));
+            rootDepth1.update(root.flat(true, 1), 1);
             assert(rootDepth1.contents.length === 2);
             assert(rootDepth1.getDirectory("project"));
             assert(rootDepth1.getDirectory("project")?.contents.length === 0);
@@ -453,14 +453,14 @@ describe("Single Tests", () => {
             assert(rootDepth1.getDirectory("other_parent")?.contents.length === 0);
             
             const rootDepth2 = new Directory("root", []);
-            rootDepth2.update(root.flat(true, 2));
+            rootDepth2.update(root.flat(true, 2), 2);
             assert(rootDepth2.contents.length === 2);
             assert(rootDepth2.getDirectory("other_parent"));
             assert(rootDepth2.getDirectory("other_parent")?.contents.length === 1);
             assert(rootDepth2.getDirectory("other_parent")?.getDirectory("other_stuff")?.contents.length === 0);
             
             const rootDepthAll = new Directory("root", []);
-            rootDepthAll.update(root.flat(true, 99));
+            rootDepthAll.update(root.flat(true, 99), 99);
             assert(rootDepthAll.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another"));
             assert(rootDepthAll.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.byteSize === other2.byteSize);
             assert(rootDepthAll.getDirectory("other_parent")?.getDirectory("other_stuff")?.getFile("another")?.realFile === other2.realFile);
@@ -481,28 +481,30 @@ describe("Single Tests", () => {
             const newRoot = new Directory("root", []);
     
             const rootDepthAll = root.flat(true, 10);
-            newRoot.update(rootDepthAll);
+            newRoot.update(rootDepthAll, 10);
+            assert(newRoot.contents.length === 2);
             assert(newRoot.getDirectory("project"));
             assert(newRoot.getDirectory("project")?.contents.length === 2);
             assert(newRoot.getDirectory("project")?.getFile("hello.txt"));
             assert(newRoot.getDirectory("project")?.getFile("hello.txt")?.realFile
             === root.getDirectory("project")?.getFile("hello.txt")?.realFile);
             
+            // Updating using lower depth value will not change lower depth contents
             const rootDepth0 = root.flat(true, 0);
-            newRoot.update(rootDepth0);
-            assert(newRoot.contents.length === 0);
+            newRoot.update(rootDepth0, 0);
+            assert(newRoot.contents.length === 2);
             assert(newRoot.lastModified.toJSON() === root.lastModified.toJSON());
             
             const rootDepth1 = root.flat(true, 1);
-            newRoot.update(rootDepth1);
-            assert((newRoot.contents.length as any) === 2);
+            newRoot.update(rootDepth1, 1);
+            assert(newRoot.contents.length === 2);
             assert(newRoot.getDirectory("other_parent"));
-            assert(newRoot.getDirectory("other_parent")?.contents.length === 0);
+            assert(newRoot.getDirectory("other_parent")?.contents.length === 1);
             
             root.removeEntry(directory, false);
             
             const rootDepth2 = root.flat(true, 2);
-            newRoot.update(rootDepth2);
+            newRoot.update(rootDepth2, 2);
             assert((newRoot.contents.length as any) === 1);
             assert(newRoot.getDirectory("other_parent"));
             assert(newRoot.getDirectory("other_parent")?.contents.length === 1);

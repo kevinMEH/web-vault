@@ -162,7 +162,7 @@ async function loadVFS(): Promise<boolean> {
     for(const vaultName in storeObject) {
         const flatDirectory = storeObject[vaultName];
         const vaultDirectory = new Directory(flatDirectory.name, [], flatDirectory.lastModified);
-        vaultDirectory.update(flatDirectory);
+        vaultDirectory.update(flatDirectory, -1);
         redisVaultMap.set(vaultName, vaultDirectory);
     }
     return true;
