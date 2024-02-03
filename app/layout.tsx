@@ -9,14 +9,8 @@ export const metadata: Metadata = {
     }
 };
 
-export default function RootLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <html lang="en" className={`text-main ${inter.variable} ${pathway.variable} ${noto_sans_mono.variable} min-h-full overflow-x-clip hide-scrollbar`}>
-            <body className={`bg-light-gray h-screen font-inter`}>{children}</body>
-        </html>
-    );
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+    return <html lang="en" className={`text-main ${inter.variable} ${pathway.variable} ${noto_sans_mono.variable} min-h-full overflow-x-clip hide-scrollbar`}>
+        {children}
+    </html>
 }
