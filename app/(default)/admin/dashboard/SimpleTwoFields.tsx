@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react";
-import Button from "../../../components/Button";
-import TextField from "../../../components/TextField";
+import Button from "../../../../components/Button";
+import TextField from "../../../../components/TextField";
 
 type SimpleTwoFieldsParameters = {
     label: string,

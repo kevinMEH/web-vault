@@ -1,11 +1,11 @@
 "use client"
 import { useEffect, useState } from "react";
 
-import { File, Directory } from "../../src/vfs";
-import { sortByName } from "../../src/helper";
+import { File, Directory } from "../../../src/vfs";
+import { sortByName } from "../../../src/helper";
 
-import Resizable from "../../components/Resizable";
-import ExplorerItem from "../../components/ExplorerItem";
+import Resizable from "../../../components/Resizable";
+import ExplorerItem from "../../../components/ExplorerItem";
 
 
 import Header from "./Header";

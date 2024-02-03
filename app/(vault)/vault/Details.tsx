@@ -2,15 +2,15 @@ import { memo } from "react";
 
 import { BUNDLED_LANGUAGES, Lang } from "shiki";
 
-import ItemIcon from "../../components/ItemIcon";
-import TabDisplay, { Tab } from "../../components/TabDisplay";
-import CodePreview from "../../components/Code/CodePreview";
-import TextField from "../../components/TextField";
-import DetailsSVG from "../../components/SVGS/DetailsSVG";
+import ItemIcon from "../../../components/ItemIcon";
+import TabDisplay, { Tab } from "../../../components/TabDisplay";
+import CodePreview from "../../../components/Code/CodePreview";
+import TextField from "../../../components/TextField";
+import DetailsSVG from "../../../components/SVGS/DetailsSVG";
 
-import { File, Directory } from "../../src/vfs";
-import { timeAgo, convertBytes } from "../../src/helper";
-import ActivitySVG from "../../components/SVGS/ActivitySVG";
+import { File, Directory } from "../../../src/vfs";
+import { timeAgo, convertBytes } from "../../../src/helper";
+import ActivitySVG from "../../../components/SVGS/ActivitySVG";
 
 type DetailsParameters = {
     item: File | Directory | null;

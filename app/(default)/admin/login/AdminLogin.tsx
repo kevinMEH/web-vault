@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
-import Button from "../../../components/Button";
-import TextField from "../../../components/TextField";
+import Button from "../../../../components/Button";
+import TextField from "../../../../components/TextField";
 
-import { post } from "../../../src/requests";
-import { getAdminToken, removeAdminToken, setAdminToken, } from "../../../src/storage";
-import type { Expect as LoginExpect, Data as LoginData } from "../../api/admin/login/route";
-import type { Expect as AdminAccessExpect, Data as AdminAccessData } from "../../api/admin/admin_access/route";
+import { post } from "../../../../src/requests";
+import { getAdminToken, removeAdminToken, setAdminToken, } from "../../../../src/storage";
+import type { Expect as LoginExpect, Data as LoginData } from "../../../api/admin/login/route";
+import type { Expect as AdminAccessExpect, Data as AdminAccessData } from "../../../api/admin/admin_access/route";
 
 type AdminLoginParameters = {
     title: string;

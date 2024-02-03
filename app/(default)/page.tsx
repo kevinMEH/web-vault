@@ -3,7 +3,7 @@ import Image from "next/image";
 
 import VaultList from "./VaultList";
 
-import Logo from "../public/logos/logo-text.svg";
+import Logo from "../../public/logos/logo-text.svg";
 
 
 export const metadata: Metadata = {

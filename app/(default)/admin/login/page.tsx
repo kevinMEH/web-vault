@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import AdminLogin from "./AdminLogin";
-import Logo from "../../../public/logos/logo-text.svg";
-import Banner from "../../../images/banner.jpeg";
+import Logo from "../../../../public/logos/logo-text.svg";
+import Banner from "../../../../images/banner.jpeg";
 
 export const metadata: Metadata = {
     title: "Vault Management",

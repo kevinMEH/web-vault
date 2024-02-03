@@ -1,6 +1,6 @@
-import ItemIcon from "../../../components/ItemIcon";
+import ItemIcon from "../../../../components/ItemIcon";
 
-import { File, Directory } from "../../../src/vfs";
+import { File, Directory } from "../../../../src/vfs";
 
 type TileParameters = {
     item: File | Directory;

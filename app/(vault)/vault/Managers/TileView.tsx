@@ -1,8 +1,8 @@
 import Tile from "./Tile";
 
-import { File, Directory } from "../../../src/vfs";
+import { File, Directory } from "../../../../src/vfs";
 import React from "react";
-import { sortByName } from "../../../src/helper";
+import { sortByName } from "../../../../src/helper";
 
 type TileViewParameters = {
     activeDirectoryChain: Directory[];
