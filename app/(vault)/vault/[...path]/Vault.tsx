@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import { post } from "../../../../src/requests";
 import { getVaultToken } from "../../../../src/storage";
 import { Directory, File } from "../../../../src/vfs";
-import type { ErrorResponse } from "../../../../src/route_helpers";
-import type { Data as RefreshData, Expect as RefreshExpect } from "../../../api/vault/refresh/route";
 import type { Data as VFSData, Expect as VFSExpect } from "../../../api/file/vfs/route";
 import Header from "../Header";
 import Resizable from "../../../../components/Resizable";
@@ -20,11 +18,14 @@ type VaultParameters = {
 
 
 const Vault = ({ path }: VaultParameters) => {
+    const router = useRouter();
     const [ vfs, setVfs ] = useState(new Directory(path[0], []));
     const [ activeItem, setActiveItem ] = useState(null as null | Directory | File);
     const [ activeDirectoryChain, setActiveDirectoryChain ] = useState([ vfs ]);
     
-    const router = useRouter();
+    useEffect(() => {
+        window.history.replaceState(window.history.state, "", `/vault/${activeDirectoryChain.map(directory => directory.name).join("/")}`);
+    }, [ activeDirectoryChain ])
 
     const vaultName = path[0];
     
