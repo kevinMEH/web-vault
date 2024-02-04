@@ -1,21 +1,23 @@
 "use client";
-
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+import Resizable from "../../../../components/Resizable";
+import ExplorerItem from "./ExplorerItem";
+
+import Header from "./Header";
+import Details from "./Details";
+import TileView from "./Managers/TileView";
+
 import { post } from "../../../../src/requests";
 import { getVaultToken } from "../../../../src/storage";
 import { Directory, File } from "../../../../src/vfs";
+
 import type { Data as VFSData, Expect as VFSExpect } from "../../../api/file/vfs/route";
-import Header from "../Header";
-import Resizable from "../../../../components/Resizable";
-import TileView from "../Managers/TileView";
-import Details from "../Details";
-import ExplorerItem from "../../../../components/ExplorerItem";
 
 type VaultParameters = {
     path: string[]
 }
-
 
 const Vault = ({ path }: VaultParameters) => {
     const router = useRouter();

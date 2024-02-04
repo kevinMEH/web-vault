@@ -1,11 +1,11 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 
-import ItemIcon from "./ItemIcon";
-import Triangle from "./Triangle";
-import RightArrowSVG from "./SVGS/RightArrowSVG";
+import ItemIcon from "../../../../components/ItemIcon";
+import Triangle from "../../../../components/Triangle";
+import RightArrowSVG from "../../../../components/SVGS/RightArrowSVG";
 
-import { File, Directory } from "../src/vfs";
-import { sortByName } from "../src/helper";
+import { File, Directory } from "../../../../src/vfs";
+import { sortByName } from "../../../../src/helper";
 
 type ExplorerItemParameters = {
     item: File | Directory;
