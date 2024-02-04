@@ -21,15 +21,14 @@ type VaultParameters = {
 
 const Vault = ({ path }: VaultParameters) => {
     const router = useRouter();
-    const [ vfs, setVfs ] = useState(new Directory(path[0], []));
     const [ activeItem, setActiveItem ] = useState(null as null | Directory | File);
-    const [ activeDirectoryChain, setActiveDirectoryChain ] = useState([ vfs ]);
+    const [ activeDirectoryChain, setActiveDirectoryChain ] = useState([ new Directory(path[0], []) ]);
+
+    const vaultName = path[0];
     
     useEffect(() => {
         window.history.replaceState(window.history.state, "", `/vault/${activeDirectoryChain.map(directory => directory.name).join("/")}`);
     }, [ activeDirectoryChain ])
-
-    const vaultName = path[0];
     
     useEffect(() => {
         (async () => {
@@ -42,7 +41,7 @@ const Vault = ({ path }: VaultParameters) => {
             
             // Precreate directories for all segments and send vfs requests
             const directoryChain: Directory[] = [];
-            const vault = vfs;
+            const vault = activeDirectoryChain[0];
             directoryChain.push(vault);
             for(let i = 1; i < path.length; i++) {
                 const current = new Directory(path[i], []);
@@ -86,7 +85,6 @@ const Vault = ({ path }: VaultParameters) => {
             }
 
             await Promise.all(vfsUpdateOperations);
-            setVfs(vault);
             setActiveDirectoryChain(directoryChain);
         })();
     }, []);
