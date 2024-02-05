@@ -10,11 +10,12 @@ import fs from "fs/promises";
 import path from "path";
 import { metaLog } from "./logger";
 import { deleteVaultPassword, setVaultPassword, vaultExistsDatabase } from "./authentication/database";
-import { validNameRegex, deleteVaultVFS, newVaultVFS } from "./controller";
+import { deleteVaultVFS, newVaultVFS } from "./controller";
 
 import CustomError from "./custom_error";
 
 import { BASE_VAULT_DIRECTORY, BASE_LOGGING_DIRECTORY } from "./env";
+import { validName } from "./helper";
 
 const deletionTimeout = 5 * 1000;
 const baseVaultLoggingDirectory = path.join(BASE_LOGGING_DIRECTORY, "vaults");
@@ -45,7 +46,7 @@ const baseVaultLoggingDirectory = path.join(BASE_LOGGING_DIRECTORY, "vaults");
  * @returns Promise of instance of CustomError with `code` and `type` attribute
  */
 async function createNewVault(vaultName: string, password: string): Promise<CustomError | null> {
-    if(false === validNameRegex.test(vaultName)) {
+    if(!validName(vaultName)) {
         metaLog("admin", "ERROR", `Tried to create a new vault ${vaultName}, but the name is not a valid name.`);
         return new CustomError(`${vaultName} is not a valid vault name.`, "ERROR", "INVALID_NAME");
     }

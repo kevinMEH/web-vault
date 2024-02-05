@@ -17,7 +17,8 @@ import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdate
 } from "../src/authentication/database/local";
 import { HashedPassword, hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
-import { validNameRegex, validPathRegex, getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
+import { validName, validPath } from "../src/helper";
+import { getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
 import { fileNameMap, folderBaseMap, fileExtensionMap } from "../src/icons/iconMap";
 import { DEFAULT_ADMIN_NAME } from "../src/env";
 
@@ -620,166 +621,170 @@ describe("Single Tests", () => {
     
     test("Controller function tests", async context => {
         await context.test("Tests valid name regex", () => {
-            assert(validNameRegex.test("a"));
-            assert(validNameRegex.test("hello"));
-            assert(validNameRegex.test("hello.txt"));
-            assert(validNameRegex.test("hello world.txt"));
-            assert(validNameRegex.test("hello world.asdf.  ..txt"));
-            assert(validNameRegex.test("hello_world"));
-            assert(validNameRegex.test("hello-"));
-            assert(validNameRegex.test("_ - ."));
-            assert(validNameRegex.test(".hidden"));
-            assert(validNameRegex.test(".hidden."));
-            assert(validNameRegex.test(".hidden .local .env"));
+            assert(validName("a"));
+            assert(validName("hello"));
+            assert(validName("hello.txt"));
+            assert(validName("hello world.txt"));
+            assert(validName("hello world.asdf.  ..txt"));
+            assert(validName("hello_world"));
+            assert(validName("hello-"));
+            assert(validName("_ - ."));
+            assert(validName(".hidden"));
+            assert(validName(".hidden."));
+            assert(validName(".hidden .local .env"));
     
-            assert(false === validNameRegex.test("."));
-            assert(false === validNameRegex.test(".."));
-            assert(false === validNameRegex.test("......."));
-            assert(false === validNameRegex.test(". "));
-            assert(false === validNameRegex.test(" ."));
-            assert(false === validNameRegex.test(" . "));
-            assert(false === validNameRegex.test("  ."));
+            assert(false === validName("."));
+            assert(false === validName(".."));
+            assert(false === validName("......."));
+            assert(false === validName(". "));
+            assert(false === validName(" ."));
+            assert(false === validName(" . "));
+            assert(false === validName("  ."));
     
-            assert(false === validNameRegex.test(""));
-            assert(false === validNameRegex.test("   "));
-            assert(false === validNameRegex.test(" asdf"));
-            assert(false === validNameRegex.test("asdf "));
-            assert(false === validNameRegex.test(" asdf "));
-            assert(false === validNameRegex.test(". asdf. "));
-            assert(false === validNameRegex.test(".asdf. "));
+            assert(false === validName(""));
+            assert(false === validName("   "));
+            assert(false === validName(" asdf"));
+            assert(false === validName("asdf "));
+            assert(false === validName(" asdf "));
+            assert(false === validName(". asdf. "));
+            assert(false === validName(".asdf. "));
     
-            assert(false === validNameRegex.test("\tasdf"));
-            assert(false === validNameRegex.test("asdf\n"));
+            assert(false === validName("\tasdf"));
+            assert(false === validName("\nasdf"));
+            assert(false === validName("\rasdf"));
+            assert(false === validName("asdf\t"));
+            assert(false === validName("asdf\n"));
+            assert(false === validName("asdf\r"));
     
-            assert(false === validNameRegex.test("asdf/"));
-            assert(false === validNameRegex.test("/asdf"));
-            assert(false === validNameRegex.test("asdf/other"));
+            assert(false === validName("asdf/"));
+            assert(false === validName("/asdf"));
+            assert(false === validName("asdf/other"));
     
-            assert(false === validNameRegex.test("-rf"));
-            assert(false === validNameRegex.test("- -rf"));
-            assert(false === validNameRegex.test("--rf"));
+            assert(false === validName("-rf"));
+            assert(false === validName("- -rf"));
+            assert(false === validName("--rf"));
         });
         
         await context.test("Tests valid path regex", () => {
-            assert(validPathRegex.test("a/a"));
-            assert(validPathRegex.test("hello/a"));
-            assert(validPathRegex.test("hello.txt/a"));
-            assert(validPathRegex.test("hello world.txt/a"));
-            assert(validPathRegex.test("hello world.asdf.  ..txt/a"));
-            assert(validPathRegex.test("hello_world/a"));
-            assert(validPathRegex.test("hello-/a"));
-            assert(validPathRegex.test("_ - ./a"));
-            assert(validPathRegex.test(".hidden/a"));
-            assert(validPathRegex.test(".hidden./a"));
-            assert(validPathRegex.test(".hidden .local .env/a"));
+            assert(validPath("a/a"));
+            assert(validPath("hello/a"));
+            assert(validPath("hello.txt/a"));
+            assert(validPath("hello world.txt/a"));
+            assert(validPath("hello world.asdf.  ..txt/a"));
+            assert(validPath("hello_world/a"));
+            assert(validPath("hello-/a"));
+            assert(validPath("_ - ./a"));
+            assert(validPath(".hidden/a"));
+            assert(validPath(".hidden./a"));
+            assert(validPath(".hidden .local .env/a"));
             
-            assert(validPathRegex.test("a/asdf"));
-            assert(validPathRegex.test("a/asdf/asdf"));
-            assert(validPathRegex.test("a/hello world/asdf"));
-            assert(validPathRegex.test("a/.asdf/asdf"));
-            assert(validPathRegex.test("a/.asdf/_hello-world.txt"));
-            assert(validPathRegex.test("vault/folder/hello_world.png"));
-            assert(validPathRegex.test("vault/folder/.asdf"));
-            assert(validPathRegex.test("_/_/_"));
+            assert(validPath("a/asdf"));
+            assert(validPath("a/asdf/asdf"));
+            assert(validPath("a/hello world/asdf"));
+            assert(validPath("a/.asdf/asdf"));
+            assert(validPath("a/.asdf/_hello-world.txt"));
+            assert(validPath("vault/folder/hello_world.png"));
+            assert(validPath("vault/folder/.asdf"));
+            assert(validPath("_/_/_"));
     
     
     
-            assert(false === validPathRegex.test("a"));
-            assert(false === validPathRegex.test("hello"));
-            assert(false === validPathRegex.test("hello.txt"));
-            assert(false === validPathRegex.test("hello world.txt"));
-            assert(false === validPathRegex.test("hello world.asdf.  ..txt"));
-            assert(false === validPathRegex.test("hello_world"));
-            assert(false === validPathRegex.test("hello-"));
-            assert(false === validPathRegex.test("_ - ."));
-            assert(false === validPathRegex.test(".hidden"));
-            assert(false === validPathRegex.test(".hidden."));
-            assert(false === validPathRegex.test(".hidden .local .env"));
+            assert(false === validPath("a"));
+            assert(false === validPath("hello"));
+            assert(false === validPath("hello.txt"));
+            assert(false === validPath("hello world.txt"));
+            assert(false === validPath("hello world.asdf.  ..txt"));
+            assert(false === validPath("hello_world"));
+            assert(false === validPath("hello-"));
+            assert(false === validPath("_ - ."));
+            assert(false === validPath(".hidden"));
+            assert(false === validPath(".hidden."));
+            assert(false === validPath(".hidden .local .env"));
     
-            assert(false === validPathRegex.test("."));
-            assert(false === validPathRegex.test(".."));
-            assert(false === validPathRegex.test("......."));
-            assert(false === validPathRegex.test(". "));
-            assert(false === validPathRegex.test(" ."));
-            assert(false === validPathRegex.test(" . "));
-            assert(false === validPathRegex.test("  ."));
+            assert(false === validPath("."));
+            assert(false === validPath(".."));
+            assert(false === validPath("......."));
+            assert(false === validPath(". "));
+            assert(false === validPath(" ."));
+            assert(false === validPath(" . "));
+            assert(false === validPath("  ."));
     
-            assert(false === validPathRegex.test("./a"));
-            assert(false === validPathRegex.test("../a"));
-            assert(false === validPathRegex.test("......./a"));
-            assert(false === validPathRegex.test(". /a"));
-            assert(false === validPathRegex.test(" ./a"));
-            assert(false === validPathRegex.test(" . /a"));
-            assert(false === validPathRegex.test("  ./a"));
+            assert(false === validPath("./a"));
+            assert(false === validPath("../a"));
+            assert(false === validPath("......./a"));
+            assert(false === validPath(". /a"));
+            assert(false === validPath(" ./a"));
+            assert(false === validPath(" . /a"));
+            assert(false === validPath("  ./a"));
     
-            assert(false === validPathRegex.test("./asdf"));
-            assert(false === validPathRegex.test("asdf/./asdf"));
-            assert(false === validPathRegex.test("asdf/."));
-            assert(false === validPathRegex.test("asdf/.."));
-            assert(false === validPathRegex.test("asdf/../asdf"));
+            assert(false === validPath("./asdf"));
+            assert(false === validPath("asdf/./asdf"));
+            assert(false === validPath("asdf/."));
+            assert(false === validPath("asdf/.."));
+            assert(false === validPath("asdf/../asdf"));
     
     
-            assert(false === validPathRegex.test(""));
-            assert(false === validPathRegex.test("   "));
-            assert(false === validPathRegex.test(" asdf"));
-            assert(false === validPathRegex.test("asdf "));
-            assert(false === validPathRegex.test(" asdf "));
-            assert(false === validPathRegex.test(". asdf. "));
-            assert(false === validPathRegex.test(".asdf. "));
+            assert(false === validPath(""));
+            assert(false === validPath("   "));
+            assert(false === validPath(" asdf"));
+            assert(false === validPath("asdf "));
+            assert(false === validPath(" asdf "));
+            assert(false === validPath(". asdf. "));
+            assert(false === validPath(".asdf. "));
     
-            assert(false === validPathRegex.test("/a"));
-            assert(false === validPathRegex.test("   /a"));
-            assert(false === validPathRegex.test(" asdf/a"));
-            assert(false === validPathRegex.test("asdf /a"));
-            assert(false === validPathRegex.test(" asdf /a"));
-            assert(false === validPathRegex.test(". asdf. /a"));
-            assert(false === validPathRegex.test(".asdf. /a"));
+            assert(false === validPath("/a"));
+            assert(false === validPath("   /a"));
+            assert(false === validPath(" asdf/a"));
+            assert(false === validPath("asdf /a"));
+            assert(false === validPath(" asdf /a"));
+            assert(false === validPath(". asdf. /a"));
+            assert(false === validPath(".asdf. /a"));
             
-            assert(false === validPathRegex.test(" /asdf"));
-            assert(false === validPathRegex.test("asdf/ asdf"));
-            assert(false === validPathRegex.test("asdf/asdf "));
-            assert(false === validPathRegex.test("asdf /asdf"));
-            assert(false === validPathRegex.test("asdf / asdf"));
+            assert(false === validPath(" /asdf"));
+            assert(false === validPath("asdf/ asdf"));
+            assert(false === validPath("asdf/asdf "));
+            assert(false === validPath("asdf /asdf"));
+            assert(false === validPath("asdf / asdf"));
     
     
-            assert(false === validPathRegex.test("\tasdf"));
-            assert(false === validPathRegex.test("asdf\n"));
-            assert(false === validPathRegex.test("\tasdf/a"));
-            assert(false === validPathRegex.test("asdf\n/a"));
-            assert(false === validPathRegex.test("a/\tasdf"));
-            assert(false === validPathRegex.test("a/asdf\n"));
+            assert(false === validPath("\tasdf"));
+            assert(false === validPath("asdf\n"));
+            assert(false === validPath("\tasdf/a"));
+            assert(false === validPath("asdf\n/a"));
+            assert(false === validPath("a/\tasdf"));
+            assert(false === validPath("a/asdf\n"));
     
-            assert(false === validPathRegex.test("asdf/\tasdf"));
-            assert(false === validPathRegex.test("asdf\n/asdf"));
-            assert(false === validPathRegex.test("asdf/asdf\n"));
-    
-    
-            assert(false === validPathRegex.test("asdf/"));
-            assert(false === validPathRegex.test("/asdf"));
-            assert(false === validPathRegex.test("/"));
-            assert(false === validPathRegex.test("asdf/asdf/"));
-            assert(false === validPathRegex.test("/asdf/"));
-            assert(false === validPathRegex.test("_._/.asdf/"));
-            assert(false === validPathRegex.test("asdf//asdf"));
-            assert(false === validPathRegex.test("asdf//"));
+            assert(false === validPath("asdf/\tasdf"));
+            assert(false === validPath("asdf\n/asdf"));
+            assert(false === validPath("asdf/asdf\n"));
     
     
-            assert(false === validPathRegex.test("-rf"));
-            assert(false === validPathRegex.test("- -rf"));
-            assert(false === validPathRegex.test("--rf"));
-            assert(false === validPathRegex.test("a/-rf"));
-            assert(false === validPathRegex.test("a/- -rf"));
-            assert(false === validPathRegex.test("a/--rf"));
-            assert(false === validPathRegex.test("-rf/a"));
-            assert(false === validPathRegex.test("- -rf/a"));
-            assert(false === validPathRegex.test("--rf/a"));
+            assert(false === validPath("asdf/"));
+            assert(false === validPath("/asdf"));
+            assert(false === validPath("/"));
+            assert(false === validPath("asdf/asdf/"));
+            assert(false === validPath("/asdf/"));
+            assert(false === validPath("_._/.asdf/"));
+            assert(false === validPath("asdf//asdf"));
+            assert(false === validPath("asdf//"));
     
-            assert(false === validPathRegex.test("asdf/-rf"));
-            assert(false === validPathRegex.test("-rf/asdf"));
-            assert(false === validPathRegex.test("asdf/- -rf"));
-            assert(false === validPathRegex.test("- -rf/asdf"));
-            assert(false === validPathRegex.test("asdf/--rf"));
-            assert(false === validPathRegex.test("--rf/asdf"));
+    
+            assert(false === validPath("-rf"));
+            assert(false === validPath("- -rf"));
+            assert(false === validPath("--rf"));
+            assert(false === validPath("a/-rf"));
+            assert(false === validPath("a/- -rf"));
+            assert(false === validPath("a/--rf"));
+            assert(false === validPath("-rf/a"));
+            assert(false === validPath("- -rf/a"));
+            assert(false === validPath("--rf/a"));
+    
+            assert(false === validPath("asdf/-rf"));
+            assert(false === validPath("-rf/asdf"));
+            assert(false === validPath("asdf/- -rf"));
+            assert(false === validPath("- -rf/asdf"));
+            assert(false === validPath("asdf/--rf"));
+            assert(false === validPath("--rf/asdf"));
         });
         
         await context.test("Tests getVaultFromPath function", () => {

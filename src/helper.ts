@@ -1,5 +1,38 @@
 import { File, Directory } from "./vfs";
 
+const allDotRegex = /^\.+$/;
+const endsInSpaceRegex = /^.* $/
+const incompleteValidNameRegex = /^[a-zA-Z0-9_.][a-zA-Z0-9_\-. ]*$/;
+const maximumNameLength = 80;
+
+/**
+ * Allowed characters: Alpha numerical, "_", "-", ".", " "
+ * Names consisting only of dots and spaces not allowed.
+ * Only matches a single entry, most often the vault's name.
+ */
+function validName(name: string) {
+    if(name.length > maximumNameLength) {
+        return false;
+    }
+    if(allDotRegex.test(name)) {
+        return false;
+    }
+    return name.length <= maximumNameLength
+        && allDotRegex.test(name) === false
+        && endsInSpaceRegex.test(name) === false
+        && incompleteValidNameRegex.test(name) === true;
+}
+
+/**
+ * Allowed characters: Alpha numerical, "_", "-", ".", " "
+ * Names consisting only of dots and spaces not allowed.
+ * There must be at least one entry after the vault name.
+ */
+function validPath(path: string) {
+    const parts = path.split("/");
+    return parts.length >= 2 && parts.every(part => validName(part));
+}
+
 function unixTime() {
     return Math.floor(Date.now() / 1000);
 }
@@ -58,4 +91,4 @@ function convertBytes(bytes: number): string {
     return byteString.substring(0, dotIndex + 2) + postfix;
 }
 
-export { unixTime, sortByName, timeAgo, convertBytes };
+export { validName, validPath, unixTime, sortByName, timeAgo, convertBytes };
