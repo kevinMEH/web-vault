@@ -23,3 +23,12 @@ export function getVaultToken() {
 export function removeVaultToken() {
     return localStorage.removeItem("vault_token"); // eslint-disable-line
 }
+
+export function getResizableWidth(name: string) {
+    const width = localStorage.getItem(`resizable:${name}`);
+    return width !== null ? parseInt(width) : width;
+}
+
+export function setResizableWidth(name: string, width: number) {
+    localStorage.setItem(`resizable:${name}`, width + "");
+}

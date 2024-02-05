@@ -1,6 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { getResizableWidth, setResizableWidth } from "../../../../src/storage";
 
 type ResizableParameters = {
+    name: string;
+
     sashPosition: "left-0" | "right-0";
     defaultWidth: number;
     minWidth: number;
@@ -12,12 +15,22 @@ type ResizableParameters = {
     onDoubleClick?: (event: MouseEvent) => any;
 };
 
-const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, onClick = undefined, onDoubleClick = undefined }: ResizableParameters) => {
+const Resizable = ({ name, sashPosition, defaultWidth, minWidth, maxWidth, children, onClick = undefined, onDoubleClick = undefined }: ResizableParameters) => {
+    const { setReadyMap } = useContext(ReadyContext);
     const sashElement = useRef(null as null | HTMLElement);
     const lastX = useRef(0);
     const containerWidth = useRef(defaultWidth);
-    const realWidth = useRef(defaultWidth)
+    const realWidth = useRef(defaultWidth);
     const [_nonce, rerender] = useState(0);
+    
+    useEffect(() => {
+        const existingWidth = getResizableWidth(name);
+        if(existingWidth !== null) {
+            containerWidth.current = existingWidth;
+            realWidth.current = existingWidth;
+        }
+        rerender(prev => prev + 1);
+    }, []);
 
     const handleMouseMove = useCallback((event: MouseEvent) => {
         event.preventDefault();
@@ -39,6 +52,8 @@ const Resizable = ({ sashPosition, defaultWidth, minWidth, maxWidth, children, o
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
         realWidth.current = containerWidth.current;
+        
+        setResizableWidth(name, containerWidth.current);
     }, [handleMouseMove]);
     
     const handleMouseDown = useCallback((event: MouseEvent) => {

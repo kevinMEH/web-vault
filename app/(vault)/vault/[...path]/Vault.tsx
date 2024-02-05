@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import Resizable from "../../../../components/Resizable";
+import Resizable from "./Resizable";
 import ExplorerItem from "./ExplorerItem";
 
 import Header from "./Header";
@@ -92,7 +92,7 @@ const Vault = ({ path }: VaultParameters) => {
     return <div className="flex flex-col h-full">
         <Header vaultName={vaultName} />
         <main className="flex flex-shrink flex-grow w-full h-full overflow-x-clip overflow-y-auto hide-scrollbar">
-            <Resizable sashPosition="right-0" defaultWidth={320} minWidth={200} maxWidth={400}
+            <Resizable name="explorer" sashPosition="right-0" defaultWidth={340} minWidth={250} maxWidth={450}
             onDoubleClick={event => {
                 setActiveItem(null);
                 event.stopPropagation();
@@ -106,7 +106,7 @@ const Vault = ({ path }: VaultParameters) => {
                 }
             </Resizable>
             <TileView activeDirectoryChain={activeDirectoryChain} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} />
-            <Resizable sashPosition="left-0" defaultWidth={350} minWidth={270} maxWidth={450}>
+            <Resizable name="details" sashPosition="left-0" defaultWidth={340} minWidth={250} maxWidth={450}>
                 <Details item={activeItem} />
             </Resizable>
         </main>
