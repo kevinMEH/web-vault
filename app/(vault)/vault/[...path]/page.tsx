@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Vault from "./Vault";
+import WithLoading from "./WithLoading";
 
 type PageParams = {
     params: {
@@ -22,7 +23,9 @@ const Page = ({ params: { path } }: PageParams) => {
     for(const string of path) {
         decodedPath.push(string.split("%20").join(" "));
     }
-    return <Vault path={decodedPath} />
+    return <WithLoading>
+        <Vault path={decodedPath} />
+    </WithLoading>
 }
 
 export default Page;

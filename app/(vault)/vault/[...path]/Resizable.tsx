@@ -1,4 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import ReadyContext from "./ReadyContext";
 import { getResizableWidth, setResizableWidth } from "../../../../src/storage";
 
 type ResizableParameters = {
@@ -30,6 +31,11 @@ const Resizable = ({ name, sashPosition, defaultWidth, minWidth, maxWidth, child
             realWidth.current = existingWidth;
         }
         rerender(prev => prev + 1);
+        setReadyMap((prev) => {
+            const map = new Map(prev);
+            map.set(name, true);
+            return map;
+        })
     }, []);
 
     const handleMouseMove = useCallback((event: MouseEvent) => {
