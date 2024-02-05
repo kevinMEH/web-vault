@@ -12,12 +12,3 @@
         scrollbar-width: none; /* Firefox */
     }
 }
-
-
-body > div:first-child,
-body > div:first-child > main
-{
-    height: 100%;
-}
-
-
