@@ -3,7 +3,7 @@ import { File, Directory } from "./vfs";
 const allDotRegex = /^\.+$/;
 const endsInSpaceRegex = /^.* $/
 const incompleteValidNameRegex = /^[a-zA-Z0-9_.][a-zA-Z0-9_\-. ]*$/;
-const maximumNameLength = 80;
+const maximumNameLength = 72;
 
 /**
  * Allowed characters: Alpha numerical, "_", "-", ".", " "

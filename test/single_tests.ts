@@ -663,6 +663,8 @@ describe("Single Tests", () => {
             assert(false === validName("-rf"));
             assert(false === validName("- -rf"));
             assert(false === validName("--rf"));
+
+            assert(false === validPath("asdfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasdf"));
         });
         
         await context.test("Tests valid path regex", () => {
@@ -785,6 +787,11 @@ describe("Single Tests", () => {
             assert(false === validPath("- -rf/asdf"));
             assert(false === validPath("asdf/--rf"));
             assert(false === validPath("--rf/asdf"));
+
+            assert(false === validPath("asdfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasdf"));
+            assert(false === validPath("asdfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasdf/item"));
+            assert(false === validPath("folder/asdfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasdf"));
+            assert(false === validPath("folder/subfolder/asdfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasdf"));
         });
         
         await context.test("Tests getVaultFromPath function", () => {
