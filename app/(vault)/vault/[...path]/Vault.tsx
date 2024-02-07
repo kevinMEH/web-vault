@@ -8,6 +8,7 @@ import ExplorerItem from "./ExplorerItem";
 import Header from "./Header";
 import Details from "./Details";
 import TileView from "./Managers/TileView";
+import DirectoryChainContext from "./VaultContext";
 
 import { post } from "../../../../src/requests";
 import { getVaultToken } from "../../../../src/storage";
@@ -89,7 +90,8 @@ const Vault = ({ path }: VaultParameters) => {
         })();
     }, []);
 
-    return <div className="flex flex-col h-full">
+    return <DirectoryChainContext.Provider value={{ activeDirectoryChain, setActiveDirectoryChain }} >
+    <div className="flex flex-col h-full">
         <Header vaultName={vaultName} />
         <main className="flex flex-shrink flex-grow w-full h-full overflow-x-clip overflow-y-auto hide-scrollbar">
             <Resizable name="explorer" sashPosition="right-0" defaultWidth={340} minWidth={250} maxWidth={450}
@@ -105,12 +107,13 @@ const Vault = ({ path }: VaultParameters) => {
                     )
                 }
             </Resizable>
-            <TileView activeDirectoryChain={activeDirectoryChain} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} />
+            <TileView setActiveItem={setActiveItem} />
             <Resizable name="details" sashPosition="left-0" defaultWidth={340} minWidth={250} maxWidth={450}>
                 <Details item={activeItem} />
             </Resizable>
         </main>
     </div>
+    </DirectoryChainContext.Provider>
 }
 
 export default Vault;
