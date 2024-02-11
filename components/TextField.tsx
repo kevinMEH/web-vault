@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, useState } from "react";
 
 type TextFieldParameters = {
-    name: string;
+    name?: string;
     labelText: string;
     placeholder: string;
     type: "email" | "password" | "text";
@@ -40,7 +40,7 @@ const TextField = ({
         <div className={className}>
             <div className={"relative"}>
                 <input
-                    name={name}
+                    name={name ? name : labelText}
                     placeholder={placeholder}
                     type={type}
                     value={value}
