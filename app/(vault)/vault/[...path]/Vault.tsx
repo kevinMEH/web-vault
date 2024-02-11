@@ -4,11 +4,10 @@ import { useEffect, useState } from "react";
 
 import Resizable from "./Resizable";
 import ExplorerItem from "./ExplorerItem";
-
 import Header from "./Header";
 import Details from "./Details";
 import TileView from "./Managers/TileView";
-import DirectoryChainContext from "./VaultContext";
+import DirectoryChainContext from "./DirectoryChainContext";
 
 import { post } from "../../../../src/requests";
 import { getVaultToken } from "../../../../src/storage";
@@ -95,11 +94,12 @@ const Vault = ({ path }: VaultParameters) => {
         <Header vaultName={vaultName} />
         <main className="flex flex-shrink flex-grow w-full h-full overflow-x-clip overflow-y-auto hide-scrollbar">
             <Resizable name="explorer" sashPosition="right-0" defaultWidth={340} minWidth={250} maxWidth={450}
-            onDoubleClick={event => {
-                setActiveItem(null);
-                event.stopPropagation();
-                event.preventDefault();
-            }}>
+                onDoubleClick={event => {
+                    setActiveItem(null);
+                    event.stopPropagation();
+                    event.preventDefault();
+                }}
+            >
                 <div className="font-mono text-quiet text-sm pt-4 pb-2 pl-8 whitespace-nowrap select-none">Vault: {vaultName}</div>
                 {
                     activeDirectoryChain[0].contents.map(

@@ -2,11 +2,11 @@
 import React, { useContext } from "react";
 
 import Tile from "./Tile";
-import Actions from "./Actions";
-import DirectoryChainContext from "../VaultContext";
+import DirectoryChainContext from "../DirectoryChainContext";
 
 import { File, Directory } from "../../../../../src/vfs";
 import { sortByName } from "../../../../../src/helper";
+import Actions from "../Actions/Actions";
 
 type TileViewParameters = {
     setActiveItem: (item: File | Directory | null) => void;
