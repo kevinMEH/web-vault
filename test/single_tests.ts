@@ -632,6 +632,8 @@ describe("Single Tests", () => {
             assert(validName(".hidden"));
             assert(validName(".hidden."));
             assert(validName(".hidden .local .env"));
+            assert(validName("image (1).png"));
+            assert(validName("()()))()((()("));
     
             assert(false === validName("."));
             assert(false === validName(".."));
@@ -670,11 +672,16 @@ describe("Single Tests", () => {
         await context.test("Tests valid path regex", () => {
             assert(validPath("a/a"));
             assert(validPath("hello/a"));
+            assert(validPath("hello/(a)"));
+            assert(validPath("hello/a)"));
+            assert(validPath("hello/(a"));
+            assert(validPath("(hel)()lo)/(a"));
             assert(validPath("hello.txt/a"));
             assert(validPath("hello world.txt/a"));
             assert(validPath("hello world.asdf.  ..txt/a"));
             assert(validPath("hello_world/a"));
             assert(validPath("hello-/a"));
+            assert(validPath("hello-)/a"));
             assert(validPath("_ - ./a"));
             assert(validPath(".hidden/a"));
             assert(validPath(".hidden./a"));

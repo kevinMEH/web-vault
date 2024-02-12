@@ -2,7 +2,7 @@ import { File, Directory } from "./vfs";
 
 const allDotRegex = /^\.+$/;
 const endsInSpaceRegex = /^.* $/
-const incompleteValidNameRegex = /^[a-zA-Z0-9_.][a-zA-Z0-9_\-. ]*$/;
+const incompleteValidNameRegex = /^[a-zA-Z0-9_.()][a-zA-Z0-9_\-. ()]*$/;
 const maximumNameLength = 72;
 
 /**
