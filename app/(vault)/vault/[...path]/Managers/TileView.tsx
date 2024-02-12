@@ -45,11 +45,11 @@ const TileView = ({ setActiveItem }: TileViewParameters) => {
                     }}>{path}</div>
                 </React.Fragment>
         })}</div>
-        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] pb-4">{
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(225px,1fr))] pb-4">{
             activeDirectory.contents.map(item =>
                 item.isDirectory && <Tile item={item} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} key={item.name}></Tile>
         )}</div>
-        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">{
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(225px,1fr))]">{
             activeDirectory.contents.map(item =>
                 !item.isDirectory && <Tile item={item} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} key={item.name}></Tile>
         )}</div>
