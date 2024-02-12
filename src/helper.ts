@@ -10,7 +10,7 @@ const maximumNameLength = 72;
  * Names consisting only of dots and spaces not allowed.
  * Only matches a single entry, most often the vault's name.
  */
-function validName(name: string) {
+export function validName(name: string) {
     if(name.length > maximumNameLength) {
         return false;
     }
@@ -28,16 +28,16 @@ function validName(name: string) {
  * Names consisting only of dots and spaces not allowed.
  * There must be at least one entry after the vault name.
  */
-function validPath(path: string) {
+export function validPath(path: string) {
     const parts = path.split("/");
     return parts.length >= 2 && parts.every(part => validName(part));
 }
 
-function unixTime() {
+export function unixTime() {
     return Math.floor(Date.now() / 1000);
 }
 
-function sortByName(first: File | Directory, second: File | Directory) {
+export function sortByName(first: File | Directory, second: File | Directory) {
     if(first.isDirectory != second.isDirectory) {
         return first.isDirectory ? -1 : 1;
     } else {
@@ -45,7 +45,7 @@ function sortByName(first: File | Directory, second: File | Directory) {
     }
 }
 
-function timeAgo(date: Date): string {
+export function timeAgo(date: Date): string {
     const current = new Date();
     let difference = current.getTime() - date.getTime(); // Milliseconds
     if(difference < 5000) return "right now";
@@ -69,7 +69,7 @@ function timeAgo(date: Date): string {
     return (date.getFullYear() - current.getFullYear()) + " years ago";
 }
 
-function convertBytes(bytes: number): string {
+export function convertBytes(bytes: number): string {
     let postfix: string;
     if(bytes < 1024) {
         postfix = " B";
@@ -91,4 +91,10 @@ function convertBytes(bytes: number): string {
     return byteString.substring(0, dotIndex + 2) + postfix;
 }
 
-export { validName, validPath, unixTime, sortByName, timeAgo, convertBytes };
+export function objectFromBase64(string: string): Record<string, unknown> | null {
+    try {
+        return JSON.parse(atob(string));
+    } catch(error) {
+        return null;
+    }
+}

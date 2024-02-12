@@ -6,7 +6,7 @@ import Button from "../../components/Button";
 
 import { post } from "../../src/requests";
 import { getVaultToken, setVaultToken } from "../../src/storage";
-import { objectFromBase64 } from "../../src/jwt_helper";
+import { objectFromBase64 } from "../../src/helper";
 
 import type { Data, Expect } from "../api/vault/trim/route";
 import type { WebVaultPayload } from "../../src/authentication/vault_token";
