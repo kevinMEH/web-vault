@@ -88,7 +88,7 @@ const Details = memo(function Details({ item }: DetailsParameters) {
         </div>
         : <div className="overflow-y-scroll hide-scrollbar">
             <div className="px-6 pt-4 pb-6 space-y-1">
-                <div className="align-top">
+                <div className="align-top flex">
                     <ItemIcon name={item.name} isFolder={item.isDirectory} isOpen={false} width={26} height={26} className="-ml-[0.0625rem] select-none" />
                     <span className="font-mono text-sub text-base font-[425] pl-2 tracking-tight truncate">{item.name}</span>
                 </div>
