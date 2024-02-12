@@ -23,12 +23,24 @@ type VaultParameters = {
 const Vault = ({ path }: VaultParameters) => {
     const router = useRouter();
     const [ activeItem, setActiveItem ] = useState(null as null | Directory | File);
-    const [ activeDirectoryChain, setActiveDirectoryChain ] = useState([ new Directory(path[0], []) ]);
+    const [ activeDirectoryChain, setActiveDirectoryChain ] = useState(() => {
+        // Precreate directories for all segments
+        const vault = new Directory(path[0], []);
+        const directoryChain = [ vault ];
+        for(let i = 1; i < path.length; i++) {
+            const current = new Directory(path[i], []);
+            directoryChain[directoryChain.length - 1].addEntry(current, false);
+            directoryChain.push(current);
+        }
+        return directoryChain;
+    });
 
     const vaultName = path[0];
     
     useEffect(() => {
-        window.history.replaceState(window.history.state, "", `/vault/${activeDirectoryChain.map(directory => directory.name).join("/")}`);
+        if(activeDirectoryChain[0].name !== "") {
+            window.history.replaceState(window.history.state, "", `/vault/${activeDirectoryChain.map(directory => directory.name).join("/")}`);
+        }
     }, [ activeDirectoryChain ])
     
     useEffect(() => {
@@ -40,15 +52,6 @@ const Vault = ({ path }: VaultParameters) => {
                 return;
             }
             
-            // Precreate directories for all segments and send vfs requests
-            const directoryChain: Directory[] = [];
-            const vault = activeDirectoryChain[0];
-            directoryChain.push(vault);
-            for(let i = 1; i < path.length; i++) {
-                const current = new Directory(path[i], []);
-                directoryChain[directoryChain.length - 1].addEntry(current, false);
-                directoryChain.push(current);
-            }
             let cancelIndex = Infinity;
             const vfsUpdateOperations = [] as Promise<void>[];
             const abortControllers = [] as AbortController[];
@@ -56,7 +59,7 @@ const Vault = ({ path }: VaultParameters) => {
                 const abortController = new AbortController();
                 const request = post<VFSExpect, VFSData>(
                     "/api/file/vfs",
-                    { vaultToken, path: path.slice(0, i + 1).join("/"), depth: 1 },
+                    { vaultToken, path: path.slice(0, i + 1).join("/"), depth: i == path.length - 1 ? 2 : 1 },
                     abortController.signal
                 ).then(data => {
                     if(i > cancelIndex) {
@@ -64,14 +67,14 @@ const Vault = ({ path }: VaultParameters) => {
                     }
                     const { vfs, depth } = data;
                     if(vfs !== undefined) {
-                        directoryChain[i].update(vfs, depth);
+                        activeDirectoryChain[i].update(vfs, depth);
                     } else {
                         cancelIndex = i;
                         if(i === 0) {
                             console.log("No permission to vault");
                             router.push("/login");
                         } else {
-                            directoryChain.splice(i);
+                            activeDirectoryChain.splice(i);
                             path.splice(i);
                             // Note: No need to remove current directory from parent
                             // since the VFS update for parent will remove for us
@@ -86,7 +89,7 @@ const Vault = ({ path }: VaultParameters) => {
             }
 
             await Promise.all(vfsUpdateOperations);
-            setActiveDirectoryChain(directoryChain);
+            setActiveDirectoryChain([...activeDirectoryChain]);
         })();
     }, []);
 
