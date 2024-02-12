@@ -12,6 +12,7 @@ import DirectoryChainContext from "./DirectoryChainContext";
 import { post } from "../../../../src/requests";
 import { getVaultToken } from "../../../../src/storage";
 import { Directory, File } from "../../../../src/vfs";
+import { sortByName } from "../../../../src/helper";
 
 import type { Data as VFSData, Expect as VFSExpect } from "../../../api/file/vfs/route";
 
@@ -102,7 +103,7 @@ const Vault = ({ path }: VaultParameters) => {
             >
                 <div className="font-mono text-quiet text-sm pt-4 pb-2 pl-8 whitespace-nowrap select-none">Vault: {vaultName}</div>
                 {
-                    activeDirectoryChain[0].contents.map(
+                    activeDirectoryChain[0].contents.sort(sortByName) && activeDirectoryChain[0].contents.map(
                         item => <ExplorerItem item={item} depth={1} key={item.name} activeDirectoryChain={activeDirectoryChain} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} />
                     )
                 }
