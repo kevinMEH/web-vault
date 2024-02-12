@@ -18,7 +18,7 @@ const TileView = ({ setActiveItem }: TileViewParameters) => {
     const activeDirectory = activeDirectoryChain[activeDirectoryChain.length - 1];
     activeDirectory.contents.sort(sortByName);
 
-    return <div className="bg-light-gray h-full w-full px-6 relative" onDoubleClick={event => {
+    return <div className="bg-light-gray h-full w-full px-6 relative" onClick={event => {
         setActiveItem(null);
         event.stopPropagation();
         event.preventDefault();

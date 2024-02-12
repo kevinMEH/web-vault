@@ -18,6 +18,12 @@ const Tile = ({ item, setActiveDirectoryChain, setActiveItem }: TileParameters) 
         event.stopPropagation();
         event.preventDefault();
     }) : (event => {
+        event.stopPropagation();
+        event.preventDefault();
+    })} onClick={item.isDirectory ? (event => {
+        event.stopPropagation();
+        event.preventDefault();
+    }) : (event => {
         setActiveItem(item);
         event.stopPropagation();
         event.preventDefault();
