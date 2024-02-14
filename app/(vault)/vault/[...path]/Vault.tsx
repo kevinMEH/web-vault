@@ -11,7 +11,7 @@ import DirectoryChainContext from "./DirectoryChainContext";
 
 import { post } from "../../../../helpers/requests";
 import { getVaultToken } from "../../../../helpers/storage";
-import { Directory, File } from "../../../../src/vfs";
+import { FrontDirectory, FrontFile } from "../../../../src/vfs";
 import { sortByName } from "../../../../helpers/helper";
 
 import type { Data as VFSData, Expect as VFSExpect } from "../../../api/file/vfs/route";
@@ -22,13 +22,13 @@ type VaultParameters = {
 
 const Vault = ({ path }: VaultParameters) => {
     const router = useRouter();
-    const [ activeItem, setActiveItem ] = useState(null as null | Directory | File);
+    const [ activeItem, setActiveItem ] = useState(null as null | FrontDirectory | FrontFile);
     const [ activeDirectoryChain, setActiveDirectoryChain ] = useState(() => {
         // Precreate directories for all segments
-        const vault = new Directory(path[0], []);
+        const vault = new FrontDirectory(path[0], []);
         const directoryChain = [ vault ];
         for(let i = 1; i < path.length; i++) {
-            const current = new Directory(path[i], []);
+            const current = new FrontDirectory(path[i], []);
             directoryChain[directoryChain.length - 1].addEntry(current, false);
             directoryChain.push(current);
         }

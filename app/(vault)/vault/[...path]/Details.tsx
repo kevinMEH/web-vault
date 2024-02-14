@@ -7,13 +7,13 @@ import TabDisplay, { Tab } from "../../../../components/TabDisplay";
 import CodePreview from "../../../../components/Code/CodePreview";
 import TextField from "../../../../components/TextField";
 import DetailsSVG from "../../../../components/SVGS/DetailsSVG";
-
-import { File, Directory } from "../../../../src/vfs";
-import { timeAgo, convertBytes } from "../../../../helpers/helper";
 import ActivitySVG from "../../../../components/SVGS/ActivitySVG";
 
+import { timeAgo, convertBytes } from "../../../../helpers/helper";
+import type { FrontFile, FrontDirectory } from "../../../../src/vfs";
+
 type DetailsParameters = {
-    item: File | Directory | null;
+    item: FrontFile | FrontDirectory | null;
 }
 
 // TODO: Actually get the contents from files

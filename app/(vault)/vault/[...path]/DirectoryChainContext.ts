@@ -1,9 +1,9 @@
 import { createContext, Dispatch, SetStateAction } from "react";
-import { Directory } from "../../../../src/vfs";
+import { FrontDirectory } from "../../../../src/vfs";
 
 type DirectoryChainContextType = {
-    activeDirectoryChain: Directory[],
-    setActiveDirectoryChain: Dispatch<SetStateAction<Directory[]>>;
+    activeDirectoryChain: FrontDirectory[],
+    setActiveDirectoryChain: Dispatch<SetStateAction<FrontDirectory[]>>;
 }
 
 const DirectoryChainContext = createContext(null as unknown as DirectoryChainContextType);

@@ -1,18 +1,18 @@
 import ItemIcon from "../../../../../components/ItemIcon";
 
-import { File, Directory } from "../../../../../src/vfs";
+import type { FrontFile, FrontDirectory } from "../../../../../src/vfs";
 
 type TileParameters = {
-    item: File | Directory;
-    setActiveDirectoryChain: (setFunc: (prev: Directory[]) => Directory[]) => void;
-    setActiveItem: (item: File | Directory) => void;
+    item: FrontFile | FrontDirectory;
+    setActiveDirectoryChain: (setFunc: (prev: FrontDirectory[]) => FrontDirectory[]) => void;
+    setActiveItem: (item: FrontFile | FrontDirectory) => void;
 }
 
 const Tile = ({ item, setActiveDirectoryChain, setActiveItem }: TileParameters) => {
     return <div className="bg-white hover:bg-light-gray border border-gray rounded-lg px-3.5 py-3
     flex items-center cursor-pointer select-none" onDoubleClick={item.isDirectory ? (event => {
         setActiveDirectoryChain(prev => {
-            const newDirectoryChain = [...prev, item as Directory];
+            const newDirectoryChain = [...prev, item as FrontDirectory];
             return newDirectoryChain;
         });
         event.stopPropagation();

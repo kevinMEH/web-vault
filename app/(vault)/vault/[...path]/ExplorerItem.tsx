@@ -3,15 +3,15 @@ import { memo, useState } from "react";
 import ItemIcon from "../../../../components/ItemIcon";
 import Triangle from "../../../../components/Triangle";
 
-import { File, Directory } from "../../../../src/vfs";
+import type { FrontFile, FrontDirectory } from "../../../../src/vfs";
 import { sortByName } from "../../../../helpers/helper";
 
 type ExplorerItemParameters = {
-    item: File | Directory;
+    item: FrontFile | FrontDirectory;
     depth: number;
-    activeDirectoryChain: Directory[];
-    setActiveDirectoryChain: (setFunc: (prev: Directory[]) => Directory[]) => void;
-    setActiveItem: (item: File) => void;
+    activeDirectoryChain: FrontDirectory[];
+    setActiveDirectoryChain: (setFunc: (prev: FrontDirectory[]) => FrontDirectory[]) => void;
+    setActiveItem: (item: FrontFile) => void;
 }
 
 const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryChain, setActiveDirectoryChain, setActiveItem }: ExplorerItemParameters) {
@@ -28,7 +28,7 @@ const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryCh
             rerender(prev => prev + 1);
         }}
         onDoubleClick={!item.isDirectory ? event => {
-            setActiveItem(item as File);
+            setActiveItem(item as FrontFile);
             event.stopPropagation();
             event.preventDefault();
         } : event => {
@@ -53,8 +53,8 @@ const ExplorerItem = memo(function ExplorerItem({ item, depth, activeDirectoryCh
                 <p className="pl-3 whitespace-nowrap">{item.name}</p>
             </div>
         </div>
-        {isOpen && isFolder && (item as Directory).contents.sort(sortByName) && <div>
-            {(item as Directory).contents.map(
+        {isOpen && isFolder && (item as FrontDirectory).contents.sort(sortByName) && <div>
+            {(item as FrontDirectory).contents.map(
                 item => <ExplorerItem item={item} depth={depth + 1} key={item.name} activeDirectoryChain={activeDirectoryChain} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} />
             )}
         </div>}

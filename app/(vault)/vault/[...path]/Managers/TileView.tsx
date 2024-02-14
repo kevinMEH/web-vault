@@ -5,16 +5,15 @@ import Tile from "./Tile";
 import DirectoryChainContext from "../DirectoryChainContext";
 import ActionsBar from "../Actions/ActionsBar";
 
-import { File, Directory } from "../../../../../src/vfs";
 import { sortByName } from "../../../../../helpers/helper";
-
-import type { Data as VFSData, Expect as VFSExpect } from "../../../../api/file/vfs/route";
-import { post } from "../../../../../helpers/requests";
 import { getVaultToken } from "../../../../../helpers/storage";
-import { pathFromChainNoEntry } from "../VaultHelpers";
+import { pathFromChainNoEntry } from "../../../../../helpers/vaultHelpers";
+import { post } from "../../../../../helpers/requests";
+import type { Data as VFSData, Expect as VFSExpect } from "../../../../api/file/vfs/route";
+import type { FrontFile, FrontDirectory } from "../../../../../src/vfs";
 
 type TileViewParameters = {
-    setActiveItem: (item: File | Directory | null) => void;
+    setActiveItem: (item: FrontFile | FrontDirectory | null) => void;
 }
 
 const TileView = ({ setActiveItem }: TileViewParameters) => {
