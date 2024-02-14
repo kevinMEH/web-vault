@@ -9,11 +9,11 @@ type ItemIconParameters = {
     isOpen: boolean;
     width: number;
     height: number;
-    className: string;
+    className?: string;
 }
 
 // Takes an item name, and then returns the material icon SVG for the item.
-const ItemIcon = memo(function ItemIcon({ name, isFolder, isOpen, width, height, className }: ItemIconParameters) {
+const ItemIcon = memo(function ItemIcon({ name, isFolder, isOpen, width, height, className = "" }: ItemIconParameters) {
     let svgName: string | undefined;
     if(isFolder) {
         svgName = folderBaseMap.get(name);
