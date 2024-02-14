@@ -4,10 +4,10 @@ import readline from "readline/promises";
 import path from "path";
 
 import { HashedPassword } from "../password";
-import { unixTime } from "../../helper"
+import { unixTime } from "../../../helpers/helper"
 import { metaLog } from "../../logger";
 import { addInterval } from "../../cleanup";
-import CustomError from "../../custom_error";
+import CustomError from "../../../helpers/custom_error";
 import { Directory, SimpleDirectory } from "../../vfs";
 
 const { USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL, DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, TESTING, VFS_BACKUP_INTERVAL, VFS_STORE_DIRECTORY } = await import("../../env");

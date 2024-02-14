@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 
 import SimpleTwoFields from "./SimpleTwoFields";
 
-import { post } from "../../../../src/requests";
+import { getAdminToken, removeAdminToken } from "../../../../helpers/storage";
+
+import { post } from "../../../../helpers/requests";
 import type { Expect as GetVaultsExpect, Data as GetVaultsData } from "../../../api/admin/get_vaults/route";
 import type { Expect as CreateVaultExpect, Data as CreateVaultData } from "../../../api/admin/create_vault/route";
 import type { Expect as DeleteVaultExpect, Data as DeleteVaultData } from "../../../api/admin/delete_vault/route";
 import type { Expect as ChangeVaultPasswordExpect, Data as ChangeVaultPasswordData } from "../../../api/admin/change_vault_password/route";
-import { getAdminToken, removeAdminToken } from "../../../../src/storage";
 import { useRouter } from "next/navigation";
 
 

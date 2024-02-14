@@ -9,10 +9,10 @@ import Details from "./Details";
 import TileView from "./Managers/TileView";
 import DirectoryChainContext from "./DirectoryChainContext";
 
-import { post } from "../../../../src/requests";
-import { getVaultToken } from "../../../../src/storage";
+import { post } from "../../../../helpers/requests";
+import { getVaultToken } from "../../../../helpers/storage";
 import { Directory, File } from "../../../../src/vfs";
-import { sortByName } from "../../../../src/helper";
+import { sortByName } from "../../../../helpers/helper";
 
 import type { Data as VFSData, Expect as VFSExpect } from "../../../api/file/vfs/route";
 

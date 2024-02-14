@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { memo } from "react";
 
-import { fileExtensionMap, fileNameMap, folderBaseMap } from "../src/icons/iconMap";
+import { fileExtensionMap, fileNameMap, folderBaseMap } from "../helpers/icons/iconMap";
 
 type ItemIconParameters = {
     name: string;

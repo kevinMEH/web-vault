@@ -12,10 +12,10 @@ import { metaLog } from "./logger";
 import { deleteVaultPassword, setVaultPassword, vaultExistsDatabase } from "./authentication/database";
 import { deleteVaultVFS, newVaultVFS } from "./controller";
 
-import CustomError from "./custom_error";
+import CustomError from "../helpers/custom_error";
 
 import { BASE_VAULT_DIRECTORY, BASE_LOGGING_DIRECTORY } from "./env";
-import { validName } from "./helper";
+import { validName } from "../helpers/helper";
 
 const deletionTimeout = 5 * 1000;
 const baseVaultLoggingDirectory = path.join(BASE_LOGGING_DIRECTORY, "vaults");

@@ -15,7 +15,7 @@ import { DEFAULT_ADMIN_NAME, DOMAIN, JWT_SECRET } from "../src/env";
 import { adminAccess } from "../src/admin_auth";
 import { Directory, File } from "../src/vfs";
 
-import { post } from "../src/requests";
+import { post } from "../helpers/requests";
 
 import type { Expect as AdminLoginExpect, Data as AdminLoginData } from "../app/api/admin/login/route";
 import type { Expect as CreateVaultExpect, Data as CreateVaultData } from "../app/api/admin/create_vault/route";

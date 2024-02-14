@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import Button from "../../../components/Button";
 import TextField from "../../../components/TextField";
 
-import { post } from "../../../src/requests";
-import { getVaultToken, removeVaultToken, setVaultToken } from "../../../src/storage";
+import { post } from "../../../helpers/requests";
+import { getVaultToken, removeVaultToken, setVaultToken } from "../../../helpers/storage";
 import type { Expect as TrimExpect, Data as TrimData } from "../../api/vault/trim/route";
 import type { Expect as LoginExpect, Data as LoginData } from "../../api/vault/login/route";
 

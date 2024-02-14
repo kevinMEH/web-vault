@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import ReadyContext from "./ReadyContext";
-import { getResizableWidth, setResizableWidth } from "../../../../src/storage";
+import { getResizableWidth, setResizableWidth } from "../../../../helpers/storage";
 
 type ResizableParameters = {
     name: string;

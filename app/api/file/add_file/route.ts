@@ -3,7 +3,7 @@
 import { NextRequest } from "next/server";
 import { addFile } from "../../../../src/file";
 import { validatePath } from "../../../../src/controller";
-import { Answer, AuthResponse, badParameters, ErrorResponse, WithFormAuthentication } from "../../../../src/route_helpers";
+import { Answer, AuthResponse, badParameters, ErrorResponse, WithFormAuthentication } from "../../../../helpers/route_helpers";
 import type { File } from "buffer";
 
 export type Expect = {

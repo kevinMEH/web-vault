@@ -1,5 +1,5 @@
 import Redis from "ioredis";
-import { unixTime } from "../../helper";
+import { unixTime } from "../../../helpers/helper";
 import { HashedPassword } from "../password";
 import { Directory, SimpleDirectory } from "../../vfs";
 import { addInterval } from "../../cleanup";

@@ -7,7 +7,7 @@ import { File, Directory } from "./vfs";
 
 import { storeVFS, vaultMap } from "./authentication/database";
 import { PRODUCTION, TESTING } from "./env";
-import { validName, validPath } from "./helper";
+import { validName, validPath } from "../helpers/helper";
 
 export type ValidatedPath = string & { __type: "ValidatedPath" };
 export type VaultPath = string & { __type: "VaultPath" };

@@ -9,7 +9,7 @@ import TextField from "../../../../components/TextField";
 import DetailsSVG from "../../../../components/SVGS/DetailsSVG";
 
 import { File, Directory } from "../../../../src/vfs";
-import { timeAgo, convertBytes } from "../../../../src/helper";
+import { timeAgo, convertBytes } from "../../../../helpers/helper";
 import ActivitySVG from "../../../../components/SVGS/ActivitySVG";
 
 type DetailsParameters = {

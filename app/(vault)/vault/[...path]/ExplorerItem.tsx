@@ -4,7 +4,7 @@ import ItemIcon from "../../../../components/ItemIcon";
 import Triangle from "../../../../components/Triangle";
 
 import { File, Directory } from "../../../../src/vfs";
-import { sortByName } from "../../../../src/helper";
+import { sortByName } from "../../../../helpers/helper";
 
 type ExplorerItemParameters = {
     item: File | Directory;

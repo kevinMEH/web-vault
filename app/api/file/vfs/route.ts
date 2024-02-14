@@ -3,7 +3,7 @@
 import { NextRequest } from "next/server";
 import { SimpleDirectory } from "../../../../src/vfs";
 import { getDirectoryAt, validateDestination } from "../../../../src/controller";
-import { Answer, AuthResponse, badParameters, ErrorResponse, WithSinglePathAuthentication } from "../../../../src/route_helpers";
+import { Answer, AuthResponse, badParameters, ErrorResponse, WithSinglePathAuthentication } from "../../../../helpers/route_helpers";
 import { MAX_VFS_DEPTH, DEFAULT_VFS_DEPTH } from "../../../../src/env";
 
 export type Expect = {

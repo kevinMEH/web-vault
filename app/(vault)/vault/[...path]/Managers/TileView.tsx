@@ -5,8 +5,7 @@ import Tile from "./Tile";
 import DirectoryChainContext from "../DirectoryChainContext";
 
 import { File, Directory } from "../../../../../src/vfs";
-import { sortByName } from "../../../../../src/helper";
-import Actions from "../Actions/Actions";
+import { sortByName } from "../../../../../helpers/helper";
 
 type TileViewParameters = {
     setActiveItem: (item: File | Directory | null) => void;

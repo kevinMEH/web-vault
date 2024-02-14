@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { vaultLogin } from "../../../../src/vault_auth";
-import { Answer, badParameters, ErrorResponse, NonAuthResponse, WithBody } from "../../../../src/route_helpers";
+import { Answer, badParameters, ErrorResponse, NonAuthResponse, WithBody } from "../../../../helpers/route_helpers";
 
 export type Expect = {
     vaultName: string,

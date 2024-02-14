@@ -17,9 +17,9 @@ import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdate
 } from "../src/authentication/database/local";
 import { HashedPassword, hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
-import { validName, validPath } from "../src/helper";
+import { validName, validPath } from "../helpers/helper";
 import { getParentPath, splitParentChild, ValidatedPath, VaultPath, getVaultFromPath } from "../src/controller";
-import { fileNameMap, folderBaseMap, fileExtensionMap } from "../src/icons/iconMap";
+import { fileNameMap, folderBaseMap, fileExtensionMap } from "../helpers/icons/iconMap";
 import { DEFAULT_ADMIN_NAME } from "../src/env";
 
 import { cleanup } from "../src/cleanup";

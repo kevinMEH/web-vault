@@ -1,4 +1,4 @@
-import { File, Directory } from "./vfs";
+import { File, Directory } from "../src/vfs";
 
 const allDotRegex = /^\.+$/;
 const endsInSpaceRegex = /^.* $/

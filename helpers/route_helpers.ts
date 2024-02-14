@@ -1,7 +1,7 @@
-import { metaLog } from "./logger";
-import { adminAccess } from "./admin_auth";
+import { metaLog } from "../src/logger";
+import { adminAccess } from "../src/admin_auth";
 import { NextRequest, NextResponse } from "next/server";
-import { vaultAccessible } from "./vault_auth";
+import { vaultAccessible } from "../src/vault_auth";
 
 export type ErrorResponse = { error: string }
 export type NonAuthResponse<Data> = NextResponse<Data> & { __type: "NonAuthResponse" };

@@ -3,7 +3,7 @@
 import { NextRequest } from "next/server";
 import { validatePath } from "../../../../src/controller";
 import { moveItem } from "../../../../src/file";
-import { Answer, AuthResponse, badParameters, ErrorResponse, WithDoublePathAuthentication } from "../../../../src/route_helpers";
+import { Answer, AuthResponse, badParameters, ErrorResponse, WithDoublePathAuthentication } from "../../../../helpers/route_helpers";
 
 export type Expect = {
     vaultToken: string,

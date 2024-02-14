@@ -1,7 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { getVaultToken } from "../../../src/storage";
+import { getVaultToken } from "../../../helpers/storage";
 
 const Vault = () => {
     const router = useRouter();
