@@ -1,21 +1,47 @@
 
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import Tile from "./Tile";
 import DirectoryChainContext from "../DirectoryChainContext";
+import ActionsBar from "../Actions/ActionsBar";
 
 import { File, Directory } from "../../../../../src/vfs";
 import { sortByName } from "../../../../../helpers/helper";
+
+import type { Data as VFSData, Expect as VFSExpect } from "../../../../api/file/vfs/route";
+import { post } from "../../../../../helpers/requests";
+import { getVaultToken } from "../../../../../helpers/storage";
+import { pathFromChainNoEntry } from "../VaultHelpers";
 
 type TileViewParameters = {
     setActiveItem: (item: File | Directory | null) => void;
 }
 
 const TileView = ({ setActiveItem }: TileViewParameters) => {
+    const [ _, rerender ] = useState(0);
     const { activeDirectoryChain, setActiveDirectoryChain } = useContext(DirectoryChainContext);
     const paths = activeDirectoryChain.map(directory => directory.name);
     const activeDirectory = activeDirectoryChain[activeDirectoryChain.length - 1];
     activeDirectory.contents.sort(sortByName);
+    
+    useEffect(() => {
+        (async () => {
+            const vaultToken = getVaultToken();
+            if(vaultToken === null) {
+                // TODO display error ribbon
+                return;
+            }
+            const { vfs, depth } = await post<VFSExpect, VFSData>(
+                "/api/file/vfs",
+                { vaultToken, path: pathFromChainNoEntry(activeDirectoryChain), depth: 2 }
+            );
+            console.log(vfs, depth);
+            if(vfs !== undefined) {
+                activeDirectoryChain[activeDirectoryChain.length - 1].update(vfs, depth);
+            } // TODO: Else display error ribbon
+            rerender(prev => prev + 1);
+        })();
+    }, [activeDirectoryChain]);
 
     return <div className="bg-light-gray h-full w-full px-6 relative" onClick={event => {
         setActiveItem(null);
@@ -52,7 +78,7 @@ const TileView = ({ setActiveItem }: TileViewParameters) => {
             activeDirectory.contents.map(item =>
                 !item.isDirectory && <Tile item={item} setActiveDirectoryChain={setActiveDirectoryChain} setActiveItem={setActiveItem} key={item.name}></Tile>
         )}</div>
-        <Actions />
+        <ActionsBar />
     </div>
 }
 
