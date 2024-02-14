@@ -12,52 +12,6 @@ import { Directory, SimpleDirectory } from "../../vfs";
 
 const { USING_REDIS, PURGE_INTERVAL, DATABASE_SAVE_INTERVAL, DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWORD_HASH, TESTING, VFS_BACKUP_INTERVAL, VFS_STORE_DIRECTORY } = await import("../../env");
 
-type TokenPair = {
-    token: string,
-    expireAt: number
-}
-
-class LinkedList {
-    head: Node;
-    tail: Node;
-
-    constructor(value: TokenPair) {
-        this.head = this.tail = new Node(value);
-    }
-    
-    add(value: TokenPair) {
-        this.tail = this.tail.add(value);
-    }
-}
-
-class Node {
-    value: TokenPair;
-    next: Node | null;
-
-    constructor(value: TokenPair, next?: Node) {
-        this.value = value;
-        if(next === undefined) this.next = null;
-        else this.next = next;
-    }
-    
-    add(value: TokenPair): Node {
-        if(this.next === null) {
-            this.next = new Node(value);
-            return this.next;
-        } else {
-            return this.next.add(value);
-        }
-    }
-    
-    getExp() {
-        return this.value.expireAt;
-    }
-}
-
-
-
-
-
 // -----------------------
 //      INITIAL SETUP
 // -----------------------
@@ -76,8 +30,7 @@ let firstTokenSave = true;
 let firstVaultSave = true;
 let firstAdminSave = true;
 
-const tokenSet: Set<string> = new Set();
-const tokenList = new LinkedList({ token: "sentinel", expireAt: 2147483646 });
+const tokenMap = new Map<string, number>();
 
 const vaultCredentialsMap: Map<string, [string, number]> = new Map();
 
@@ -217,11 +170,8 @@ async function saveOutdatedTokensToFile(): Promise<void> {
 
     // Writing to temp file
     try {
-        let current = tokenList.head.next; // Sentinel is automatically added so is not written.
-        while(current) {
-            const value = current.value;
-            await file.appendFile(`"${value.token}",${value.expireAt}\n`);
-            current = current.next;
+        for(const [ token, expireAt ] of tokenMap.entries()) {
+            await file.appendFile(`"${token}",${expireAt}\n`);
         }
         await file.close();
     } catch(error) {
@@ -295,28 +245,20 @@ async function saveOutdatedTokensToFile(): Promise<void> {
  * @param expireAt 
  */
 function localAddOutdatedToken(token: string, expireAt: number) {
-    tokenSet.add(token);
-    tokenList.add({ token, expireAt });
+    tokenMap.set(token, expireAt);
 }
 
 function localIsOutdatedToken(token: string) {
-    return tokenSet.has(token);
+    return tokenMap.has(token);
 }
 
 function purgeAllOutdated() {
     const time = unixTime() - 5;
-    let lastValid: Node = tokenList.head;
-    let current: Node | null = tokenList.head;
-    while(current) {
-        if(current.getExp() < time) { // Has expired already, remove from list and set
-            tokenSet.delete(current.value.token);
-            lastValid.next = current.next;
-        } else { // Not expired, update lastValid
-            lastValid = current;
+    for(const [ token, expireAt ] of tokenMap.entries()) {
+        if(expireAt < time) { // Has expired already
+            tokenMap.delete(token);
         }
-        current = lastValid.next;
     }
-    tokenList.tail = lastValid;
 }
 
 /**
@@ -641,8 +583,7 @@ export {
     localInvalidAdminIssuingDate,
     localResetAdminNonce,
 
-    tokenList as _tokenList,
-    tokenSet as _tokenSet,
+    tokenMap as _tokenMap,
     vaultCredentialsMap as _vaultCredentialsMap,
     adminCredentialsMap as _adminCredentialsMap
 };

@@ -11,9 +11,9 @@ import JWT, { unixTime, Header, Payload } from "jwt-km";
 import { redisIsOutdatedToken, redisAddOutdatedToken } from "../src/authentication/database/redis";
 import { _saveOutdatedTokensToFile, _loadOutdatedTokensFromFile, localAddOutdatedToken,
     localIsOutdatedToken, _purgeAllOutdated, _loadVaultCredentialsFromFile, localSetVaultPassword,
-    localVaultExists, localDeleteVault, _tokenList, _tokenSet,
-    _vaultCredentialsMap, NodeType as Node, localSetAdminPassword, _adminCredentialsMap,
-    _loadAdminCredentialsFromFile, localDeleteAdmin, localVerifyAdminPassword, localInvalidAdminIssuingDate
+    localVaultExists, localDeleteVault, _tokenMap, _vaultCredentialsMap, NodeType as Node,
+    localSetAdminPassword, _adminCredentialsMap, _loadAdminCredentialsFromFile, localDeleteAdmin,
+    localVerifyAdminPassword, localInvalidAdminIssuingDate
 } from "../src/authentication/database/local";
 import { HashedPassword, hashPassword } from "../src/authentication/password";
 import { File, Directory } from "../src/vfs";
@@ -142,18 +142,9 @@ describe("Single Tests", () => {
             // this is fine as we will always verify if they are expired before
             // checking if they are outdated.
             
-            let nonexpiredExists = false;
-            let nonexpired2Exists = false;
-            // Check that purge correctly modified the linked list too
-            let current: Node | null = _tokenList.head;
-            while(current) {
-                assert(current.getExp() >= unixTime() - 10);
-                if(current.value.token === "test.token.nonexpired") nonexpiredExists = true;
-                if(current.value.token === "test.token.nonexpired2") nonexpired2Exists = true;
-                current = current.next;
-            }
-            // Check that purge did not purge nonexpired tokens
-            assert(nonexpiredExists && nonexpired2Exists);
+            // Check that purge correctly modified the map too
+            assert(_tokenMap.has("test.token.nonexpired") === true);
+            assert(_tokenMap.has("test.token.nonexpired2") === true);
         });
         
         await context.test("Saves the in memory tokens database to a file and loads from the file", async () => {
@@ -164,9 +155,7 @@ describe("Single Tests", () => {
     
             await _saveOutdatedTokensToFile();
             
-            _tokenList.head.next = null;
-            _tokenList.tail = _tokenList.head;
-            _tokenSet.clear();
+            _tokenMap.clear();
             assert(!localIsOutdatedToken("save.me.tofile"));
             assert(!localIsOutdatedToken("save.me.too"));
             
