@@ -20,14 +20,12 @@ export type SimpleDirectory = {
 // possible inconsistencies between the file system and the VFS, as the VFS is
 // now solely responsible for the structuring of the files.
 
-class File {
+export class File {
     name: string;
     byteSize: number;
     lastModified: Date;
     realFile: string;
-
     isDirectory = false;
-    isOpen = false; // Typing purposes only, no use on file
     
     constructor(name: string, byteSize: number, realFile: string, lastModified?: string | Date) {
         this.name = name;
@@ -84,14 +82,11 @@ class File {
 }
 
 
-class Directory {
+export class Directory {
     name: string;
     lastModified: Date;
-
     contents: (File | Directory)[];
-
     isDirectory = true;
-    isOpen = false; // For displaying directory on frontend
     
     constructor(name: string, contents: (File | Directory)[], lastModified?: string | Date) {
         this.name = name;
@@ -152,15 +147,15 @@ class Directory {
     }
     
     getAllSubfiles(): File[] {
-        const realFiles = [];
+        const files = [];
         for(const item of this.contents) {
             if(item.isDirectory) {
-                realFiles.push(...(item as Directory).getAllSubfiles());
+                files.push(...(item as Directory).getAllSubfiles());
             } else {
-                realFiles.push(item as File);
+                files.push(item as File);
             }
         }
-        return realFiles;
+        return files;
     }
     
     /**
@@ -214,7 +209,7 @@ class Directory {
             if(index === -1) return false;
             
             this.contents.splice(index, 1);
-                if(realChange) this.modifiedNow();
+            if(realChange) this.modifiedNow();
             return true;
         }
     }
@@ -223,6 +218,7 @@ class Directory {
         this.lastModified = new Date();
     }
     
+    // NOTE: For backend use only. You may not have full VFS on frontend.
     getByteSize(): number {
         let total = 0;
         for(const item of this.contents) {
@@ -295,17 +291,16 @@ class Directory {
      * 
      * This is used for client side updating of virtual file system.
      * 
-     * @param flatItem 
+     * @param simpleItem 
      */
-    private attach(flatItem: SimpleFile | SimpleDirectory, depth: number): void {
-        if(flatItem.isDirectory) {
+    attach(simpleItem: SimpleFile | SimpleDirectory, depth: number): void {
+        if(simpleItem.isDirectory) {
             // Create new directory, and then update itself.
-            const newDirectory = new Directory(flatItem.name, []);
-            newDirectory.update(flatItem as SimpleDirectory, depth - 1);
+            const newDirectory = new Directory(simpleItem.name, []);
+            newDirectory.update(simpleItem as SimpleDirectory, depth - 1);
             this.addEntry(newDirectory, false);
         } else {
-            // Create new file from flatFile
-            const newFile = new File(flatItem.name, (flatItem as SimpleFile).byteSize, (flatItem as SimpleFile).realFile, flatItem.lastModified);
+            const newFile = new File(simpleItem.name, (simpleItem as SimpleFile).byteSize, (simpleItem as SimpleFile).realFile, simpleItem.lastModified);
             this.addEntry(newFile, false);
         }
     }
@@ -347,4 +342,165 @@ class Directory {
     }
 }
 
-export { File, Directory };
+
+
+// Frontend use
+export class FrontFile extends File {
+    realFile = "";
+    isOpen = false; // For frontend Directory use only
+    selected = false; // Is it selected by user? (Visual change only if selected)
+    
+    clone(modified: boolean): FrontFile {
+        return new FrontFile(this.name, this.byteSize, this.realFile, modified ? undefined : this.lastModified.toJSON());
+    }
+}
+
+export class FrontDirectory extends Directory {
+    contents: (FrontFile | FrontDirectory)[];
+    isOpen = false; // For displaying directory on frontend
+    selected = false; // Is it selected by user? (Visual change only if selected)
+    
+    constructor(name: string, contents: (FrontFile | FrontDirectory)[], lastModified?: string | Date) {
+        super(name, contents, lastModified);
+        this.contents = contents; // Redundant but Typescript is stupid
+    }
+    
+    getAny(name: string): FrontFile | FrontDirectory | null {
+        for(const item of this.contents) {
+            if(name === name) {
+                return item;
+            }
+        }
+        return null;
+    }
+    
+    getFile(name: string): FrontFile | null {
+        for(const item of this.contents) {
+            if(!item.isDirectory && item.name === name) {
+                return item as FrontFile;
+            }
+        }
+        return null;
+    }
+    
+    getDirectory(name: string): FrontDirectory | null {
+        for(const item of this.contents) {
+            if(item.isDirectory && item.name === name) {
+                return item as FrontDirectory;
+            }
+        }
+        return null;
+    }
+    
+    getPath(path: string): FrontFile | FrontDirectory | null {
+        let last: FrontFile | FrontDirectory | null = this;
+        const items = path.split("/");
+        for(let i = 0; i < items.length; i++) {
+            if(last !== null && last.isDirectory) {
+                last = (last as FrontDirectory).getAny(items[i]);
+            } else {
+                return null;
+            }
+        }
+        return last;
+    }
+    
+    getAllSubfiles(): FrontFile[] {
+        const files = [];
+        for(const item of this.contents) {
+            if(item.isDirectory) {
+                files.push(...(item as FrontDirectory).getAllSubfiles());
+            } else {
+                files.push(item as FrontFile);
+            }
+        }
+        return files;
+    }
+    
+    addEntry(item: FrontDirectory | FrontFile, realChange: boolean): void {
+        this.contents.push(item);
+        if(realChange) {
+            this.modifiedNow();
+        }
+    }
+    
+    removeEntry(entry: string | FrontDirectory | FrontFile, realChange: boolean): boolean {
+        if(typeof entry === "string") {
+            for(let i = 0; i < this.contents.length; i++) {
+                if(this.contents[i].name === entry) {
+                    this.contents.splice(i, 1);
+                    if(realChange) this.modifiedNow();
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            const index = this.contents.indexOf(entry);
+            if(index === -1) return false;
+            
+            this.contents.splice(index, 1);
+            if(realChange) this.modifiedNow();
+            return true;
+        }
+    }
+    
+    getByteSize(): number {
+        throw new Error("Do not call getByteSize() from a directory on frontend.");
+    }
+    
+    clone(modified: boolean): FrontDirectory {
+        const clonedContents: (FrontFile | FrontDirectory)[] = [];
+        for(const item of this.contents) {
+            clonedContents.push(item.clone(modified));
+        }
+        return new FrontDirectory(this.name, clonedContents, modified ? undefined : this.lastModified.toJSON());
+    }
+    
+    attach(simpleItem: SimpleFile | SimpleDirectory, depth: number): void {
+        if(simpleItem.isDirectory) {
+            // Create new directory, and then update itself.
+            const newDirectory = new FrontDirectory(simpleItem.name, []);
+            newDirectory.update(simpleItem as SimpleDirectory, depth - 1);
+            this.addEntry(newDirectory, false);
+        } else {
+            const newFile = new FrontFile(simpleItem.name, (simpleItem as SimpleFile).byteSize, "", simpleItem.lastModified);
+            this.addEntry(newFile, false);
+        }
+    }
+    
+    /**
+     * Update the current directory based on the object passed in.
+     * 
+     * This is used for client side updating of virtual file system, and turning
+     * flattened file system back into Files and Directories.
+     * 
+     * If depth is equal to zero, contents will not be updated.
+     * 
+     * @param flatDirectory - Flattened Directory object
+     */
+    update(flatDirectory: SimpleDirectory, depth: number): void {
+        this.lastModified = new Date(flatDirectory.lastModified);
+        if(depth === 0) {
+            return;
+        }
+        const newContents: (FrontFile | FrontDirectory)[] = [];
+        const toAttach: (SimpleFile | SimpleDirectory)[] = [];
+        for(const item of flatDirectory.contents) {
+            const maybeCurrent = this.getAny(item.name);
+            if(maybeCurrent !== null && maybeCurrent.isDirectory === item.isDirectory) {
+                // Update existing, and push to new contents
+                maybeCurrent.update(item as never, depth - 1);
+                newContents.push(maybeCurrent);
+            } else {
+                // Does not currently exist, or is not of the same type: attach later
+                toAttach.push(item);
+            }
+        }
+        
+        this.contents = newContents;
+        for(const item of toAttach) {
+            // Attach all new items to current directory
+            this.attach(item, depth);
+        }
+    }
+}
