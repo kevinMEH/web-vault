@@ -15,6 +15,12 @@ const ENV: ENV = {
 
 
 
+    // VFS Backup Interval in seconds. By default, every 30 minutes.
+    // Ex: 10 * 60
+    ,VFS_BACKUP_INTERVAL: undefined
+
+
+
     // -------------------------------------------------
     // Settings below only valid if using in memory database. (Not using Redis)
     // -------------------------------------------------
@@ -107,10 +113,6 @@ const ENV: ENV = {
 
 
 
-    // VFS Backup Interval in seconds. By default, every 30 minutes.
-    // Ex: 10 * 60
-    ,VFS_BACKUP_INTERVAL: undefined
-
     // Where to store vaults. By default, in the ./vaults folder.
     // Ex: "./vaults"
     ,BASE_VAULT_DIRECTORY: undefined
@@ -124,10 +126,6 @@ const ENV: ENV = {
     // Maximum depth of VFS allowed to be sent to the client. By default, 5
     // Ex: 2, 3, 4, 99
     ,MAX_VFS_DEPTH: undefined
-    
-    // Default depth of VFS sent to the client. By default, 3
-    // Ex: 1, 2, 3, 4
-    ,DEFAULT_VFS_DEPTH: undefined
 
 }
 
@@ -135,6 +133,8 @@ type ENV = {
     PRODUCTION: boolean,
 
     REDIS?: boolean,
+
+    VFS_BACKUP_INTERVAL?: number,
 
     DATABASE_SAVE_INTERVAL?: number,
     PURGE_INTERVAL?: number,
@@ -153,10 +153,8 @@ type ENV = {
 
     BASE_VAULT_DIRECTORY?: string,
     LOGGING_DIRECTORY?: string,
-    VFS_BACKUP_INTERVAL?: number,
     
     MAX_VFS_DEPTH?: number,
-    DEFAULT_VFS_DEPTH?: number
 }
 
 export default ENV;

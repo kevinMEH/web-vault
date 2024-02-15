@@ -56,4 +56,3 @@ export const BASE_LOGGING_DIRECTORY = config.LOGGING_DIRECTORY || path.join(proc
 
 
 export const MAX_VFS_DEPTH = config.MAX_VFS_DEPTH || 5;
-export const DEFAULT_VFS_DEPTH = config.DEFAULT_VFS_DEPTH || 3;
