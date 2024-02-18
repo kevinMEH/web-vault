@@ -46,6 +46,10 @@ const baseVaultLoggingDirectory = path.join(BASE_LOGGING_DIRECTORY, "vaults");
  * @returns Promise of instance of CustomError with `code` and `type` attribute
  */
 async function createNewVault(vaultName: string, password: string): Promise<CustomError | null> {
+    if(vaultName === "temp") {
+        metaLog("admin", "ERROR", `Tried to create a new vault called "temp", which is disallowed as "temp" is reserved.`);
+        return new CustomError(`Vault is not allowed to be named "temp".`, "ERROR", "INVALID_NAME");
+    }
     if(!validName(vaultName)) {
         metaLog("admin", "ERROR", `Tried to create a new vault ${vaultName}, but the name is not a valid name.`);
         return new CustomError(`${vaultName} is not a valid vault name.`, "ERROR", "INVALID_NAME");
