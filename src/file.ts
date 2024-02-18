@@ -68,40 +68,6 @@ async function __getTempFile(vault: VaultPath): Promise<string> {
 }
 
 /**
- * Creates a displaced directory in the specified directory, and returns it.
- * 
- * The directory name will be in the form "displaced", or "displaced (1)" if
- * "displaced" is already taken.
- * 
- * @param parentDirectory 
- * @returns Directory
- */
-function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
-    let displacedDirectory = parentDirectory.getAny("displaced");
-    if(displacedDirectory === null) {
-        displacedDirectory = new Directory("displaced", []);
-        parentDirectory.addEntry(displacedDirectory, true);
-        return displacedDirectory;
-    }
-    if(displacedDirectory.isDirectory) {
-        return displacedDirectory as Directory;
-    }
-    // Keeps iterating until you find either a preexisting directory, or nothing
-    for(let i = 1; i < 10; i++) {
-        displacedDirectory = parentDirectory.getAny(`displaced (${i})`);
-        if(displacedDirectory === null) {
-            displacedDirectory = new Directory(`displaced (${i})`, []);
-            parentDirectory.addEntry(displacedDirectory, true);
-            return displacedDirectory;
-        } else if(displacedDirectory.isDirectory) {
-            return displacedDirectory as Directory;
-        }
-    }
-    // All displaced directories 9 and below are taken. Abort operation.
-    return null;
-}
-
-/**
  * Adding files: What happens:
  * 
  * - User sends in a form request, with the file attached.
@@ -118,13 +84,12 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * 
  * What if during the file upload time, a new file / directory has been created
  * with the same name?
- * The file name will be appended with numbers, and the new path will be
- * returned from the function.
+ * The file will be deleted and it will not be added.
  * 
  * What if files are super big, and another file is uploaded with same name?
  * Both files are allowed to be uploaded. The first file that finishes uploading
  * will get the desired name. The second file will then see that the file name
- * has been taken, and will follow the steps from the question above.
+ * has been taken, and will abort.
  */
 
 /**
@@ -135,11 +100,10 @@ function getDisplacedDirectory(parentDirectory: Directory): Directory | null {
  * 
  * @param file 
  */
-async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<ValidatedPath | boolean> {
+async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<boolean> {
     const targetVault = getVaultFromPath(desiredPath);
-    // Checks if the parent directory exists and path is not occupied. However,
-    // if this condition is violated after this initial check the file upload
-    // will still succeed.
+    // Checks if the parent directory exists and path is not occupied.
+    // This condition will be rechecked later during __tempToVault
     const [ parentPath, name ] = splitParentChild(desiredPath);
     const parentDirectory = getDirectoryAt(parentPath);
     if(parentDirectory === null || parentPath === null) {
@@ -172,6 +136,7 @@ async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<Valid
         });
         return false;
     }
+
     // Moving to vault
     return __tempToVault(desiredPath, tempFileName);
 }
@@ -180,111 +145,64 @@ async function addFile(file: WebFile, desiredPath: ValidatedPath): Promise<Valid
  * Adds a file from the temp vault into the desired vault and then creates the
  * VFS entry.
  * 
- * Upper level directories will be recursively created if they do not exist. If
- * there exists an upper level directory that is actually a file, the file will
- * be placed into a "displaced" directory.
+ * If the file's parent directory does not exist, the process will be aborted.
+ * If the file's path is already occupied, the process will be aborted.
  * 
- * If there are possible file naming conflicts, it will be given a new name and
- * the new path will be returned.
- * 
- * @param desiredPath 
+ * @param targetPath 
  * @param tempFileName 
  */
-async function __tempToVault(desiredPath: ValidatedPath, tempFileName: string): Promise<ValidatedPath | boolean> {
+async function __tempToVault(targetPath: ValidatedPath, tempFileName: string): Promise<boolean> {
     const tempFilePath = path.join(tempFileDirectory, tempFileName);
-    const targetVault = getVaultFromPath(desiredPath);
-    const directories = desiredPath.split("/");
-
-    let displaced = false;
-    let finalPath = directories[0];
-    let last: Directory | null = getVaultVFS(directories[0] as VaultPath);
-    // It may be that the file upload was performed right before vault deletion,
-    // if this happens to be the case delete the temp file.
-    if(last === null) {
-        vaultLog(targetVault, "WARNING", `Attempting to add a file at path "${desiredPath}" with temp file ${tempFileName}, but the vault no longer exists.`);
-        await fs.unlink(tempFilePath).catch(error => {
-            const message = (error as Error).message;
-            vaultLog(targetVault, "ERROR", `Attempting to remove temp file "${tempFilePath}", but encountered unexpected error ${message}.`);
-        });
-        return false;
-    }
-    // Go up the paths, creating directories if they don't exist.
-    for(let i = 1; i < directories.length - 1; i++) {
-        const directoryName = directories[i];
-        let nextDirectory: Directory | File | null = last.getAny(directoryName);
-        if(nextDirectory === null) {
-            nextDirectory = new Directory(directoryName, [])
-            last.addEntry(nextDirectory, true);
-        } else {
-            // If the item was a file, we can't continue. Find a displaced
-            // directory and use it instead.
-            if(!nextDirectory.isDirectory) {
-                last = getDisplacedDirectory(last);
-                if(last === null) { // No displaced directory available
-                    return false;
-                }
-                finalPath += "/" + last.name;
-                displaced = true;
-                break;
-            }
-        }
-        last = nextDirectory as Directory;
-        finalPath += "/" + directoryName;
-    }
+    const targetVault = getVaultFromPath(targetPath);
     
-    // Moving from temp to new
+    const stats = await fs.stat(tempFilePath).catch(error => {
+        const message = (error as Error).message;
+        vaultLog(targetVault, "ERROR", `Trying to obtain stats for file "${targetPath}" with real file in temp directory "${tempFilePath}", but encountered unexpected error ${message}.`)
+        return null;
+    });
+
     const newFileName = await __getTempFile(targetVault);
     const newFilePath = path.join(BASE_VAULT_DIRECTORY, targetVault, newFileName);
     try {
         await fs.rename(tempFilePath, newFilePath);
     } catch(error) {
         const message = (error as Error).message;
-        vaultLog(targetVault, "ERROR", `Attempting to add a file at path "${desiredPath}" by renaming temp file "${tempFilePath}" to "${newFilePath}", but encountered unexpected error ${message}. Deleting file...`);
-        await fs.unlink(tempFilePath).catch(error => {
+        vaultLog(targetVault, "ERROR", `Attempting to add a file at path "${targetPath}" by renaming temp file "${tempFilePath}" to "${newFilePath}", but encountered unexpected error ${message}. Deleting file...`);
+        await fs.unlink(tempFilePath).catch(async error => {
+            const message = (error as Error).message;
+            vaultLog(targetVault, "ERROR", `Attempting to remove temp file "${tempFilePath}", but encountered unexpected error ${message}.`);
+            await fs.unlink(newFilePath).catch(error => {
+                const message = (error as Error).message;
+                vaultLog(targetVault, "ERROR", `Attempting to remove possibly renamed temp file "${newFilePath}", but encountered unexpected error ${message}.`);
+            });
+        });
+        return false;
+    }
+    
+    const [ parentPath, name ] = splitParentChild(targetPath);
+    const parentDirectory = getDirectoryAt(parentPath);
+    if(parentDirectory === null || parentPath === null) {
+        vaultLog(targetVault, "NON URGENT", `Uploading file at "${targetPath}", but the parent directory does not exist.`);
+        await fs.unlink(newFilePath).catch(error => {
             const message = (error as Error).message;
             vaultLog(targetVault, "ERROR", `Attempting to remove temp file "${tempFilePath}", but encountered unexpected error ${message}.`);
         });
         return false;
     }
-    const stats = await fs.stat(newFilePath).catch(error => {
-        const message = (error as Error).message;
-        vaultLog(targetVault, "ERROR", `Trying to obtain stats for file "${desiredPath}" with real file "${newFilePath}", but encountered unexpected error ${message}.`)
-        return null;
-    });
-
-    // Creating file entry in VFS
-    const originalFileName = directories[directories.length - 1];
-    const firstDotIndex = originalFileName.indexOf(".");
-    const fileNameBase = firstDotIndex >= 0 ? originalFileName.substring(0, firstDotIndex) : originalFileName;
-    const fileNameExtension = firstDotIndex >= 0 ? originalFileName.substring(firstDotIndex) : "";
-
-    let fileName = fileNameBase + fileNameExtension;
-    // Find out if there already exists a file there with same name. If there
-    // does, then we rename to "file (1)" etc. to prevent conflicts.
-    let existingFile = last.getAny(fileName);
-    if(existingFile !== null) {
-        displaced = true;
-        for(let i = 1; i < 10; i++) {
-            fileName = `${fileNameBase} (${i})${fileNameExtension}`;
-            existingFile = last.getAny(fileName);
-            if(existingFile === null) {
-                break;
-            }
-        }
-        // If after file (9) still conflicts, then choose random name.
-        while(existingFile !== null) {
-            fileName = `${fileNameBase} (${randomFileName()})${fileNameExtension}`
-            existingFile = last.getAny(fileName);
-        }
+    const maybeExists = parentDirectory.getAny(name);
+    if(maybeExists !== null) {
+        vaultLog(targetVault, "NON URGENT", `Uploading file at "${targetPath}", but there is already an entry there with the same name.`);
+        await fs.unlink(newFilePath).catch(error => {
+            const message = (error as Error).message;
+            vaultLog(targetVault, "ERROR", `Attempting to remove temp file "${tempFilePath}", but encountered unexpected error ${message}.`);
+        });
+        return false;
     }
-    const newFileEntry = stats !== null
-        ? new File(fileName, stats.size, newFileName, stats.mtime)
-        : new File(fileName, 0, newFileName);
-    last.addEntry(newFileEntry, true);
+
+    const newFileEntry = stats !== null ? new File(name, stats.size, newFileName, stats.mtime) : new File(name, 0, newFileName);
+    parentDirectory.addEntry(newFileEntry, true);
+
     after();
-    if(displaced) {
-        return finalPath + "/" + fileName as ValidatedPath;
-    }
     return true;
 }
 

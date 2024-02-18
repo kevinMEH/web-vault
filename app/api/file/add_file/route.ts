@@ -13,8 +13,7 @@ export type Expect = {
 }
 
 export type Data = {
-    success: boolean,
-    displacedPath?: string
+    success: boolean
 } | ErrorResponse;
 
 export async function POST(request: NextRequest): Promise<AuthResponse<Data>> {
@@ -28,10 +27,7 @@ export async function POST(request: NextRequest): Promise<AuthResponse<Data>> {
         }
         if(file !== null && typeof file !== "string") {
             const result = await addFile(file as unknown as File, validatedPath);
-            return Answer<Data>(200, {
-                success: result !== false,
-                displacedPath: result !== true && result !== false ? result : undefined
-            });
+            return Answer<Data>(200, { success: result });
         }
         return Answer<ErrorResponse>(400, {
             error: badParameters("Expected body with File attribute file.")
