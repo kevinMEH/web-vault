@@ -2,7 +2,7 @@ import JWT, { unixTime } from "jwt-km";
 import { metaLog } from "./logger";
 import { invalidAdminIssuingDate, resetAdminNonce, verifyAdminPassword } from "./authentication/database";
 import { ADMIN_JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "./env";
-import type { WebVaultPayload } from "./authentication/vault_token";
+import type { VaultPayload } from "./authentication/vault_token";
 import { addLongTimeout } from "./cleanup";
 
 export type AdminPayload = {
@@ -28,7 +28,7 @@ async function __getUnwrappedAdmin(token: string): Promise<AdminPayload | null> 
     if(unwrapped === null) {
         return null;
     }
-    const [ _header, payload ] = unwrapped as [ unknown, AdminPayload | WebVaultPayload ];
+    const [ _header, payload ] = unwrapped as [ unknown, AdminPayload | VaultPayload ];
     if(payload.type !== "admin") {
         return null;
     }

@@ -10,7 +10,7 @@ export type VaultAccess = {
     expiration: number
 };
 
-export type WebVaultPayload = {
+export type VaultPayload = {
     iss: string,
     exp: number,
     iat: number,
@@ -40,9 +40,9 @@ function __createToken(access: VaultAccess[]): string {
  * (Issued before nonce, expired vaults, etc.)
  * 
  * @param token 
- * @returns Promise<[Header, WebVaultPayload, Token] | null>
+ * @returns
  */
-async function getUnwrappedToken(token: string): Promise<WebVaultPayload | null> {
+async function getUnwrappedToken(token: string): Promise<VaultPayload | null> {
     if(await isOutdatedToken(token)) {
         return null;
     }
@@ -51,7 +51,7 @@ async function getUnwrappedToken(token: string): Promise<WebVaultPayload | null>
     if(unwrapped === null) {
         return null;
     }
-    const [_header, payload] = unwrapped as [Header, WebVaultPayload | AdminPayload];
+    const [_header, payload] = unwrapped as [Header, VaultPayload | AdminPayload];
     if(payload.type !== "vault") {
         return null;
     }

@@ -8,7 +8,7 @@ import fs from "fs/promises";
 import { Blob } from "buffer";
 
 import { cleanup } from "../src/cleanup";
-import { createToken, WebVaultPayload } from "../src/authentication/vault_token";
+import { createToken, VaultPayload } from "../src/authentication/vault_token";
 import { deleteVaultPassword, setVaultPassword } from "../src/authentication/database";
 import JWT, { Header, unixTime } from "jwt-km";
 import { DEFAULT_ADMIN_NAME, DOMAIN, JWT_SECRET } from "../src/env";
@@ -320,7 +320,7 @@ describe("API tests", () => {
                 assert(JWT.unwrap(vaultToken, JWT_SECRET) !== null, "The secret key used by the server and the test is not the same. Please fix or the next few tests may be ineffective.");
                 const unwrapped = JWT.unwrap(vaultToken, JWT_SECRET);
                 assert(unwrapped !== null);
-                const [ _header, payload ] = unwrapped as [ Header, WebVaultPayload ];
+                const [ _header, payload ] = unwrapped as [ Header, VaultPayload ];
                 assert(payload.access.length === 1);
                 assert(payload.access[0].vault === vaultOne);
             }
@@ -329,7 +329,7 @@ describe("API tests", () => {
             assert(oneVaultToken !== null);
             const oneUnwrapped = JWT.unwrap(oneVaultToken, JWT_SECRET);
             assert(oneUnwrapped !== null);
-            const [ _header, oneVaultPayload ] = oneUnwrapped as [ Header, WebVaultPayload ];
+            const [ _header, oneVaultPayload ] = oneUnwrapped as [ Header, VaultPayload ];
             assert(oneVaultPayload.access.length === 1);
             assert(oneVaultPayload.access[0].vault === vaultOne);
             
@@ -337,7 +337,7 @@ describe("API tests", () => {
             assert(bothVaultToken !== null);
             const bothUnwrapped = JWT.unwrap(bothVaultToken, JWT_SECRET);
             assert(bothUnwrapped !== null);
-            const [ __header, bothVaultPayload ] = bothUnwrapped as [ Header, WebVaultPayload ];
+            const [ __header, bothVaultPayload ] = bothUnwrapped as [ Header, VaultPayload ];
             assert(bothVaultPayload.access.length === 2);
             assert(bothVaultPayload.access.some(access => access.vault === vaultOne));
             assert(bothVaultPayload.access.some(access => access.vault === vaultTwo));
@@ -346,7 +346,7 @@ describe("API tests", () => {
             assert(stillBothVaultToken !== null)
             const stillBothUnwrapped = JWT.unwrap(stillBothVaultToken, JWT_SECRET);
             assert(stillBothUnwrapped !== null);
-            const [ ___header, stillBothVaultPayload ] = stillBothUnwrapped as [ Header, WebVaultPayload ];
+            const [ ___header, stillBothVaultPayload ] = stillBothUnwrapped as [ Header, VaultPayload ];
             assert(stillBothVaultPayload.access.length === 2);
             assert(stillBothVaultPayload.access.some(access => access.vault === vaultOne));
             assert(stillBothVaultPayload.access.some(access => access.vault === vaultTwo));
@@ -817,7 +817,7 @@ describe("API tests", () => {
                 vaultOne/
                     LICENSE
                 */
-                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 5 }));
                 assert(vfs !== undefined);
                 vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 1);
@@ -840,7 +840,7 @@ describe("API tests", () => {
             }
             
             {
-                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 5 }));
                 assert(vfs !== undefined);
                 vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 0);
@@ -964,7 +964,7 @@ describe("API tests", () => {
                         .gitignore
                         subfolder/
                 */
-                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 5 }));
                 assert(vfs !== undefined);
                 vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length === 3);
@@ -989,7 +989,7 @@ describe("API tests", () => {
                 const oldFile = vaultOne.getFile("LICENSE");
                 assert(oldFile !== null);
 
-                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 5 }));
                 assert(vfs !== undefined);
                 vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length === 3);
@@ -1015,7 +1015,7 @@ describe("API tests", () => {
                         .gitignore
                         subfolder/
                 */
-                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 5 }));
                 assert(vfs !== undefined);
                 vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 2);
@@ -1050,7 +1050,7 @@ describe("API tests", () => {
                         .gitignore
                         subfolder/
                 */
-                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
+                const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 5 }));
                 assert(vfs !== undefined);
                 vaultOne.update(vfs, depth);
                 assert(vaultOne.contents.length as number === 2);
@@ -1085,12 +1085,12 @@ describe("API tests", () => {
                                 LICENSE
                 */
                 {
-                    const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName }));
+                    const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName, depth: 5 }));
                     assert(vfs !== undefined);
                     vaultOne.update(vfs, depth);
                 }
                 {
-                    const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder/subfolder" }));
+                    const { vfs, depth } = (await post<VFSExpect, VFSData>("file/vfs", { vaultToken, path: vaultOneName + "/folder/subfolder", depth: 5 }));
                     assert(vfs !== undefined);
                     const subfolder = vaultOne.getPath("folder/subfolder");
                     assert(subfolder !== null);

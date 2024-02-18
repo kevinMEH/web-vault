@@ -9,7 +9,7 @@ import { getVaultToken, setVaultToken } from "../../helpers/storage";
 import { objectFromBase64 } from "../../helpers/helper";
 
 import type { Data, Expect } from "../api/vault/trim/route";
-import type { WebVaultPayload } from "../../src/authentication/vault_token";
+import type { VaultPayload } from "../../src/authentication/vault_token";
 
 
 const VaultList = () => {
@@ -27,7 +27,7 @@ const VaultList = () => {
                 return [];
             }
             setVaultToken(trimmedToken);
-            const payload = objectFromBase64(trimmedToken.split(".")[1]) as WebVaultPayload;
+            const payload = objectFromBase64(trimmedToken.split(".")[1]) as VaultPayload;
             if(payload.access.length === 0) {
                 return [];
             }
