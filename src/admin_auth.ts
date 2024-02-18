@@ -3,7 +3,6 @@ import { metaLog } from "./logger";
 import { invalidAdminIssuingDate, resetAdminNonce, verifyAdminPassword } from "./authentication/database";
 import { ADMIN_JWT_EXPIRATION, DOMAIN, JWT_SECRET } from "./env";
 import type { VaultPayload } from "./authentication/vault_token";
-import { addLongTimeout } from "./cleanup";
 
 export type AdminPayload = {
     iss: string,
@@ -44,9 +43,6 @@ async function __getUnwrappedAdmin(token: string): Promise<AdminPayload | null> 
 async function adminLogin(adminName: string, password: string): Promise<string | null> {
     if(await verifyAdminPassword(adminName, password)) {
         metaLog("admin", "INFO", `Successful login attempt for admin ${adminName}.`);
-        addLongTimeout(`Automatic admin ${adminName} nounce change`, async () => {
-            await resetAdminNonce(adminName);
-        }, ADMIN_JWT_EXPIRATION * 1000);
         return __createAdminToken(adminName);
     }
     // TODO: Log unsuccessful login and also include IP
