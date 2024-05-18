@@ -1,7 +1,7 @@
 import path from "path";
 import { mkdir } from "fs/promises";
 import config from "../config";
-import { metaLog } from "./logger";
+import errorFormatter, { metaLog } from "./logger";
 
 // The ${name} configuration must be specified. ${reason}
 function configUndefinedError(configurationName: string, reason: string): never {
@@ -17,7 +17,7 @@ export const TESTING = process.env.TESTING === "true" && config.PRODUCTION !== t
 
 export const PRODUCTION: boolean = (() => {
     const entry = config.PRODUCTION;
-    if(entry === undefined) {
+    if((entry as any) === undefined) {
         configUndefinedError("PRODUCTION", "Unless you know what you are doing, set PRODUCTION to true.");
     } else if(typeof entry === "boolean") {
         return entry;
@@ -72,7 +72,13 @@ export const VFS_STORE_DIRECTORY: string = await (async () => {
     } else if(typeof entry === "string") {
         await mkdir(path.join(entry)).then(() => {
             metaLog("admin", "INFO", `Created new VFS store directory at "${path.join(entry)}".`);
-        }).catch(() => {});
+        }).catch(error => {
+            if(error.code !== "EEXIST") {
+                metaLog("admin", "ERROR", `Encountered unrecognized error ${errorFormatter(error as Error)} while creating new VFS store directory at "${path.join(entry)}".`);
+                console.log(`Encountered unrecognized error ${errorFormatter(error as Error)} while creating new VFS store directory at "${path.join(entry)}".`);
+                process.exit(-1);
+            }
+        });
         return entry;
     } else {
         configIncorrectType("VFS_STORE_DIRECTORY", "string");
@@ -232,11 +238,23 @@ export const BASE_VAULT_DIRECTORY: string = await (async () => {
         return defaultValue;
     } else if(typeof entry === "string") {
         await mkdir(path.join(entry)).then(() => {
-            metaLog("admin", "INFO", `Created new base vault directory at "${path.join(entry)}".`)
-        }).catch(() => {});
+            metaLog("admin", "INFO", `Created new base vault directory at "${path.join(entry)}".`);
+        }).catch(error => {
+            if(error.code !== "EEXIST") {
+                metaLog("admin", "ERROR", `Encountered unrecognized error ${errorFormatter(error as Error)} while creating a new base vault directory at "${path.join(entry)}".`);
+                console.error(`Encountered unrecognized error ${errorFormatter(error as Error)} while creating a new base vault directory at "${path.join(entry)}".`);
+                process.exit(-1);
+            }
+        });
         await mkdir(path.join(entry, "temp")).then(() => {
-            metaLog("admin", "INFO", `Created temp vault directory at "${path.join(entry, "temp")}".`)
-        }).catch(() => {});
+            metaLog("admin", "INFO", `Created temp vault directory at "${path.join(entry, "temp")}".`);
+        }).catch(error => {
+            if(error.code !== "EEXIST") {
+                metaLog("admin", "ERROR", `Encountered unrecognized error ${errorFormatter(error as Error)} while creating temp vault directory at "${path.join(entry, "temp")}".`);
+                console.error(`Encountered unrecognized error ${errorFormatter(error as Error)} while creating temp vault directory at "${path.join(entry, "temp")}".`);
+                process.exit(-1);
+            }
+        });
         return entry;
     } else {
         configIncorrectType("BASE_VAULT_DIRECTORY", "string");
@@ -251,7 +269,13 @@ export const BASE_LOGGING_DIRECTORY: string = await (async () => {
     } else if(typeof entry === "string") {
         await mkdir(path.join(entry, "admin")).then(() => {
             metaLog("admin", "INFO", `Created new logging directory at ${path.join(entry)}`);
-        }).catch(() => {});
+        }).catch(error => {
+            if(error.code !== "EEXIST") {
+                metaLog("admin", "ERROR", `Encountered unrecognized error ${errorFormatter(error as Error)} while creating a new logging directory at ${path.join(entry)}`);
+                console.error(`Encountered unrecognized error ${errorFormatter(error as Error)} while creating a new logging directory at ${path.join(entry)}`);
+                process.exit(-1);
+            }
+        });
         await Promise.all([
             mkdir(path.join(entry, "admin"), { recursive: true }),
             mkdir(path.join(entry, "authentication"), { recursive: true }),
@@ -264,7 +288,7 @@ export const BASE_LOGGING_DIRECTORY: string = await (async () => {
         ]).then(() => {
             metaLog("admin", "INFO", `Created new logging category directories inside "${path.join(entry)}".`);
         }).catch(error => {
-            metaLog("admin", "WARNING", `Encountered error "${(error as Error).name}: ${(error as Error).message}" while creating new logging category directories inside "${path.join(entry)}".`);
+            metaLog("admin", "WARNING", `Encountered error ${errorFormatter(error as Error)} while creating new logging category directories inside "${path.join(entry)}".`);
         });
         return entry;
     } else {
