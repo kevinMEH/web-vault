@@ -6,7 +6,6 @@ import path from "path";
 import config from "../config";
 
 
-config.TESTING = true;
 const vaultDirectory = config.BASE_VAULT_DIRECTORY = path.join(process.cwd(), "vaults");
 config.JWT_SECRET = "4B6576696E20697320636F6F6C";
 config.DOMAIN = "Kevin";

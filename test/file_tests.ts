@@ -6,7 +6,6 @@ import path from "path";
 import config from "../config";
 
 
-config.TESTING = true;
 if(process.env.REDIS) {
     config.REDIS = true;
     console.log("Using Redis");
@@ -77,6 +76,27 @@ describe("File function tests", () => {
     
         assert(await createNewVault(testVaultOne, "randompassword") === null);
         assert(await createNewVault(testVaultTwo, "randompassword") === null);
+
+        {
+            const path = validatePath(testVaultOne + "/folder1");
+            assert(path !== null);
+            assert(addFolder(path) === true);
+        }
+        {
+            const path = validatePath(testVaultOne + "/folder2");
+            assert(path !== null);
+            assert(addFolder(path) === true);
+        }
+        {
+            const path = validatePath(testVaultOne + "/folder2/another folder");
+            assert(path !== null);
+            assert(addFolder(path) === true);
+        }
+        {
+            const path = validatePath(testVaultTwo + "/some folder");
+            assert(path !== null);
+            assert(addFolder(path) === true);
+        }
         
         gitignoreStat = await fs.stat("./.gitignore");
         licenseStat = await fs.stat("./LICENSE");

@@ -6,7 +6,6 @@ import path from "path";
 import config from "../config";
 
 
-config.TESTING = true;
 config.JWT_SECRET = "4B6576696E20697320636F6F6C";
 config.DOMAIN = "Kevin";
 config.PASSWORD_SALT = "ABC99288B9288B22A66F00E";
