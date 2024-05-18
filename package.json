@@ -16,6 +16,7 @@
     "controller_tests_local": "TESTING=true ./ts_node.sh test/controller_tests.ts",
     "controller_tests_redis": "TESTING=true REDIS=true ./ts_node.sh test/controller_tests.ts",
     "file_tests": "TESTING=true REDIS=true ./ts_node.sh test/file_tests.ts",
+
     "backend_tests": "bash test/test_backend.sh",
     "api_tests": "TESTING=true ./ts_node.sh test/api_tests.ts"
   },

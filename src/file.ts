@@ -4,7 +4,7 @@ import { pipeline } from "stream/promises";
 import { File as WebFile } from "buffer";
 
 import { metaLog, vaultLog } from "./logger";
-import { getVaultFromPath, getDirectoryAt, splitParentChild, getAt, getVaultVFS } from "./controller";
+import { getVaultFromPath, getDirectoryAt, splitParentChild, getAt } from "./controller";
 import type { ValidatedPath, VaultPath } from "./controller";
 import { File, Directory } from "./vfs";
 import { storeVFS } from "./authentication/database";
