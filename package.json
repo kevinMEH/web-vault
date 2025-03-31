@@ -24,7 +24,7 @@
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
-    "axios": "^1.6.8",
+    "axios": "^1.8.2",
     "eslint": "^8.41.0",
     "eslint-config-next": "^14.1.0",
     "ioredis": "^5.2.5",
